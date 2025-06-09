@@ -20,15 +20,15 @@ export default function Home() {
         <SectionCardDashboard />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col mx-4">
-            <div className="flex flex-row w-full gap-4 mt-4">
-              <div className="flex flex-col gap-4 w-[1100px]">
+            <div className="flex flex-col lg:flex-row w-full gap-4 mt-4">
+              <div className="flex flex-col gap-4 w-full lg:w-2/3">
                 <ChartArea
                   selectedSection={selectedSection}
                   setSelectedSection={setSelectedSection}
                 />
                 <DataTable selectedSection={selectedSection} />
               </div>
-              <div className="flex flex-col w-[551px]">
+              <div className="flex flex-col w-full lg:w-1/3">
                 <SectionCardStatus />
               </div>
             </div>

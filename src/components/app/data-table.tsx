@@ -15,45 +15,45 @@ import { ContentStatistic } from "./ui/content-statistic";
 const invoices = [
   {
     invoice: "INV001",
-    paymentStatus: "Paid",
-    totalAmount: "$250.00",
-    paymentMethod: "Credit Card",
+    paymentStatus: "Lunas",
+    totalAmount: "Rp 2.500.000",
+    paymentMethod: "Kartu Kredit",
   },
   {
     invoice: "INV002",
-    paymentStatus: "Pending",
-    totalAmount: "$150.00",
-    paymentMethod: "PayPal",
+    paymentStatus: "Tertunda",
+    totalAmount: "Rp 1.500.000",
+    paymentMethod: "GoPay",
   },
   {
     invoice: "INV003",
-    paymentStatus: "Unpaid",
-    totalAmount: "$350.00",
-    paymentMethod: "Bank Transfer",
+    paymentStatus: "Belum Dibayar",
+    totalAmount: "Rp 3.500.000",
+    paymentMethod: "Transfer Bank",
   },
   {
     invoice: "INV004",
-    paymentStatus: "Paid",
-    totalAmount: "$450.00",
-    paymentMethod: "Credit Card",
+    paymentStatus: "Lunas",
+    totalAmount: "Rp 4.500.000",
+    paymentMethod: "Kartu Kredit",
   },
   {
     invoice: "INV005",
-    paymentStatus: "Paid",
-    totalAmount: "$550.00",
-    paymentMethod: "PayPal",
+    paymentStatus: "Lunas",
+    totalAmount: "Rp 5.500.000",
+    paymentMethod: "OVO",
   },
   {
     invoice: "INV006",
-    paymentStatus: "Pending",
-    totalAmount: "$200.00",
-    paymentMethod: "Bank Transfer",
+    paymentStatus: "Tertunda",
+    totalAmount: "Rp 2.000.000",
+    paymentMethod: "Transfer Bank",
   },
   {
     invoice: "INV007",
-    paymentStatus: "Unpaid",
-    totalAmount: "$300.00",
-    paymentMethod: "Credit Card",
+    paymentStatus: "Belum Dibayar",
+    totalAmount: "Rp 3.000.000",
+    paymentMethod: "Dana",
   },
 ];
 
@@ -64,13 +64,13 @@ export function DataTable({ selectedSection }: { selectedSection: string }) {
     case "credit":
       content = (
         <Table>
-          <TableCaption>A list of your recent invoices.</TableCaption>
+          <TableCaption>Daftar faktur terbaru Anda.</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px]">Invoice</TableHead>
+              <TableHead className="w-[100px]">Faktur</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Method</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Metode</TableHead>
+              <TableHead className="text-right">Jumlah</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -88,7 +88,7 @@ export function DataTable({ selectedSection }: { selectedSection: string }) {
           <TableFooter>
             <TableRow>
               <TableCell colSpan={3}>Total</TableCell>
-              <TableCell className="text-right">$2,500.00</TableCell>
+              <TableCell className="text-right">Rp 22.500.000</TableCell>
             </TableRow>
           </TableFooter>
         </Table>

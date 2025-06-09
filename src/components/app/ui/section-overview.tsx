@@ -37,7 +37,7 @@ export function SectionOverview() {
     },
     {
       title: "CEO",
-      value: "Tegar jir",
+      value: "Eko Sumatyo",
       color: "text-[#00b4d8]",
     },
     {
