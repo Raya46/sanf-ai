@@ -26,7 +26,7 @@ export function SectionCardStatus() {
         <div className="mx-4">
           <Progress />
         </div>
-        <CardFooter className="flex flex-row gap-4">
+        <CardFooter className="flex flex-row justify-center gap-4">
           <div className="flex flex-col items-center p-4 border border-gray-300 rounded-lg">
             <File width={20} height={20} color="#007BFF" />
             <CardTitle className="font-bold text-lg">10</CardTitle>

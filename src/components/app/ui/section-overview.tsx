@@ -37,7 +37,7 @@ export function SectionOverview() {
     },
     {
       title: "CEO",
-      value: "Eko Sumatyo",
+      value: "Wempy Kunto Wiambodo",
       color: "text-[#00b4d8]",
     },
     {
