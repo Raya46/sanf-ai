@@ -23,6 +23,11 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const key = formData.get("key") as string | null;
+    const original_filename = formData.get("original_filename") as
+      | string
+      | null;
+    const user_id = formData.get("user_id") as string | null;
+    const user_email = formData.get("user_email") as string | null;
 
     if (!file || !key) {
       return NextResponse.json(
@@ -35,12 +40,19 @@ export async function POST(req: NextRequest) {
 
     const url = `${endpoint}/${bucketName}/${key}`;
 
+    const headers: Record<string, string> = {
+      "Content-Type": file.type,
+      "Content-Length": buffer.length.toString(),
+    };
+
+    if (original_filename)
+      headers["x-amz-meta-original-filename"] = original_filename;
+    if (user_id) headers["x-amz-meta-user-id"] = user_id;
+    if (user_email) headers["x-amz-meta-user-email"] = user_email;
+
     const res = await s3.fetch(url, {
       method: "PUT",
-      headers: {
-        "Content-Type": file.type,
-        "Content-Length": buffer.length.toString(),
-      },
+      headers: headers,
       body: buffer,
     });
 
