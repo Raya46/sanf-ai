@@ -114,7 +114,7 @@ export function AppSidebar({
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Account
+            Accounts
           </SidebarGroupLabel>
           <SidebarMenu>
             {accountItems.map((item) => (

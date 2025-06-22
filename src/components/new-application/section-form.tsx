@@ -12,9 +12,11 @@ import {
   SelectValue,
 } from "../ui/select";
 import { useDropzone } from "react-dropzone";
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useMemo, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { submitApplication } from "@/app/actions";
+import { createClient } from "@/utils/supabase/client";
+import { User } from "@supabase/supabase-js";
 
 interface StagedFile {
   file: File;
@@ -23,16 +25,28 @@ interface StagedFile {
 }
 
 export function SectionForm() {
+  const [user, setUser] = useState<User | null>(null);
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    fetchUser();
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map((file) => {
       return {
         file,
         docType: "document",
-        key: `document-${uuidv4()}`,
+        key: `document-${uuidv4()}.pdf`,
       };
     });
     setStagedFiles((prevFiles) => [...prevFiles, ...newFiles]);
@@ -54,6 +68,12 @@ export function SectionForm() {
   }, [stagedFiles]);
 
   const handleSubmit = async () => {
+    if (!user) {
+      console.error("User not found, cannot submit.");
+      // Optionally, show an error message to the user
+      return;
+    }
+
     setIsSubmitting(true);
 
     const uploadedFilesForAction = [];
@@ -63,6 +83,12 @@ export function SectionForm() {
         const formData = new FormData();
         formData.append("file", stagedFile.file);
         formData.append("key", stagedFile.key);
+        // Add metadata
+        formData.append("original_filename", stagedFile.file.name);
+        formData.append("user_id", user.id);
+        if (user.email) {
+          formData.append("user_email", user.email);
+        }
 
         const res = await fetch("/api/upload", {
           method: "POST",
