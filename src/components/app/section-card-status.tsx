@@ -1,18 +1,54 @@
-import { Edit, File, Moon, TriangleAlert } from "lucide-react";
+import { Edit, File, Moon, TriangleAlert, TrendingUp } from "lucide-react";
+import { Label, Pie, PieChart } from "recharts";
 import {
   Card,
+  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import { Progress } from "../ui/progress";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "../ui/chart";
 import { Separator } from "../ui/separator";
+import * as React from "react";
 
 export function SectionCardStatus() {
+  const chartData = [
+    { status: "new", count: 10, fill: "var(--color-new)" },
+    { status: "review", count: 10, fill: "var(--color-review)" },
+    { status: "pending", count: 5, fill: "var(--color-pending)" },
+  ];
+
+  const chartConfig = {
+    count: {
+      label: "Count",
+    },
+    new: {
+      label: "Pengajuan Baru",
+      color: "#007BFF",
+    },
+    review: {
+      label: "Menunggu Tinjauan Manual",
+      color: "#28A745",
+    },
+    pending: {
+      label: "Keputusan Tertunda",
+      color: "#FFC107",
+    },
+  } satisfies ChartConfig;
+
+  const totalApplications = React.useMemo(() => {
+    return chartData.reduce((acc, curr) => acc + curr.count, 0);
+  }, []);
+
   return (
     <div className="flex flex-col gap-4">
-      <Card>
+      <Card className="flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Status Alur Kerja Saat ini</CardTitle>
           <CardDescription className="text-[#007BFF]">
@@ -22,10 +58,56 @@ export function SectionCardStatus() {
         <div className="mx-4">
           <Separator />
         </div>
-        <CardTitle className="text-center">25</CardTitle>
-        <div className="mx-4">
-          <Progress />
-        </div>
+        <CardContent className="flex-1 pb-0">
+          <ChartContainer
+            config={chartConfig}
+            className="mx-auto aspect-square max-h-[200px]"
+          >
+            <PieChart>
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent hideLabel />}
+              />
+              <Pie
+                data={chartData}
+                dataKey="count"
+                nameKey="status"
+                innerRadius={50}
+                strokeWidth={3}
+              >
+                <Label
+                  content={({ viewBox }) => {
+                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                      return (
+                        <text
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          <tspan
+                            x={viewBox.cx}
+                            y={viewBox.cy}
+                            className="fill-foreground text-2xl font-bold"
+                          >
+                            {totalApplications}
+                          </tspan>
+                          <tspan
+                            x={viewBox.cx}
+                            y={(viewBox.cy || 0) + 20}
+                            className="fill-muted-foreground text-sm"
+                          >
+                            Total
+                          </tspan>
+                        </text>
+                      );
+                    }
+                  }}
+                />
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+        </CardContent>
         <CardFooter className="flex flex-row justify-center gap-4">
           <div className="flex flex-col items-center p-4 border border-gray-300 rounded-lg">
             <File width={20} height={20} color="#007BFF" />
@@ -43,7 +125,7 @@ export function SectionCardStatus() {
           </div>
           <div className="flex flex-col items-center p-4 border border-gray-300 rounded-lg">
             <Moon width={20} height={20} color="#007BFF" />
-            <CardTitle className="font-bold text-lg">10</CardTitle>
+            <CardTitle className="font-bold text-lg">5</CardTitle>
             <CardDescription className="text-xs text-center">
               Keputusan Tertunda
             </CardDescription>
