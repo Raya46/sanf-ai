@@ -14,7 +14,7 @@ export default async function RegisterPage() {
   }
 
   return (
-    <main className="flex items-center justify-center w-full h-screen">
+    <main className="w-full h-screen">
       <Suspense>
         <RegisterForm />
       </Suspense>
