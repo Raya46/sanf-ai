@@ -1,5 +1,5 @@
 "use client";
-import { FilePlus, History, LogOut, PanelsTopLeft } from "lucide-react";
+import { LogOut, PanelsTopLeft, FilePlus, History } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import {
@@ -14,10 +14,13 @@ import {
   SidebarGroupLabel,
   SidebarRail,
 } from "../ui/sidebar";
+import { logout } from "@/app/auth/actions";
+import { User } from "@supabase/supabase-js";
 
 const sideBarItems = [
   {
     title: "Dashboard",
+    url: "/",
     url: "/",
     icon: PanelsTopLeft,
   },
