@@ -1,0 +1,11 @@
+{
+  "/api/upload/route": "/api/upload",
+  "/favicon.ico/route": "/favicon.ico",
+  "/_not-found/page": "/_not-found",
+  "/(dashboard)/application/page": "/application",
+  "/(dashboard)/new-application/[...id]/page": "/new-application/[...id]",
+  "/(dashboard)/new-application/page": "/new-application",
+  "/login/page": "/login",
+  "/page": "/",
+  "/register/page": "/register"
+}
