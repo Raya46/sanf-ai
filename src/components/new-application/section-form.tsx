@@ -110,11 +110,15 @@ export function SectionForm() {
 
         if (!res.ok) {
           const errorData = await res.json();
-          throw new Error(errorData.error || "Upload failed");
+          throw new Error(
+            typeof errorData === "object" && errorData !== null && "error" in errorData
+              ? (errorData as { error?: string }).error || "Upload failed"
+              : "Upload failed"
+          );
         }
 
-        const result = await res.json();
-        if (!result.success) {
+        const result = (await res.json()) as { success: boolean; key?: string };
+        if (!result.success || !result.key) {
           throw new Error("Upload failed");
         }
 

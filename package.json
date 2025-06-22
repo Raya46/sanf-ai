@@ -12,6 +12,9 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
+    "@ai-sdk/google": "^1.2.19",
+    "@ai-sdk/openai": "^1.3.22",
+    "@ai-sdk/react": "^1.2.12",
     "@opennextjs/cloudflare": "^1.2.0",
     "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-dialog": "^1.1.14",
@@ -25,6 +28,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.0",
+    "ai": "^4.3.16",
     "aws4fetch": "^1.0.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -35,6 +39,7 @@
     "react-dropzone": "^14.3.8",
     "recharts": "^2.15.3",
     "tailwind-merge": "^3.3.0",
+    "zod": "^3.25.67",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
