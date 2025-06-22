@@ -21,7 +21,6 @@ const sideBarItems = [
   {
     title: "Dashboard",
     url: "/",
-    url: "/",
     icon: PanelsTopLeft,
   },
   {
@@ -44,12 +43,18 @@ const accountItems = [
   },
 ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { user?: User }) {
   const [pathname, setPathname] = React.useState("");
 
   React.useEffect(() => {
     setPathname(window.location.pathname);
   }, []);
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -115,32 +120,48 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {accountItems.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
-                  asChild
+                  asChild={item.title !== "Logout"}
                   isActive={pathname === item.url}
                   className="hover:bg-red-50 duration-200 focus:text-red-600 data-[active=true]:text-red-600"
                 >
-                  <Link href={item.url}>
-                    <div
-                      className={`w-8 h-8 ${
-                        pathname === item.url
-                          ? "bg-red-600"
-                          : "bg-red-500 hover:bg-red-600"
-                      } justify-center items-center flex rounded-lg transition-colors duration-200`}
+                  {item.title === "Logout" ? (
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 p-2"
                     >
-                      {item.icon && (
-                        <item.icon className="h-5 w-5 text-white" />
-                      )}
-                    </div>
-                    <span
-                      className={`text-sm ${
-                        pathname === item.url
-                          ? "text-red-600"
-                          : "text-gray-700 hover:text-red-600"
-                      } font-medium`}
-                    >
-                      {item.title}
-                    </span>
-                  </Link>
+                      <div className="w-8 h-8 bg-red-500 hover:bg-red-600 justify-center items-center flex rounded-lg transition-colors duration-200">
+                        {item.icon && (
+                          <item.icon className="h-5 w-5 text-white" />
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-700 hover:text-red-600 font-medium">
+                        {item.title}
+                      </span>
+                    </button>
+                  ) : (
+                    <Link href={item.url}>
+                      <div
+                        className={`w-8 h-8 ${
+                          pathname === item.url
+                            ? "bg-red-600"
+                            : "bg-red-500 hover:bg-red-600"
+                        } justify-center items-center flex rounded-lg transition-colors duration-200`}
+                      >
+                        {item.icon && (
+                          <item.icon className="h-5 w-5 text-white" />
+                        )}
+                      </div>
+                      <span
+                        className={`text-sm ${
+                          pathname === item.url
+                            ? "text-red-600"
+                            : "text-gray-700 hover:text-red-600"
+                        } font-medium`}
+                      >
+                        {item.title}
+                      </span>
+                    </Link>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}

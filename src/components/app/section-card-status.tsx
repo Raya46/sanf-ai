@@ -1,4 +1,4 @@
-import { Edit, File, Moon, TriangleAlert, TrendingUp } from "lucide-react";
+import { Edit, File, Moon, TriangleAlert } from "lucide-react";
 import { Label, Pie, PieChart } from "recharts";
 import {
   Card,
