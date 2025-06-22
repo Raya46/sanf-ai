@@ -177,7 +177,7 @@ export function ChartArea({
         <CardAction>
           <Select value={selectedSection} onValueChange={setSelectedSection}>
             <SelectTrigger
-              className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
+              className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate"
               size="sm"
               aria-label="Select a value"
             >
@@ -214,7 +214,7 @@ export function ChartArea({
         <CardAction>
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger
-              className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
+              className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate"
               size="sm"
               aria-label="Select a value"
             >
