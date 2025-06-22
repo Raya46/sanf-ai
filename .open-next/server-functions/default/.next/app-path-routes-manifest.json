@@ -1,21 +1,14 @@
 {
+  "/_not-found/page": "/_not-found",
+  "/api/applications/[id]/route": "/api/applications/[id]",
+  "/api/applications/route": "/api/applications",
+  "/api/applications/stats/route": "/api/applications/stats",
   "/api/upload/route": "/api/upload",
   "/favicon.ico/route": "/favicon.ico",
-<<<<<<< HEAD
-  "/_not-found/page": "/_not-found",
   "/(dashboard)/application/page": "/application",
   "/(dashboard)/new-application/[...id]/page": "/new-application/[...id]",
   "/(dashboard)/new-application/page": "/new-application",
   "/login/page": "/login",
   "/page": "/",
   "/register/page": "/register"
-=======
-  "/api/upload/route": "/api/upload",
-  "/(dashboard)/application/page": "/application",
-  "/(dashboard)/new-application/[...id]/page": "/new-application/[...id]",
-  "/login/page": "/login",
-  "/register/page": "/register",
-  "/(dashboard)/new-application/page": "/new-application",
-  "/page": "/"
->>>>>>> ad63b92a4021a453b2bc04546806e6d2a98344cd
 }
