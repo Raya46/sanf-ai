@@ -1,5 +1,5 @@
 "use client";
-import { FilePlus, History, LogOut, PanelsTopLeft } from "lucide-react";
+import { LogOut, PanelsTopLeft, FilePlus, History } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import {
@@ -10,11 +10,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "../ui/sidebar";
+import { logout } from "@/app/auth/actions";
+import { User } from "@supabase/supabase-js";
 
 const sideBarItems = [
   {
     title: "Dashboard",
-    url: "#",
+    url: "/",
     icon: PanelsTopLeft,
   },
   {
@@ -27,18 +29,16 @@ const sideBarItems = [
     url: "/application",
     icon: History,
   },
-  {
-    title: "Logout",
-    url: "#",
-    icon: LogOut,
-  },
 ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  user,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { user: User | null }) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader className="bg-white">
-        <SidebarMenu className="bg-white">
+    <Sidebar {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Link href={"/"}>
@@ -48,7 +48,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent className="bg-white">
+      <SidebarContent>
         <SidebarMenu>
           {sideBarItems.map((item) => (
             <SidebarMenuItem key={item.title}>
@@ -60,6 +60,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarContent>
+        <SidebarMenu>
+          {user && (
+            <SidebarMenuItem>
+              <form action={logout} className="w-full">
+                <SidebarMenuButton className="w-full justify-start" asChild>
+                  <button className="w-full">
+                    <LogOut />
+                    <span>Logout</span>
+                  </button>
+                </SidebarMenuButton>
+              </form>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarContent>
     </Sidebar>

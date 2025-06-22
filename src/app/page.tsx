@@ -1,40 +1,28 @@
-"use client";
-
 import { SiteHeader } from "@/components/app/app-header";
 import { AppSidebar } from "@/components/app/app-sidebar";
-import { ChartArea } from "@/components/app/chart-area";
-import { DataTable } from "@/components/app/data-table";
-import { SectionCardDashboard } from "@/components/app/section-card-dashboard";
-import { SectionCardStatus } from "@/components/app/section-card-status";
-import { SidebarInset } from "@/components/ui/sidebar";
-import * as React from "react";
+import { DashboardClient } from "@/components/app/dashboard-client";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  const [selectedSection, setSelectedSection] = React.useState("credit");
+export default async function Home() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return redirect("/login");
+  }
 
   return (
-    <>
-      <AppSidebar variant="inset" />
+    <SidebarProvider>
+      <AppSidebar variant="inset" user={user} />
       <SidebarInset>
         <SiteHeader />
-        <SectionCardDashboard />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col mx-4">
-            <div className="flex flex-col lg:flex-row w-full gap-4 mt-4">
-              <div className="flex flex-col gap-4 w-full lg:w-2/3">
-                <ChartArea
-                  selectedSection={selectedSection}
-                  setSelectedSection={setSelectedSection}
-                />
-                <DataTable selectedSection={selectedSection} />
-              </div>
-              <div className="flex flex-col w-full lg:w-1/3">
-                <SectionCardStatus />
-              </div>
-            </div>
-          </div>
-        </div>
+        <DashboardClient />
       </SidebarInset>
-    </>
+    </SidebarProvider>
   );
 }
