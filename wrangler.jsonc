@@ -6,5 +6,16 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "vars": {
+    "OPENAI_API_KEY": "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",
+    "NODE_ENV": "production"
+  },
+  "define": {
+    "process.env.OPENAI_API_KEY": "\"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\"",
+    "globalThis.AI": "AI"
   }
 }
