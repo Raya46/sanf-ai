@@ -2,8 +2,6 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, CoreMessage } from "ai";
 import { NextRequest } from "next/server";
 
-export const runtime = "edge";
-
 export interface CloudflareEnv {
   AI: Ai;
   OPENAI_API_KEY: string;
