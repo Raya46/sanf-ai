@@ -125,8 +125,13 @@ export function AppSidebar({
                   className="hover:bg-red-50 duration-200 focus:text-red-600 data-[active=true]:text-red-600"
                 >
                   {item.title === "Logout" ? (
-                    <button
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={handleLogout}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") handleLogout();
+                      }}
                       className="w-full flex items-center gap-3 p-2"
                     >
                       <div className="w-8 h-8 bg-red-500 hover:bg-red-600 justify-center items-center flex rounded-lg transition-colors duration-200">
@@ -137,7 +142,7 @@ export function AppSidebar({
                       <span className="text-sm text-gray-700 hover:text-red-600 font-medium">
                         {item.title}
                       </span>
-                    </button>
+                    </div>
                   ) : (
                     <Link href={item.url}>
                       <div

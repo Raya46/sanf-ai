@@ -23,7 +23,7 @@ export default async function NewApplicationPage() {
         <SiteHeader />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col">
-            <h1 className="m-4">New Credit Application</h1>
+            <h1 className="m-4 font-bold text-lg">New Credit Application</h1>
             <SectionForm />
           </div>
         </div>
