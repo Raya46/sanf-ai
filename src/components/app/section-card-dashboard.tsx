@@ -1,11 +1,49 @@
+"use client";
+
 import { Check, Clock, File, Plus, TriangleAlert } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardDescription, CardTitle } from "../ui/card";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Skeleton } from "../ui/skeleton";
+
+interface DashboardStats {
+  totalProcessed: number;
+  totalApproved: number;
+  averageRiskScore: number;
+}
 
 export function SectionCardDashboard() {
+  const router = useRouter();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/applications/stats");
+        if (!response.ok) {
+          throw new Error("Failed to fetch dashboard stats");
+        }
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   return (
     <div className="flex flex-col gap-4 pt-4 mx-4">
-      <Button className="w-fit bg-blue-600">
+      <Button
+        onClick={() => router.push("/new-application")}
+        className="w-fit bg-blue-600"
+      >
         <Plus />
         <span>New Application</span>
       </Button>
@@ -15,7 +53,11 @@ export function SectionCardDashboard() {
             <File width={20} height={20} color="#007BFF" />
           </div>
           <div className="flex flex-col">
-            <CardTitle>150</CardTitle>
+            {isLoading ? (
+              <Skeleton className="h-6 w-12" />
+            ) : (
+              <CardTitle>{stats?.totalProcessed ?? 0}</CardTitle>
+            )}
             <CardDescription>Total Aplikasi Diproses</CardDescription>
           </div>
         </Card>
@@ -24,7 +66,11 @@ export function SectionCardDashboard() {
             <Check width={20} height={20} color="#4CAF50" />
           </div>
           <div className="flex flex-col">
-            <CardTitle>100</CardTitle>
+            {isLoading ? (
+              <Skeleton className="h-6 w-12" />
+            ) : (
+              <CardTitle>{stats?.totalApproved ?? 0}</CardTitle>
+            )}
             <CardDescription>Aplikasi Disetujui</CardDescription>
           </div>
         </Card>
@@ -33,7 +79,11 @@ export function SectionCardDashboard() {
             <Clock width={20} height={20} color="#FF9800" />
           </div>
           <div className="flex flex-col">
-            <CardTitle>5.2</CardTitle>
+            {isLoading ? (
+              <Skeleton className="h-6 w-12" />
+            ) : (
+              <CardTitle>{stats?.averageRiskScore ?? 0}</CardTitle>
+            )}
             <CardDescription>Rata-rata Skor Risiko</CardDescription>
           </div>
         </Card>

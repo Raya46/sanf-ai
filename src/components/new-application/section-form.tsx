@@ -14,7 +14,6 @@ import {
 import { useDropzone } from "react-dropzone";
 import { useCallback, useState, useMemo, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { submitApplication } from "@/app/actions";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 
@@ -29,6 +28,11 @@ export function SectionForm() {
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const [companyName, setCompanyName] = useState("");
+  const [applicationType, setApplicationType] = useState("");
+  const [contactPerson, setContactPerson] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [isFormValid, setIsFormValid] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -40,6 +44,15 @@ export function SectionForm() {
     };
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    setIsFormValid(
+      companyName.trim() !== "" &&
+        applicationType.trim() !== "" &&
+        contactPerson.trim() !== "" &&
+        contactEmail.trim() !== ""
+    );
+  }, [companyName, applicationType, contactPerson, contactEmail]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map((file) => {
@@ -123,26 +136,50 @@ export function SectionForm() {
       }
     }
 
-    const result = await submitApplication({
-      status: "submitted",
-      files: uploadedFilesForAction,
-    });
+    try {
+      const response = await fetch("/api/applications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "submitted",
+          files: uploadedFilesForAction,
+          company_name: companyName,
+          application_type: applicationType,
+          contact_person: contactPerson,
+          contact_email: contactEmail,
+        }),
+      });
 
-    if (result.success && result.applicationId) {
-      router.push(`/new-application/${result.applicationId}`);
-    } else {
-      console.error("Submission failed", result.error);
+      if (!response.ok) {
+        throw new Error("Submission failed");
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.applicationId) {
+        router.push(`/new-application/${result.applicationId}`);
+      } else {
+        console.error("Submission failed", result.error);
+      }
+    } catch (error) {
+      console.error("Submission failed", error);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   return (
     <div className="flex flex-row gap-8 mt-4 mx-4 flex-1">
       <div className="flex flex-col gap-2 w-full flex-1">
         <p>Company Name</p>
-        <Input />
+        <Input
+          value={companyName}
+          onChange={(e) => setCompanyName(e.target.value)}
+        />
         <p>Application Type</p>
-        <Select>
+        <Select onValueChange={setApplicationType} value={applicationType}>
           <SelectTrigger
             className="flex w-full **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
             size="sm"
@@ -163,9 +200,15 @@ export function SectionForm() {
           </SelectContent>
         </Select>
         <p>Contact Person</p>
-        <Input />
+        <Input
+          value={contactPerson}
+          onChange={(e) => setContactPerson(e.target.value)}
+        />
         <p>Contact Email</p>
-        <Input />
+        <Input
+          value={contactEmail}
+          onChange={(e) => setContactEmail(e.target.value)}
+        />
       </div>
       <div className="flex flex-col gap-4 mt-4 w-full flex-1">
         <h1>Upload Supporting Document</h1>
@@ -221,7 +264,7 @@ export function SectionForm() {
         )}
         <Button
           className="bg-blue-600 flex flex-row items-center self-end"
-          disabled={!hasEnoughFiles || isSubmitting}
+          disabled={!hasEnoughFiles || isSubmitting || !isFormValid}
           onClick={handleSubmit}
         >
           {isSubmitting ? (

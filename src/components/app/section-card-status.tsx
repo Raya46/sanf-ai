@@ -17,31 +17,31 @@ import {
 import { Separator } from "../ui/separator";
 import * as React from "react";
 
+const chartData = [
+  { status: "new", count: 10, fill: "var(--color-new)" },
+  { status: "review", count: 10, fill: "var(--color-review)" },
+  { status: "pending", count: 5, fill: "var(--color-pending)" },
+];
+
+const chartConfig = {
+  count: {
+    label: "Count",
+  },
+  new: {
+    label: "Pengajuan Baru",
+    color: "#007BFF",
+  },
+  review: {
+    label: "Menunggu Tinjauan Manual",
+    color: "#28A745",
+  },
+  pending: {
+    label: "Keputusan Tertunda",
+    color: "#FFC107",
+  },
+} satisfies ChartConfig;
+
 export function SectionCardStatus() {
-  const chartData = [
-    { status: "new", count: 10, fill: "var(--color-new)" },
-    { status: "review", count: 10, fill: "var(--color-review)" },
-    { status: "pending", count: 5, fill: "var(--color-pending)" },
-  ];
-
-  const chartConfig = {
-    count: {
-      label: "Count",
-    },
-    new: {
-      label: "Pengajuan Baru",
-      color: "#007BFF",
-    },
-    review: {
-      label: "Menunggu Tinjauan Manual",
-      color: "#28A745",
-    },
-    pending: {
-      label: "Keputusan Tertunda",
-      color: "#FFC107",
-    },
-  } satisfies ChartConfig;
-
   const totalApplications = React.useMemo(() => {
     return chartData.reduce((acc, curr) => acc + curr.count, 0);
   }, []);
