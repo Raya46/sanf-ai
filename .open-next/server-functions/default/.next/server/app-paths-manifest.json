@@ -1,6 +1,7 @@
 {
   "/api/upload/route": "app/api/upload/route.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
+<<<<<<< HEAD
   "/_not-found/page": "app/_not-found/page.js",
   "/(dashboard)/application/page": "app/(dashboard)/application/page.js",
   "/(dashboard)/new-application/[...id]/page": "app/(dashboard)/new-application/[...id]/page.js",
@@ -8,4 +9,13 @@
   "/login/page": "app/login/page.js",
   "/page": "app/page.js",
   "/register/page": "app/register/page.js"
+=======
+  "/api/upload/route": "app/api/upload/route.js",
+  "/(dashboard)/application/page": "app/(dashboard)/application/page.js",
+  "/(dashboard)/new-application/[...id]/page": "app/(dashboard)/new-application/[...id]/page.js",
+  "/login/page": "app/login/page.js",
+  "/register/page": "app/register/page.js",
+  "/(dashboard)/new-application/page": "app/(dashboard)/new-application/page.js",
+  "/page": "app/page.js"
+>>>>>>> ad63b92a4021a453b2bc04546806e6d2a98344cd
 }
