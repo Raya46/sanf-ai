@@ -32,7 +32,7 @@ export function SectionForm() {
       return {
         file,
         docType: "document",
-        key: `document-${uuidv4()}`,
+        key: `document-${uuidv4()}.pdf`,
       };
     });
     setStagedFiles((prevFiles) => [...prevFiles, ...newFiles]);
