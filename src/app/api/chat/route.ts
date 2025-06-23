@@ -1,101 +1,93 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText, CoreMessage } from "ai";
+import { streamText, CoreMessage, createDataStreamResponse } from "ai";
 import { NextRequest } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export interface CloudflareEnv {
-  AI: Ai;
+  AI: Ai | null;
   OPENAI_API_KEY: string;
 }
 
 // Get environment variables for OpenNext on Cloudflare
-function getCloudflareEnv(request: NextRequest): CloudflareEnv {
-  const apiKey = process.env.OPENAI_API_KEY;
+function getCloudflareEnv(): CloudflareEnv {
+  let apiKey = process.env.OPENAI_API_KEY; // Default for local dev
   let ai = null;
 
-  // Check if we're in development mode
+  // Check if we're in development or production
   const isDevelopment = process.env.NODE_ENV === "development";
+  const isProduction = process.env.NODE_ENV === "production";
+
+  console.log("Environment detection:", {
+    nodeEnv: process.env.NODE_ENV,
+    isDevelopment,
+    isProduction,
+    hasCloudflareWorkers: process.env.CLOUDFLARE_WORKERS === "true",
+  });
 
   if (!isDevelopment) {
     // Production: Use OpenNext.js getCloudflareContext
     try {
-      const { env } = getCloudflareContext();
+      const { env } = getCloudflareContext() as { env: any };
       ai = env.AI;
+      // In production on Cloudflare, secrets are on the 'env' object, not process.env.
+      // This requires you to set the secret via `npx wrangler secret put OPENAI_API_KEY`.
+      apiKey = env.OPENAI_API_KEY;
+
+      console.log("Production Cloudflare context accessed.");
 
       if (ai) {
-        console.log("AI binding successfully accessed via OpenNext context");
+        console.log(
+          "AI binding successfully accessed via OpenNext context in production"
+        );
       }
     } catch (contextError) {
-      console.warn(
-        "OpenNext context not available in production:",
-        contextError instanceof Error ? contextError.message : contextError
-      );
+      console.error("Failed to access Cloudflare context in production:", {
+        error:
+          contextError instanceof Error ? contextError.message : contextError,
+        stack: contextError instanceof Error ? contextError.stack : undefined,
+      });
 
       // Fallback methods for production
-      try {
-        // Method 1: Direct access from globalThis
-        if ((globalThis as any).AI) {
-          ai = (globalThis as any).AI;
-          console.log("AI binding accessed via globalThis");
-        }
-
-        // Method 2: Check process.env (OpenNext injection)
-        if (!ai && (process.env as any).AI) {
-          ai = (process.env as any).AI;
-          console.log("AI binding accessed via process.env");
-        }
-
-        // Method 3: Check request context
-        if (!ai && (request as any).cf?.env?.AI) {
-          ai = (request as any).cf.env.AI;
-          console.log("AI binding accessed via request context");
-        }
-      } catch (fallbackError) {
-        console.error("All AI binding access methods failed:", fallbackError);
+      if ((globalThis as any).AI) {
+        ai = (globalThis as any).AI;
+        console.log("AI binding accessed via globalThis fallback");
       }
     }
   } else {
-    // Development: Try OpenNext context with fallbacks
-    try {
-      const { env } = getCloudflareContext();
-      ai = env.AI;
-      if (ai) {
-        console.log("AI binding accessed via OpenNext context in development");
-      }
-    } catch {
-      console.log(
-        "OpenNext context not available in development mode - this is expected"
-      );
+    // Development: Read from process.env (from .env file)
+    console.log("Development mode detected - OpenNext context not available");
+    console.log("In development, AutoRAG functionality will be skipped");
+    console.log("Deploy to Cloudflare Workers to test AutoRAG integration");
 
-      // In development, we don't expect AutoRAG to work
-      // but try fallback methods just in case
-      if ((globalThis as any).AI) {
-        ai = (globalThis as any).AI;
-        console.log("AI binding accessed via globalThis in development");
-      }
-    }
+    // Don't try to access getCloudflareContext in development
+    // as it will always fail without proper Cloudflare Workers environment
   }
 
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY not found in environment");
+  console.log(
+    `API Key loaded: ${apiKey ? `sk-...${apiKey.slice(-4)}` : "Not found"}`
+  );
+
+  if (!apiKey || apiKey.length === 0) {
+    throw new Error("OPENAI_API_KEY not found or is empty in environment");
   }
 
   if (!ai) {
     if (isDevelopment) {
-      console.log(
-        "AI binding not available in development mode - this is expected"
-      );
+      console.log("🔄 Development mode: AI binding not available (expected)");
+      console.log("AutoRAG will work when deployed to Cloudflare Workers");
     } else {
-      console.warn(
-        "Cloudflare AI binding not available in production. Environment info:",
-        {
-          nodeEnv: process.env.NODE_ENV,
-          hasCloudflareWorkers: process.env.CLOUDFLARE_WORKERS,
-          isCloudflareRuntime:
-            typeof (globalThis as any).caches !== "undefined",
-        }
+      console.error("❌ Production: Cloudflare AI binding not available");
+      console.error("This indicates an issue with:");
+      console.error("1. Verify AI binding is configured in wrangler.jsonc");
+      console.error(
+        "2. Ensure deployed to Cloudflare Workers with proper bindings"
+      );
+      console.error(
+        "3. Verify AutoRAG is in the same Cloudflare account as the Worker"
       );
     }
+  } else {
+    console.log("✅ AI binding successfully found and ready for AutoRAG");
   }
 
   return {
@@ -105,171 +97,132 @@ function getCloudflareEnv(request: NextRequest): CloudflareEnv {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const requestBody: { messages?: CoreMessage[] } = await request.json();
-
-    // Type guard for messages
-    if (!requestBody || !Array.isArray(requestBody.messages)) {
-      throw new Error("Invalid request: messages array is required");
-    }
-
-    const { messages } = requestBody;
-    const lastMessage = messages[messages.length - 1];
-
-    // Ensure the last message is a user message
-    if (lastMessage.role !== "user") {
-      throw new Error("Last message must be from user");
-    }
-
-    const userQuery =
-      typeof lastMessage.content === "string"
-        ? lastMessage.content
-        : lastMessage.content
-            .map((part) =>
-              part.type === "text" ? part.text : "[non-text content]"
-            )
-            .join(" ");
-
-    // Get environment
-    const env = getCloudflareEnv(request);
-
-    // Create OpenAI provider with OpenRouter base URL
-    const openai = createOpenAI({
-      baseURL: "https://openrouter.ai/api/v1",
-      apiKey: env.OPENAI_API_KEY,
-    });
-
-    let chunks = "";
-
-    // Only try AutoRAG if AI binding is available
-    if (env.AI) {
+  return createDataStreamResponse({
+    async execute(dataStream) {
       try {
-        const autoragName =
-          process.env.AUTORAG_NAME || "sanf-credit-analysis-v2";
-        console.log(`Attempting AutoRAG search with instance: ${autoragName}`);
-        console.log(`Query: ${userQuery.substring(0, 100)}...`);
+        const requestBody: { messages?: CoreMessage[] } = await request.json();
 
-        // Use the search method with proper parameters
-        const searchResult = await env.AI.autorag(autoragName).search({
-          query: userQuery,
-          max_num_results: 5,
-          ranking_options: {
-            score_threshold: 0.3,
+        if (!requestBody || !Array.isArray(requestBody.messages)) {
+          throw new Error("Invalid request: messages array is required");
+        }
+
+        const { messages } = requestBody;
+        const lastMessage = messages[messages.length - 1];
+
+        if (lastMessage.role !== "user") {
+          throw new Error("Last message must be from user");
+        }
+
+        const userQuery =
+          typeof lastMessage.content === "string"
+            ? lastMessage.content
+            : lastMessage.content
+                .map((part) =>
+                  part.type === "text" ? part.text : "[non-text content]"
+                )
+                .join(" ");
+
+        const env = getCloudflareEnv();
+        const openai = createOpenAI({
+          baseURL: "https://openrouter.ai/api/v1",
+          apiKey: env.OPENAI_API_KEY, // Use the standard apiKey property
+          headers: {
+            // OpenRouter recommends these headers for identification.
+            "HTTP-Referer": "https://sanf.ai", // TODO: Replace with your actual site URL
+            "X-Title": "SANF AI Credit Analysis", // TODO: Replace with your app name
           },
-          rewrite_query: true,
         });
 
-        console.log("AutoRAG search completed:", {
-          hasData: !!searchResult.data,
-          resultsCount: searchResult.data?.length || 0,
-          searchQuery: searchResult.search_query,
-        });
+        let chunks = "";
+        if (env.AI) {
+          try {
+            dataStream.writeData({ status: "Searching documents..." });
+            const autoragName =
+              process.env.AUTORAG_NAME || "sanf-credit-analysis-v2";
+            const searchResult = await env.AI.autorag(autoragName).search({
+              query: userQuery,
+              max_num_results: 5,
+            });
 
-        // Check if documents found
-        if (searchResult.data && searchResult.data.length > 0) {
-          // Join all document chunks into a single string
-          chunks = searchResult.data
-            .map((item) => {
-              const data = item.content
-                .map((content) => content.text)
+            if (searchResult.data && searchResult.data.length > 0) {
+              chunks = searchResult.data
+                .map((item) => {
+                  const data = item.content
+                    .map((content) => content.text)
+                    .join("\n\n");
+                  return `<file name="${item.filename}">${data}</file>`;
+                })
                 .join("\n\n");
-
-              return `<file name="${item.filename}" score="${item.score}">${data}</file>`;
-            })
-            .join("\n\n");
-
-          console.log(
-            "Found relevant documents:",
-            searchResult.data.map((item) => ({
-              filename: item.filename,
-              score: item.score,
-            }))
-          );
-        } else {
-          console.log("No relevant documents found for query");
+              dataStream.writeData({
+                status: `Found ${searchResult.data.length} documents.`,
+              });
+            } else {
+              dataStream.writeData({ status: "No documents found." });
+            }
+          } catch (autoragError) {
+            console.error("AutoRAG operation failed:", autoragError);
+            dataStream.writeData({ status: "Document search failed." });
+          }
         }
-      } catch (autoragError) {
-        const errorMessage =
-          autoragError instanceof Error
-            ? autoragError.message
-            : "Unknown error";
 
-        console.error("AutoRAG search failed:", {
-          error: errorMessage,
-          stack: autoragError instanceof Error ? autoragError.stack : undefined,
+        const systemMessage = {
+          role: "system" as const,
+          content: env.AI
+            ? "You are a helpful assistant analyzing credit applications. Answer questions based on the provided files in Indonesian language. Always include 'Sources: [filename1, filename2]' at the end of your response when using the provided documents."
+            : "You are a helpful assistant analyzing credit applications. Answer questions in Indonesian language. Note: Document search is not available in this environment.",
+        };
+
+        const aiMessages: CoreMessage[] = [systemMessage];
+        if (chunks) {
+          aiMessages.push({ role: "user", content: chunks });
+        }
+        aiMessages.push(...messages.slice(0, -1), {
+          role: "user",
+          content: userQuery,
         });
 
-        // Check for specific error types
-        if (
-          errorMessage.includes("not found") ||
-          errorMessage.includes("does not exist") ||
-          errorMessage.includes("autorag")
-        ) {
-          console.error(
-            `AutoRAG instance '${
-              process.env.AUTORAG_NAME || "sanf-credit-analysis-v2"
-            }' not found in this Cloudflare account. Please ensure the AutoRAG is deployed in the same account as this Worker.`
-          );
-        }
+        dataStream.writeData({ status: "Generating response..." });
+        const result = streamText({
+          model: openai("gpt-4o-mini"),
+          messages: aiMessages,
+          temperature: 0.7,
+          maxTokens: 1000,
+          onFinish() {
+            dataStream.writeData({ status: "completed" });
+          },
+        });
 
-        // Continue without AutoRAG if it fails
+        result.mergeIntoDataStream(dataStream);
+      } catch (error) {
+        console.error("Error in stream execution:", error);
+        throw error; // Throw error to be caught by onError
       }
-    } else {
-      const isDev = process.env.NODE_ENV === "development";
-      console.log(
-        isDev
-          ? "AI binding not available in development mode - AutoRAG will be available in production"
-          : "AI binding not available in production, skipping AutoRAG search"
-      );
-    }
-
-    // Create the message array for the AI
-    const aiMessages: CoreMessage[] = [
-      {
-        role: "system",
-        content: env.AI
-          ? "You are a helpful assistant analyzing credit applications. Answer questions based on the provided files in Indonesian language. Always include 'Sources: [filename1, filename2]' at the end of your response when using the provided documents."
-          : "You are a helpful assistant analyzing credit applications. Answer questions in Indonesian language. Note: Document search is not available in this environment.",
-      },
-    ];
-
-    // Add document context if available
-    if (chunks) {
-      aiMessages.push({
-        role: "user",
-        content: chunks,
-      });
-    }
-
-    // Add conversation history and current query
-    aiMessages.push(
-      ...messages.slice(0, -1), // Previous conversation history
-      {
-        role: "user",
-        content: userQuery,
+    },
+    onError: (error) => {
+      console.error("Stream error:", error);
+      // Provide a more specific error message to the client
+      if (
+        error instanceof Error &&
+        (error.message.includes("401") ||
+          error.message.includes("No auth credentials"))
+      ) {
+        return "Authentication error. Please verify the API key is set correctly as a Cloudflare secret.";
       }
-    );
+      return error instanceof Error
+        ? error.message
+        : "An unknown error occurred";
+    },
+  });
+}
 
-    // Generate streaming response with OpenRouter
-    const result = await streamText({
-      model: openai("gpt-4o-mini"),
-      messages: aiMessages,
-      temperature: 0.7,
-      maxTokens: 1000,
-    });
-
-    return result.toDataStreamResponse();
-  } catch (error) {
-    console.error("Chat API error:", error);
-    return new Response(
-      JSON.stringify({
-        error: "Failed to process request",
-        details: error instanceof Error ? error.message : "Unknown error",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  }
+// Add OPTIONS handler for CORS preflight requests
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204, // No Content
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
 }

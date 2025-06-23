@@ -4,26 +4,41 @@ import { ChatCard } from "@/components/new-application/ui/chat-card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowUp } from "lucide-react";
-import {  useRef, KeyboardEvent } from "react";
+import { useRef, KeyboardEvent, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 
 export function ChatSection() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } =
-    useChat({
-      api: "/api/chat",
-      initialMessages: [
-        {
-          id: "1",
-          role: "assistant",
-          content:
-            "Berdasarkan dokumen yang disediakan, aplikasi kredit ini terkait dengan PT Maju Bersama. Laporan keuangan menunjukkan kesehatan finansial yang stabil selama 2 tahun terakhir, dengan pertumbuhan pendapatan yang konsisten. Rekening koran 3 bulan mengkonfirmasi likuiditas yang kuat.",
-        },
-      ],
-      onError: (error) => {
-        console.error("Chat error:", error);
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    error,
+    data,
+  } = useChat({
+    api: "/api/chat",
+    initialMessages: [
+      {
+        id: "1",
+        role: "assistant",
+        content:
+          "Berdasarkan dokumen yang disediakan, aplikasi kredit ini terkait dengan PT Maju Bersama. Laporan keuangan menunjukkan kesehatan finansial yang stabil selama 2 tahun terakhir, dengan pertumbuhan pendapatan yang konsisten. Rekening koran 3 bulan mengkonfirmasi likuiditas yang kuat.",
       },
-    });
+    ],
+    onError: (error) => {
+      console.error("Chat error:", error.message);
+    },
+    onFinish: (message) => {
+      console.log("Message finished streaming:", message.role);
+    },
+    onResponse: (response) => {
+      if (!response.ok) {
+        console.error("Error response from API:", response.statusText);
+      }
+    },
+  });
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -39,6 +54,9 @@ export function ChatSection() {
     }
   };
 
+  const lastData = data?.[data.length - 1] as { status?: string } | undefined;
+  const statusMessage = lastData?.status ?? "Sedang menganalisis dokumen...";
+
   return (
     <div className="flex flex-col flex-1 bg-white gap-3 m-4 p-4 rounded-lg h-[calc(100vh-2rem)]">
       <h1 className="flex-shrink-0">Credit Application</h1>
@@ -50,14 +68,14 @@ export function ChatSection() {
 
           if (message.role === "assistant") {
             // Try to extract sources from the end of the message
-            const sourceMatch = content.match(/Sources?: ([^\n]+)$/);
+            const sourceMatch = content.match(/Sources?: (.*)$/);
             if (sourceMatch) {
-              sources = sourceMatch[0];
-              content = content.replace(/\n?Sources?: [^\n]+$/, "").trim();
+              sources = sourceMatch[1];
+              content = content.replace(/\n?Sources?: .*$/, "").trim();
             } else if (index === 0) {
               // Fallback for initial message
               sources =
-                "Sources: Laporan_Keuangan_2_Tahun.pdf, Rekening_Koran_3_Bulan.pdf";
+                "Laporan_Keuangan_2_Tahun.pdf, Rekening_Koran_3_Bulan.pdf";
             }
           }
 
@@ -79,15 +97,33 @@ export function ChatSection() {
           <ChatCard
             color="bg-transparent"
             position="start"
-            chat="Sedang menganalisis dokumen..."
+            chat={statusMessage}
           />
         )}
         {error && (
-          <ChatCard
-            color="bg-red-100 text-red-800"
-            position="start"
-            chat={`Error: ${error.message}`}
-          />
+          <div>
+            <ChatCard
+              color="bg-red-100 text-red-800"
+              position="start"
+              chat={`Terjadi kesalahan: ${error.message}. Silakan coba lagi.`}
+            />
+            {/* Add debug info in development */}
+            {process.env.NODE_ENV === "development" && (
+              <ChatCard
+                color="bg-yellow-100 text-yellow-800"
+                position="start"
+                chat={`Debug: ${JSON.stringify(
+                  {
+                    errorName: error.name,
+                    errorMessage: error.message,
+                    errorCause: error.cause,
+                  },
+                  null,
+                  2
+                )}`}
+              />
+            )}
+          </div>
         )}
       </div>
       <form onSubmit={onSubmit} className="relative w-full flex-shrink-0">

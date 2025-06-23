@@ -14,7 +14,7 @@
     "cleanDistDir": true,
     "assetPrefix": "",
     "cacheMaxMemorySize": 52428800,
-    "configOrigin": "next.config.js",
+    "configOrigin": "next.config.ts",
     "useFileSystemPublicRoutes": true,
     "generateEtags": true,
     "pageExtensions": [
@@ -97,11 +97,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-<<<<<<< HEAD
     "outputFileTracingRoot": "D:\\College\\Hackathon\\sanf-ai",
-=======
-    "outputFileTracingRoot": "C:\\Users\\raya\\project\\belajar_nextjs\\sanf-ai",
->>>>>>> a00967360d214f947195a0d53d5093392f448478
     "experimental": {
       "nodeMiddleware": false,
       "cacheLife": {
@@ -159,11 +155,7 @@
       "middlewarePrefetch": "flexible",
       "optimisticClientCache": true,
       "manualClientBasePath": false,
-<<<<<<< HEAD
       "cpus": 15,
-=======
-      "cpus": 3,
->>>>>>> a00967360d214f947195a0d53d5093392f448478
       "memoryBasedWorkersCount": false,
       "imgOptConcurrency": null,
       "imgOptTimeoutInSeconds": 7,
@@ -204,7 +196,9 @@
       "dynamicIO": false,
       "inlineCss": false,
       "useCache": false,
-      "runtime": "edge",
+      "serverComponentsExternalPackages": [
+        "@opennextjs/cloudflare"
+      ],
       "optimizePackageImports": [
         "lucide-react",
         "date-fns",
@@ -287,19 +281,15 @@
     },
     "htmlLimitedBots": "Mediapartners-Google|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti",
     "bundlePagesRouterDependencies": false,
-    "configFileName": "next.config.js",
+    "configFileName": "next.config.ts",
+    "serverExternalPackages": [
+      "@opennextjs/cloudflare"
+    ],
     "turbopack": {
-<<<<<<< HEAD
       "root": "D:\\College\\Hackathon\\sanf-ai"
     }
   },
   "appDir": "D:\\College\\Hackathon\\sanf-ai",
-=======
-      "root": "C:\\Users\\raya\\project\\belajar_nextjs\\sanf-ai"
-    }
-  },
-  "appDir": "C:\\Users\\raya\\project\\belajar_nextjs\\sanf-ai",
->>>>>>> a00967360d214f947195a0d53d5093392f448478
   "relativeAppDir": "",
   "files": [
     ".next\\routes-manifest.json",

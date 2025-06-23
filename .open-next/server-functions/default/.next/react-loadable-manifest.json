@@ -24,11 +24,7 @@
   "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
     "id": 99341,
     "files": [
-<<<<<<< HEAD
       "static/chunks/341.a4c9e4b8dad9832e.js"
-=======
-      "static/chunks/341.2d345fac9603782f.js"
->>>>>>> a00967360d214f947195a0d53d5093392f448478
     ]
   }
 }

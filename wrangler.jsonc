@@ -10,13 +10,19 @@
   "ai": {
     "binding": "AI"
   },
+  "observability": {
+    "logs": {
+      "enabled": true
+    }
+  },
   "vars": {
-    "NODE_ENV": "development",
+    "NODE_ENV": "production",
     "CLOUDFLARE_WORKERS": "true",
     "AUTORAG_NAME": "sanf-credit-analysis-v2"
   },
   "define": {
     "globalThis.AI": "AI",
-    "process.env.AI": "AI"
+    "process.env.AI": "AI",
+    "process.env.NODE_ENV": "\"production\""
   }
 }
