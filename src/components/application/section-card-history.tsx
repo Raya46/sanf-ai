@@ -53,7 +53,7 @@ export function SectionCardHistory() {
         if (!response.ok) {
           throw new Error("Failed to fetch applications");
         }
-        const data = await response.json();
+        const data: Application[] = await response.json();
         setApplications(data);
       } catch (error) {
         console.error(error);
