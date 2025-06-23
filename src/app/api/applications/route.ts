@@ -9,6 +9,15 @@ interface UploadedFile {
   file_size_bytes?: number;
 }
 
+interface ApplicationData {
+  status: string;
+  company_name: string;
+  application_type: string;
+  contact_person: string;
+  contact_email: string;
+  files: UploadedFile[];
+}
+
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -32,7 +41,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const applicationData = await request.json();
+  const applicationData: ApplicationData = await request.json();
   const supabase = await createClient();
 
   const {
