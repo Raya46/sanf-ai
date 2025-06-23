@@ -8,8 +8,15 @@
   "/favicon.ico/route": "/favicon.ico",
   "/(dashboard)/application/page": "/application",
   "/(dashboard)/new-application/[...id]/page": "/new-application/[...id]",
+<<<<<<< HEAD
   "/page": "/",
   "/(dashboard)/new-application/page": "/new-application",
   "/register/page": "/register",
   "/login/page": "/login"
+=======
+  "/(dashboard)/new-application/page": "/new-application",
+  "/login/page": "/login",
+  "/page": "/",
+  "/register/page": "/register"
+>>>>>>> a00967360d214f947195a0d53d5093392f448478
 }

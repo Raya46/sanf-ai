@@ -8,8 +8,15 @@
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/(dashboard)/application/page": "app/(dashboard)/application/page.js",
   "/(dashboard)/new-application/[...id]/page": "app/(dashboard)/new-application/[...id]/page.js",
+<<<<<<< HEAD
   "/page": "app/page.js",
   "/(dashboard)/new-application/page": "app/(dashboard)/new-application/page.js",
   "/register/page": "app/register/page.js",
   "/login/page": "app/login/page.js"
+=======
+  "/(dashboard)/new-application/page": "app/(dashboard)/new-application/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/register/page": "app/register/page.js"
+>>>>>>> a00967360d214f947195a0d53d5093392f448478
 }

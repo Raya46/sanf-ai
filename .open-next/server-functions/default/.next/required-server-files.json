@@ -97,7 +97,11 @@
         "transform": "lodash/{{member}}"
       }
     },
+<<<<<<< HEAD
     "outputFileTracingRoot": "D:\\College\\Hackathon\\sanf-ai",
+=======
+    "outputFileTracingRoot": "C:\\Users\\raya\\project\\belajar_nextjs\\sanf-ai",
+>>>>>>> a00967360d214f947195a0d53d5093392f448478
     "experimental": {
       "nodeMiddleware": false,
       "cacheLife": {
@@ -155,7 +159,11 @@
       "middlewarePrefetch": "flexible",
       "optimisticClientCache": true,
       "manualClientBasePath": false,
+<<<<<<< HEAD
       "cpus": 15,
+=======
+      "cpus": 3,
+>>>>>>> a00967360d214f947195a0d53d5093392f448478
       "memoryBasedWorkersCount": false,
       "imgOptConcurrency": null,
       "imgOptTimeoutInSeconds": 7,
@@ -281,10 +289,17 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.js",
     "turbopack": {
+<<<<<<< HEAD
       "root": "D:\\College\\Hackathon\\sanf-ai"
     }
   },
   "appDir": "D:\\College\\Hackathon\\sanf-ai",
+=======
+      "root": "C:\\Users\\raya\\project\\belajar_nextjs\\sanf-ai"
+    }
+  },
+  "appDir": "C:\\Users\\raya\\project\\belajar_nextjs\\sanf-ai",
+>>>>>>> a00967360d214f947195a0d53d5093392f448478
   "relativeAppDir": "",
   "files": [
     ".next\\routes-manifest.json",

@@ -111,7 +111,9 @@ export function SectionForm() {
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(
-            typeof errorData === "object" && errorData !== null && "error" in errorData
+            typeof errorData === "object" &&
+            errorData !== null &&
+            "error" in errorData
               ? (errorData as { error?: string }).error || "Upload failed"
               : "Upload failed"
           );
