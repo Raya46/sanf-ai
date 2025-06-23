@@ -4,7 +4,7 @@ import { ChatCard } from "@/components/new-application/ui/chat-card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowUp } from "lucide-react";
-import { useRef, KeyboardEvent, useEffect } from "react";
+import { useRef, KeyboardEvent } from "react";
 import { useChat } from "@ai-sdk/react";
 
 export function ChatSection() {
