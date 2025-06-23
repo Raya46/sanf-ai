@@ -54,7 +54,8 @@ export function SectionCardHistory() {
           throw new Error("Failed to fetch applications");
         }
         const data = await response.json();
-        setApplications(data);
+        // Ensure data is an array of Application
+        setApplications(Array.isArray(data) ? (data as Application[]) : []);
       } catch (error) {
         console.error(error);
       } finally {

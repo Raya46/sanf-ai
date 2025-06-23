@@ -11,9 +11,12 @@
     "binding": "AI"
   },
   "vars": {
-    "NODE_ENV": "development"
+    "NODE_ENV": "development",
+    "CLOUDFLARE_WORKERS": "true",
+    "AUTORAG_NAME": "sanf-credit-analysis-v2"
   },
   "define": {
-    "globalThis.AI": "AI"
+    "globalThis.AI": "AI",
+    "process.env.AI": "AI"
   }
 }

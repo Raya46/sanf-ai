@@ -32,7 +32,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const applicationData = await request.json();
+  const applicationData = await request.json() as {
+    status: string;
+    company_name: string;
+    application_type: string;
+    contact_person: string;
+    contact_email: string;
+    files: UploadedFile[];
+  };
   const supabase = await createClient();
 
   const {

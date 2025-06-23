@@ -27,7 +27,7 @@ export function SectionCardDashboard() {
           throw new Error("Failed to fetch dashboard stats");
         }
         const data = await response.json();
-        setStats(data);
+        setStats(data as DashboardStats);
       } catch (error) {
         console.error(error);
       } finally {

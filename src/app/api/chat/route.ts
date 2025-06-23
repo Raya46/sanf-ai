@@ -1,6 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, CoreMessage } from "ai";
 import { NextRequest } from "next/server";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export interface CloudflareEnv {
   AI: Ai;
@@ -10,29 +11,69 @@ export interface CloudflareEnv {
 // Get environment variables for OpenNext on Cloudflare
 function getCloudflareEnv(request: NextRequest): CloudflareEnv {
   const apiKey = process.env.OPENAI_API_KEY;
-
-  // Try multiple ways to access the AI binding in Cloudflare Workers
   let ai = null;
 
-  // Method 1: Check if AI is available on globalThis
-  if ((globalThis as any).AI) {
-    ai = (globalThis as any).AI;
-  }
+  // Check if we're in development mode
+  const isDevelopment = process.env.NODE_ENV === "development";
 
-  // Method 2: Check if AI is available on the request context
-  if (!ai && (request as any).cf?.env?.AI) {
-    ai = (request as any).cf.env.AI;
-  }
+  if (!isDevelopment) {
+    // Production: Use OpenNext.js getCloudflareContext
+    try {
+      const { env } = getCloudflareContext();
+      ai = env.AI;
 
-  // Method 3: Check if AI is available on process.env (OpenNext specific)
-  if (!ai && (process.env as any).AI) {
-    ai = (process.env as any).AI;
-  }
+      if (ai) {
+        console.log("AI binding successfully accessed via OpenNext context");
+      }
+    } catch (contextError) {
+      console.warn(
+        "OpenNext context not available in production:",
+        contextError instanceof Error ? contextError.message : contextError
+      );
 
-  // Method 4: Check if running in Cloudflare Workers environment
-  if (!ai && typeof (globalThis as any).caches !== "undefined") {
-    // We're in a Cloudflare Workers environment, AI should be injected
-    ai = (globalThis as any).AI;
+      // Fallback methods for production
+      try {
+        // Method 1: Direct access from globalThis
+        if ((globalThis as any).AI) {
+          ai = (globalThis as any).AI;
+          console.log("AI binding accessed via globalThis");
+        }
+
+        // Method 2: Check process.env (OpenNext injection)
+        if (!ai && (process.env as any).AI) {
+          ai = (process.env as any).AI;
+          console.log("AI binding accessed via process.env");
+        }
+
+        // Method 3: Check request context
+        if (!ai && (request as any).cf?.env?.AI) {
+          ai = (request as any).cf.env.AI;
+          console.log("AI binding accessed via request context");
+        }
+      } catch (fallbackError) {
+        console.error("All AI binding access methods failed:", fallbackError);
+      }
+    }
+  } else {
+    // Development: Try OpenNext context with fallbacks
+    try {
+      const { env } = getCloudflareContext();
+      ai = env.AI;
+      if (ai) {
+        console.log("AI binding accessed via OpenNext context in development");
+      }
+    } catch {
+      console.log(
+        "OpenNext context not available in development mode - this is expected"
+      );
+
+      // In development, we don't expect AutoRAG to work
+      // but try fallback methods just in case
+      if ((globalThis as any).AI) {
+        ai = (globalThis as any).AI;
+        console.log("AI binding accessed via globalThis in development");
+      }
+    }
   }
 
   if (!apiKey) {
@@ -40,10 +81,21 @@ function getCloudflareEnv(request: NextRequest): CloudflareEnv {
   }
 
   if (!ai) {
-    console.warn(
-      "Cloudflare AI binding not available - this may be expected in development"
-    );
-    // For development or when AI binding is not available, we'll continue without AutoRAG
+    if (isDevelopment) {
+      console.log(
+        "AI binding not available in development mode - this is expected"
+      );
+    } else {
+      console.warn(
+        "Cloudflare AI binding not available in production. Environment info:",
+        {
+          nodeEnv: process.env.NODE_ENV,
+          hasCloudflareWorkers: process.env.CLOUDFLARE_WORKERS,
+          isCloudflareRuntime:
+            typeof (globalThis as any).caches !== "undefined",
+        }
+      );
+    }
   }
 
   return {
@@ -92,9 +144,25 @@ export async function POST(request: NextRequest) {
     // Only try AutoRAG if AI binding is available
     if (env.AI) {
       try {
-        // Search for documents in AutoRAG
-        const searchResult = await env.AI.autorag("credit-documents").search({
+        const autoragName =
+          process.env.AUTORAG_NAME || "sanf-credit-analysis-v2";
+        console.log(`Attempting AutoRAG search with instance: ${autoragName}`);
+        console.log(`Query: ${userQuery.substring(0, 100)}...`);
+
+        // Use the search method with proper parameters
+        const searchResult = await env.AI.autorag(autoragName).search({
           query: userQuery,
+          max_num_results: 5,
+          ranking_options: {
+            score_threshold: 0.3,
+          },
+          rewrite_query: true,
+        });
+
+        console.log("AutoRAG search completed:", {
+          hasData: !!searchResult.data,
+          resultsCount: searchResult.data?.length || 0,
+          searchQuery: searchResult.search_query,
         });
 
         // Check if documents found
@@ -103,22 +171,56 @@ export async function POST(request: NextRequest) {
           chunks = searchResult.data
             .map((item) => {
               const data = item.content
-                .map((content) => {
-                  return content.text;
-                })
+                .map((content) => content.text)
                 .join("\n\n");
 
-              return `<file name="${item.filename}">${data}`;
+              return `<file name="${item.filename}" score="${item.score}">${data}</file>`;
             })
             .join("\n\n");
 
-          // Extract source filenames for display
-          // sources = searchResult.data.map((item) => item.filename);
+          console.log(
+            "Found relevant documents:",
+            searchResult.data.map((item) => ({
+              filename: item.filename,
+              score: item.score,
+            }))
+          );
+        } else {
+          console.log("No relevant documents found for query");
         }
       } catch (autoragError) {
-        console.error("AutoRAG search failed:", autoragError);
+        const errorMessage =
+          autoragError instanceof Error
+            ? autoragError.message
+            : "Unknown error";
+
+        console.error("AutoRAG search failed:", {
+          error: errorMessage,
+          stack: autoragError instanceof Error ? autoragError.stack : undefined,
+        });
+
+        // Check for specific error types
+        if (
+          errorMessage.includes("not found") ||
+          errorMessage.includes("does not exist") ||
+          errorMessage.includes("autorag")
+        ) {
+          console.error(
+            `AutoRAG instance '${
+              process.env.AUTORAG_NAME || "sanf-credit-analysis-v2"
+            }' not found in this Cloudflare account. Please ensure the AutoRAG is deployed in the same account as this Worker.`
+          );
+        }
+
         // Continue without AutoRAG if it fails
       }
+    } else {
+      const isDev = process.env.NODE_ENV === "development";
+      console.log(
+        isDev
+          ? "AI binding not available in development mode - AutoRAG will be available in production"
+          : "AI binding not available in production, skipping AutoRAG search"
+      );
     }
 
     // Create the message array for the AI
