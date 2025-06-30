@@ -1,15 +1,15 @@
 {
   "/_not-found/page": "/_not-found",
-  "/api/applications/[id]/route": "/api/applications/[id]",
   "/api/applications/route": "/api/applications",
-  "/api/applications/stats/route": "/api/applications/stats",
+  "/api/applications/[id]/route": "/api/applications/[id]",
   "/api/chat/route": "/api/chat",
+  "/api/applications/stats/route": "/api/applications/stats",
   "/api/upload/route": "/api/upload",
   "/favicon.ico/route": "/favicon.ico",
   "/(dashboard)/application/page": "/application",
+  "/login/page": "/login",
   "/(dashboard)/new-application/[...id]/page": "/new-application/[...id]",
   "/(dashboard)/new-application/page": "/new-application",
-  "/login/page": "/login",
   "/page": "/",
   "/register/page": "/register"
 }

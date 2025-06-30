@@ -158,11 +158,7 @@ export function SectionForm() {
         throw new Error("Submission failed");
       }
 
-      const result: {
-        success: boolean;
-        applicationId?: string;
-        error?: string;
-      } = await response.json();
+      const result = (await response.json()) as { success: boolean; applicationId?: string; error?: string };
 
       if (result.success && result.applicationId) {
         router.push(`/new-application/${result.applicationId}`);
