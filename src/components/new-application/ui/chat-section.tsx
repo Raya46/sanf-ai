@@ -1,13 +1,21 @@
 "use client";
 
+import { useChat } from "@ai-sdk/react";
+import { ArrowUp } from "lucide-react";
+import { KeyboardEvent, useRef } from "react";
+import { ActiveView } from "@/app/(dashboard)/new-application/[...id]/page";
 import { ChatCard } from "@/components/new-application/ui/chat-card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUp } from "lucide-react";
-import { useRef, KeyboardEvent } from "react";
-import { useChat } from "@ai-sdk/react";
+import { MacroEconomicView } from "./macro-economic-view";
 
-export function ChatSection() {
+interface ChatSectionProps {
+  activeView: ActiveView;
+  setActiveView: (view: ActiveView) => void;
+}
+
+export function ChatSection({ activeView, setActiveView }: ChatSectionProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const {
     messages,
@@ -59,95 +67,117 @@ export function ChatSection() {
 
   return (
     <div className="flex flex-col flex-1 bg-white gap-3 m-4 p-4 rounded-lg h-[calc(100vh-2rem)]">
-      <h1 className="flex-shrink-0">Credit Application</h1>
-      <div className="flex-1 overflow-y-auto flex flex-col gap-3">
-        {messages.map((message, index) => {
-          // Extract sources from the message content or use fallback
-          let sources = undefined;
-          let content = message.content;
+      <Tabs
+        value={activeView}
+        onValueChange={(value) => setActiveView(value as ActiveView)}
+        className="flex flex-col h-full"
+      >
+        <TabsList>
+          <TabsTrigger value="credit-application">
+            Credit Application
+          </TabsTrigger>
+          <TabsTrigger value="macroeconomics">Macroeconomics</TabsTrigger>
+        </TabsList>
+        <TabsContent
+          value="credit-application"
+          className="flex-1 flex flex-col gap-3 mt-2 overflow-hidden"
+        >
+          <div className="flex-1 overflow-y-auto flex flex-col gap-3">
+            {messages.map((message, index) => {
+              // Extract sources from the message content or use fallback
+              let sources = undefined;
+              let content = message.content;
 
-          if (message.role === "assistant") {
-            // Try to extract sources from the end of the message
-            const sourceMatch = content.match(/Sources?: (.*)$/);
-            if (sourceMatch) {
-              sources = sourceMatch[1];
-              content = content.replace(/\n?Sources?: .*$/, "").trim();
-            } else if (index === 0) {
-              // Fallback for initial message
-              sources =
-                "Laporan_Keuangan_2_Tahun.pdf, Rekening_Koran_3_Bulan.pdf";
-            }
-          }
-
-          return (
-            <ChatCard
-              key={message.id}
-              color={
-                message.role === "user"
-                  ? "bg-blue-500 text-white"
-                  : "bg-transparent"
+              if (message.role === "assistant") {
+                // Try to extract sources from the end of the message
+                const sourceMatch = content.match(/Sources?: (.*)$/);
+                if (sourceMatch) {
+                  sources = sourceMatch[1];
+                  content = content.replace(/\n?Sources?: .*$/, "").trim();
+                } else if (index === 0) {
+                  // Fallback for initial message
+                  sources =
+                    "Laporan_Keuangan_2_Tahun.pdf, Rekening_Koran_3_Bulan.pdf";
+                }
               }
-              position={message.role === "user" ? "end" : "start"}
-              chat={content}
-              sources={sources}
-            />
-          );
-        })}
-        {isLoading && (
-          <ChatCard
-            color="bg-transparent"
-            position="start"
-            chat={statusMessage}
-          />
-        )}
-        {error && (
-          <div>
-            <ChatCard
-              color="bg-red-100 text-red-800"
-              position="start"
-              chat={`Terjadi kesalahan: ${error.message}. Silakan coba lagi.`}
-            />
-            {/* Add debug info in development */}
-            {process.env.NODE_ENV === "development" && (
+
+              return (
+                <ChatCard
+                  key={message.id}
+                  color={
+                    message.role === "user"
+                      ? "bg-blue-500 text-white"
+                      : "bg-transparent"
+                  }
+                  position={message.role === "user" ? "end" : "start"}
+                  chat={content}
+                  sources={sources}
+                />
+              );
+            })}
+            {isLoading && (
               <ChatCard
-                color="bg-yellow-100 text-yellow-800"
+                color="bg-transparent"
                 position="start"
-                chat={`Debug: ${JSON.stringify(
-                  {
-                    errorName: error.name,
-                    errorMessage: error.message,
-                    errorCause: error.cause,
-                  },
-                  null,
-                  2
-                )}`}
+                chat={statusMessage}
               />
             )}
+            {error && (
+              <div>
+                <ChatCard
+                  color="bg-red-100 text-red-800"
+                  position="start"
+                  chat={`Terjadi kesalahan: ${error.message}. Silakan coba lagi.`}
+                />
+                {/* Add debug info in development */}
+                {process.env.NODE_ENV === "development" && (
+                  <ChatCard
+                    color="bg-yellow-100 text-yellow-800"
+                    position="start"
+                    chat={`Debug: ${JSON.stringify(
+                      {
+                        errorName: error.name,
+                        errorMessage: error.message,
+                        errorCause: error.cause,
+                      },
+                      null,
+                      2
+                    )}`}
+                  />
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <form onSubmit={onSubmit} className="relative w-full flex-shrink-0">
-        <Textarea
-          ref={textareaRef}
-          value={input}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          placeholder="Ketik pesan Anda..."
-          className="min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 pr-12"
-          rows={2}
-          disabled={isLoading}
-        />
-        <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
-          <Button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="rounded-full bg-blue-500 p-1.5 h-fit border"
-            size="icon"
-          >
-            <ArrowUp className="w-4 h-4" />
-          </Button>
-        </div>
-      </form>
+          <form onSubmit={onSubmit} className="relative w-full flex-shrink-0">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Ketik pesan Anda..."
+              className="min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 pr-12"
+              rows={2}
+              disabled={isLoading}
+            />
+            <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
+              <Button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="rounded-full bg-blue-500 p-1.5 h-fit border"
+                size="icon"
+              >
+                <ArrowUp className="w-4 h-4" />
+              </Button>
+            </div>
+          </form>
+        </TabsContent>
+        <TabsContent
+          value="macroeconomics"
+          className="flex-1 mt-2 overflow-hidden"
+        >
+          <MacroEconomicView />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
