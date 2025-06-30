@@ -24,7 +24,7 @@ export function CreditAnalysisCard({
         {icon}
       </div>
       <CardTitle>{title}</CardTitle>
-      <CardDescription>{description}</CardDescription>
+      <CardDescription className="text-center">{description}</CardDescription>
     </Card>
   );
 }

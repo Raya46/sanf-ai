@@ -54,14 +54,18 @@ function getCloudflareEnv(request: NextRequest): CloudflareEnv {
 
 export async function POST(request: NextRequest) {
   try {
-    const requestBody: { messages?: CoreMessage[] } = await request.json();
+    const requestBody: {
+      messages?: CoreMessage[];
+      data?: { macroData?: any };
+    } = await request.json();
 
     // Type guard for messages
     if (!requestBody || !Array.isArray(requestBody.messages)) {
       throw new Error("Invalid request: messages array is required");
     }
 
-    const { messages } = requestBody;
+    const { messages, data } = requestBody;
+    const { macroData } = data || {};
     const lastMessage = messages[messages.length - 1];
 
     // Ensure the last message is a user message
@@ -121,13 +125,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Create a context string from the macro data if it exists
+    let macroContext = "";
+    if (macroData) {
+      macroContext = `Here is the current macroeconomic data context: ${JSON.stringify(
+        macroData
+      )}. Use this data to answer any questions related to it.`;
+    }
+
     // Create the message array for the AI
     const aiMessages: CoreMessage[] = [
       {
         role: "system",
         content: env.AI
-          ? "You are a helpful assistant analyzing credit applications. Answer questions based on the provided files in Indonesian language. Always include 'Sources: [filename1, filename2]' at the end of your response when using the provided documents."
-          : "You are a helpful assistant analyzing credit applications. Answer questions in Indonesian language. Note: Document search is not available in this environment.",
+          ? `You are a helpful assistant analyzing credit applications. Answer questions based on the provided files in Indonesian language. If the user asks about macroeconomic data, use the provided context. Always include 'Sources: [filename1, filename2]' at the end of your response when using the provided documents.`
+          : `You are a helpful assistant analyzing credit applications. Answer questions in Indonesian language. If the user asks about macroeconomic data, use the provided context. Note: Document search is not available in this environment.`,
       },
     ];
 
@@ -136,6 +148,14 @@ export async function POST(request: NextRequest) {
       aiMessages.push({
         role: "user",
         content: chunks,
+      });
+    }
+
+    // Add macro data context if available
+    if (macroContext) {
+      aiMessages.push({
+        role: "user",
+        content: macroContext,
       });
     }
 
