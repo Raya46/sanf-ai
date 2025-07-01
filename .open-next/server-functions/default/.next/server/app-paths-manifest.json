@@ -1,15 +1,16 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/api/applications/route": "app/api/applications/route.js",
   "/api/applications/[id]/route": "app/api/applications/[id]/route.js",
-  "/api/chat/route": "app/api/chat/route.js",
+  "/api/applications/route": "app/api/applications/route.js",
   "/api/applications/stats/route": "app/api/applications/stats/route.js",
+  "/api/chat/route": "app/api/chat/route.js",
   "/api/upload/route": "app/api/upload/route.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/api/macroeconomics/route": "app/api/macroeconomics/route.js",
   "/(dashboard)/application/page": "app/(dashboard)/application/page.js",
-  "/login/page": "app/login/page.js",
   "/(dashboard)/new-application/[...id]/page": "app/(dashboard)/new-application/[...id]/page.js",
   "/(dashboard)/new-application/page": "app/(dashboard)/new-application/page.js",
+  "/login/page": "app/login/page.js",
   "/page": "app/page.js",
   "/register/page": "app/register/page.js"
 }
