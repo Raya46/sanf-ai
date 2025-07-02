@@ -25,7 +25,7 @@ const sideBarItems = [
   },
   {
     title: "New Application",
-    url: "/new-application",
+    url: "/dashboard/3/new-application",
     icon: FilePlus,
   },
   {

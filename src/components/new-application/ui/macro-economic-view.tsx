@@ -17,22 +17,17 @@ import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface EnergyData {
-  name: string;
-  unit: string;
-  price: number;
-  day: number;
-  percent: number;
-}
-
-interface IndicatorData {
-  name: string;
-  value: string;
+interface CommodityData {
+  Commodity: string;
+  Unit: string;
+  Price: string;
+  Day: string;
+  "%": string;
 }
 
 interface MacroData {
-  energy: EnergyData[];
-  mainIndicators: IndicatorData[];
+  energy_prices: CommodityData[];
+  // mainIndicators: IndicatorData[]; // Temporarily removed
 }
 
 export function MacroEconomicView() {
@@ -101,10 +96,10 @@ export function MacroEconomicView() {
 
   return (
     <div className="flex flex-col flex-1 gap-4 h-full overflow-y-auto p-1">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-1">
         <Card>
           <CardHeader>
-            <CardTitle>Energy Prices</CardTitle>
+            <CardTitle>Commodities</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoadingData ? (
@@ -120,58 +115,37 @@ export function MacroEconomicView() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data?.energy.map((item) => (
-                    <TableRow key={item.name}>
+                  {data?.energy_prices.map((item) => (
+                    <TableRow key={item.Commodity}>
                       <TableCell>
-                        <div className="font-medium">{item.name}</div>
+                        <div className="font-medium">{item.Commodity}</div>
                         <div className="text-xs text-muted-foreground">
-                          {item.unit}
+                          {item.Unit}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
-                        {item.price.toFixed(2)}
-                      </TableCell>
+                      <TableCell className="text-right">{item.Price}</TableCell>
                       <TableCell
                         className={`text-right flex items-center justify-end gap-1 ${
-                          item.day >= 0 ? "text-green-600" : "text-red-600"
+                          !String(item.Day).startsWith("-")
+                            ? "text-green-600"
+                            : "text-red-600"
                         }`}
                       >
-                        {item.day >= 0 ? (
+                        {!String(item.Day).startsWith("-") ? (
                           <ArrowUp className="h-3 w-3" />
                         ) : (
                           <ArrowDown className="h-3 w-3" />
                         )}
-                        {item.day.toFixed(2)}
+                        {item.Day}
                       </TableCell>
                       <TableCell
                         className={`text-right ${
-                          item.percent >= 0 ? "text-green-600" : "text-red-600"
+                          !item["%"].startsWith("-")
+                            ? "text-green-600"
+                            : "text-red-600"
                         }`}
                       >
-                        {item.percent.toFixed(2)}%
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Main Indicators</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingData ? (
-              <Skeleton className="h-48 w-full" />
-            ) : (
-              <Table>
-                <TableBody>
-                  {data?.mainIndicators.map((item) => (
-                    <TableRow key={item.name}>
-                      <TableCell>{item.name}</TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {item.value}
+                        {item["%"]}
                       </TableCell>
                     </TableRow>
                   ))}

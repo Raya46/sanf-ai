@@ -81,92 +81,54 @@ export function SectionForm() {
   }, [stagedFiles]);
 
   const handleSubmit = async () => {
-    if (!user) {
-      console.error("User not found, cannot submit.");
-      // Optionally, show an error message to the user
+    if (!user || !isFormValid) {
+      console.error("User not found or form is invalid.");
       return;
     }
 
     setIsSubmitting(true);
 
-    const uploadedFilesForAction = [];
-
-    for (const stagedFile of stagedFiles) {
-      try {
-        const formData = new FormData();
-        formData.append("file", stagedFile.file);
-        formData.append("key", stagedFile.key);
-        // Add metadata
-        formData.append("original_filename", stagedFile.file.name);
-        formData.append("user_id", user.id);
-        if (user.email) {
-          formData.append("user_email", user.email);
-        }
-
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(
-            typeof errorData === "object" &&
-            errorData !== null &&
-            "error" in errorData
-              ? (errorData as { error?: string }).error || "Upload failed"
-              : "Upload failed"
-          );
-        }
-
-        const result = (await res.json()) as { success: boolean; key?: string };
-        if (!result.success || !result.key) {
-          throw new Error("Upload failed");
-        }
-
-        uploadedFilesForAction.push({
-          file_type: stagedFile.docType,
-          file_name: stagedFile.file.name,
-          r2_object_key: result.key,
-          file_size_bytes: stagedFile.file.size,
-        });
-      } catch (error) {
-        console.error("Upload failed for", stagedFile.file.name, error);
-
-        setIsSubmitting(false);
-        return;
-      }
-    }
-
     try {
+      // 1. Create a single FormData object for everything
+      const formData = new FormData();
+
+      // 2. Append all form fields
+      formData.append("company_name", companyName);
+      formData.append("application_type", applicationType);
+      formData.append("contact_person", contactPerson);
+      formData.append("contact_email", contactEmail);
+
+      // 3. Append all staged files under the same key 'files'
+      for (const stagedFile of stagedFiles) {
+        formData.append("files", stagedFile.file);
+      }
+
+      // 4. Send a single request to the new unified endpoint
       const response = await fetch("/api/applications", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: "submitted",
-          files: uploadedFilesForAction,
-          company_name: companyName,
-          application_type: applicationType,
-          contact_person: contactPerson,
-          contact_email: contactEmail,
-        }),
+        body: formData, // No 'Content-Type' header needed, browser sets it for FormData
       });
 
       if (!response.ok) {
-        throw new Error("Submission failed");
+        const errorResult = (await response.json()) as { error?: string };
+        throw new Error(errorResult.error || "Submission failed");
       }
 
-      const result = (await response.json()) as { success: boolean; applicationId?: string; error?: string };
+      const result = (await response.json()) as {
+        success: boolean;
+        applicationId?: string;
+        error?: string;
+      };
 
       if (result.success && result.applicationId) {
         router.push(`/new-application/${result.applicationId}`);
       } else {
-        console.error("Submission failed", result.error);
+        console.error("Submission failed with error:", result.error);
+        // TODO: Show an error message to the user
       }
     } catch (error) {
-      console.error("Submission failed", error);
+      console.error("An error occurred during submission:", error);
+      // TODO: Show a generic error message to the user
     } finally {
       setIsSubmitting(false);
     }

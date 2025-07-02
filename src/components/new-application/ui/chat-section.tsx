@@ -1,22 +1,44 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
+import { useChat, Message } from "@ai-sdk/react";
 import { ArrowUp } from "lucide-react";
-import { KeyboardEvent, useRef } from "react";
+import { Fragment, KeyboardEvent, useEffect, useRef } from "react";
 import { ActiveView } from "@/app/dashboard/[projectId]/new-application/[applicationId]/page";
 import { ChatCard } from "@/components/new-application/ui/chat-card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { MacroEconomicView } from "./macro-economic-view";
+import { ChartBarNegative } from "./negative-bar-chart";
+import { CreditApplication, ChatMessage as DbChatMessage } from "@/lib/types";
 
 interface ChatSectionProps {
   activeView: ActiveView;
   setActiveView: (view: ActiveView) => void;
+  applicationData?: CreditApplication | null;
+  isLoadingData: boolean;
+  errorData?: Error | null;
+  initialMessages: DbChatMessage[];
+  isLoadingChat: boolean;
+  applicationId: string;
 }
 
-export function ChatSection({ activeView, setActiveView }: ChatSectionProps) {
+export function ChatSection({
+  activeView,
+  setActiveView,
+  applicationData,
+  initialMessages,
+  isLoadingChat,
+  applicationId,
+}: ChatSectionProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const formattedInitialMessages: Message[] = initialMessages.map((msg) => ({
+    id: msg.id,
+    role: msg.sender_type === "ai" ? "assistant" : "user",
+    content: msg.message_content,
+  }));
+
   const {
     messages,
     input,
@@ -25,28 +47,16 @@ export function ChatSection({ activeView, setActiveView }: ChatSectionProps) {
     isLoading,
     error,
     data,
+    setMessages,
   } = useChat({
     api: "/api/chat",
-    initialMessages: [
-      {
-        id: "1",
-        role: "assistant",
-        content:
-          "Berdasarkan dokumen yang disediakan, aplikasi kredit ini terkait dengan PT Maju Bersama. Laporan keuangan menunjukkan kesehatan finansial yang stabil selama 2 tahun terakhir, dengan pertumbuhan pendapatan yang konsisten. Rekening koran 3 bulan mengkonfirmasi likuiditas yang kuat.",
-      },
-    ],
-    onError: (error) => {
-      console.error("Chat error:", error.message);
-    },
-    onFinish: (message) => {
-      console.log("Message finished streaming:", message.role);
-    },
-    onResponse: (response) => {
-      if (!response.ok) {
-        console.error("Error response from API:", response.statusText);
-      }
-    },
+    body: { applicationId },
+    initialMessages: formattedInitialMessages,
   });
+
+  useEffect(() => {
+    setMessages(formattedInitialMessages);
+  }, [initialMessages]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -64,6 +74,15 @@ export function ChatSection({ activeView, setActiveView }: ChatSectionProps) {
 
   const lastData = data?.[data.length - 1] as { status?: string } | undefined;
   const statusMessage = lastData?.status ?? "Sedang menganalisis dokumen...";
+
+  const parseMessage = (content: string) => {
+    const sourceMatch = content.match(/Sumber: (.*)$/);
+    const sources = sourceMatch ? sourceMatch[1] : undefined;
+    const mainContent = sourceMatch
+      ? content.replace(/Sumber: .*$/, "").trim()
+      : content;
+    return { mainContent, sources };
+  };
 
   return (
     <div className="flex flex-col flex-1 bg-white gap-3 m-4 p-4 rounded-lg h-[calc(100vh-2rem)]">
@@ -83,36 +102,38 @@ export function ChatSection({ activeView, setActiveView }: ChatSectionProps) {
           className="flex-1 flex flex-col gap-3 mt-2 overflow-hidden"
         >
           <div className="flex-1 overflow-y-auto flex flex-col gap-3">
+            {isLoadingChat && (
+              <ChatCard
+                color="bg-transparent"
+                position="start"
+                chat="Loading chat history..."
+              />
+            )}
+
             {messages.map((message, index) => {
-              // Extract sources from the message content or use fallback
-              let sources = undefined;
-              let content = message.content;
-
-              if (message.role === "assistant") {
-                // Try to extract sources from the end of the message
-                const sourceMatch = content.match(/Sources?: (.*)$/);
-                if (sourceMatch) {
-                  sources = sourceMatch[1];
-                  content = content.replace(/\n?Sources?: .*$/, "").trim();
-                } else if (index === 0) {
-                  // Fallback for initial message
-                  sources =
-                    "Laporan_Keuangan_2_Tahun.pdf, Rekening_Koran_3_Bulan.pdf";
-                }
-              }
-
+              const { mainContent, sources } = parseMessage(message.content);
               return (
-                <ChatCard
-                  key={message.id}
-                  color={
-                    message.role === "user"
-                      ? "bg-blue-500 text-white"
-                      : "bg-transparent"
-                  }
-                  position={message.role === "user" ? "end" : "start"}
-                  chat={content}
-                  sources={sources}
-                />
+                <Fragment key={message.id}>
+                  <ChatCard
+                    color={
+                      message.role === "user"
+                        ? "bg-blue-500 text-white"
+                        : "bg-transparent"
+                    }
+                    position={message.role === "user" ? "end" : "start"}
+                    chat={mainContent}
+                    sources={sources}
+                  />
+                  {index === 0 &&
+                    message.role === "assistant" &&
+                    applicationData && (
+                      <div className="px-4 py-2">
+                        <ChartBarNegative
+                          data={applicationData.revenue || []}
+                        />
+                      </div>
+                    )}
+                </Fragment>
               );
             })}
             {isLoading && (
@@ -121,31 +142,6 @@ export function ChatSection({ activeView, setActiveView }: ChatSectionProps) {
                 position="start"
                 chat={statusMessage}
               />
-            )}
-            {error && (
-              <div>
-                <ChatCard
-                  color="bg-red-100 text-red-800"
-                  position="start"
-                  chat={`Terjadi kesalahan: ${error.message}. Silakan coba lagi.`}
-                />
-                {/* Add debug info in development */}
-                {process.env.NODE_ENV === "development" && (
-                  <ChatCard
-                    color="bg-yellow-100 text-yellow-800"
-                    position="start"
-                    chat={`Debug: ${JSON.stringify(
-                      {
-                        errorName: error.name,
-                        errorMessage: error.message,
-                        errorCause: error.cause,
-                      },
-                      null,
-                      2
-                    )}`}
-                  />
-                )}
-              </div>
             )}
           </div>
           <form onSubmit={onSubmit} className="relative w-full flex-shrink-0">

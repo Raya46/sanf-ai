@@ -10,54 +10,54 @@ import {
   File,
   Flag,
   TriangleAlert,
-  AreaChart,
-  Landmark,
-  TrendingUp,
-  UserX,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface SidebarIndicator {
-  name: string;
-  value: string;
+interface ApplicationData {
+  probability_approval: number;
+  overall_indicator: string;
+  document_validation_percentage: number;
+  estimated_analysis_time_minutes: number;
 }
 
 interface AnalyticsSidebarProps {
   activeView: "credit-application" | "macroeconomics";
+  applicationId?: string;
 }
 
-const indicatorIcons: { [key: string]: React.ReactNode } = {
-  "Inflation Rate": <TrendingUp className="w-8 h-8" />,
-  "Interest Rate": <Landmark className="w-8 h-8" />,
-  "GDP Growth Rate": <AreaChart className="w-8 h-8" />,
-  "Unemployment Rate": <UserX className="w-8 h-8" />,
-};
-
-export function AnalyticsSidebar({ activeView }: AnalyticsSidebarProps) {
-  const [sidebarData, setSidebarData] = useState<SidebarIndicator[]>([]);
+export function AnalyticsSidebar({
+  activeView,
+  applicationId,
+}: AnalyticsSidebarProps) {
+  const [applicationData, setApplicationData] =
+    useState<ApplicationData | null>(null);
+  const [isAppLoading, setIsAppLoading] = useState(true);
 
   useEffect(() => {
-    const fetchSidebarData = async () => {
-      if (activeView === "macroeconomics") {
-        try {
-          const response = await fetch("/api/macroeconomics");
-          if (!response.ok) {
-            throw new Error("Failed to fetch sidebar data");
-          }
-          const data = (await response.json()) as {
-            sidebarIndicators: SidebarIndicator[];
-          };
-          setSidebarData(data.sidebarIndicators);
-        } catch (error) {
-          console.error(error);
-          // Handle error state if needed
+    if (!applicationId) {
+      setIsAppLoading(false);
+      return;
+    }
+    const fetchApplicationData = async () => {
+      setIsAppLoading(true);
+      try {
+        const response = await fetch(`/api/applications/${applicationId}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch application data");
         }
+        const data = (await response.json()) as ApplicationData;
+        setApplicationData(data);
+      } catch (error) {
+        console.error(error);
+        setApplicationData(null);
+      } finally {
+        setIsAppLoading(false);
       }
     };
-
-    fetchSidebarData();
-  }, [activeView]);
+    fetchApplicationData();
+  }, [applicationId]);
 
   return (
     <div className="sticky top-4 flex flex-col w-1/4 bg-white rounded-lg shadow-lg mr-4 p h-[calc(100vh-2rem)] overflow-y-auto">
@@ -66,88 +66,85 @@ export function AnalyticsSidebar({ activeView }: AnalyticsSidebarProps) {
         <Separator />
       </div>
       <div className="flex flex-col p-4 gap-4">
-        {activeView === "credit-application" ? (
-          <>
-            <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2">
+          {/* Persistent Application Cards */}
+          {isAppLoading ? (
+            <>
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </>
+          ) : applicationData ? (
+            <>
               <CreditAnalysisCard
                 icon={<CheckCircle2 className="w-8 h-8" />}
-                title="85%"
+                title={`${applicationData.probability_approval}%`}
                 description="Probabilitas Persetujuan"
                 bgColor="transparent"
                 iconColor="#007BFF"
               />
               <CreditAnalysisCard
                 icon={<TriangleAlert className="w-8 h-8" />}
-                title="Sedang"
+                title={applicationData.overall_indicator}
                 description="Indikator Risiko"
                 bgColor="transparent"
                 iconColor="#FF9800"
               />
-              <CreditAnalysisCard
-                icon={<Clock className="w-8 h-8" />}
-                title="90%"
-                description="Progress Validasi Dokumen"
-                bgColor="transparent"
-                iconColor="#007BFF"
-              />
-              <CreditAnalysisCard
-                icon={<Flag className="w-8 h-8" />}
-                title="15 Menit"
-                description="Estimasi Waktu Analisis"
-                bgColor="transparent"
-                iconColor="#007BFF"
-              />
+            </>
+          ) : (
+            <p className="col-span-2 text-center text-gray-500">
+              Data aplikasi tidak ditemukan.
+            </p>
+          )}
+
+          {/* View-specific cards */}
+          {activeView === "credit-application" && (
+            <>
+              {isAppLoading ? (
+                <>
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </>
+              ) : applicationData ? (
+                <>
+                  <CreditAnalysisCard
+                    icon={<Clock className="w-8 h-8" />}
+                    title={`${applicationData.document_validation_percentage}%`}
+                    description="Progress Validasi Dokumen"
+                    bgColor="transparent"
+                    iconColor="#007BFF"
+                  />
+                  <CreditAnalysisCard
+                    icon={<Flag className="w-8 h-8" />}
+                    title={`${applicationData.estimated_analysis_time_minutes} Menit`}
+                    description="Estimasi Waktu Analisis"
+                    bgColor="transparent"
+                    iconColor="#007BFF"
+                  />
+                </>
+              ) : null}
+            </>
+          )}
+        </div>
+
+        {activeView === "credit-application" && (
+          <div className="flex flex-col gap-4">
+            <p>Tautan Cepat</p>
+            <div className="flex flex-row items-center gap-2">
+              <File className="w-4 h-4" />
+              <p>Lihat Laporan Lengkap</p>
             </div>
-            <div className="flex flex-col gap-4">
-              <p>Tautan Cepat</p>
-              <div className="flex flex-row items-center gap-2">
-                <File className="w-4 h-4" />
-                <p>Lihat Laporan Lengkap</p>
-              </div>
-              <div className="flex flex-row items-center gap-2">
-                <File className="w-4 h-4" />
-                <p>Lihat Laporan Lengkap</p>
-              </div>
-              <div className="flex flex-row items-center gap-2">
-                <File className="w-4 h-4" />
-                <p>Lihat Laporan Lengkap</p>
-              </div>
-              <Button className="bg-blue-600 flex flex-row mx-4 mb-4">
-                <Download className="w-4 h-4" />
-                <Link href="/">Ekspor PDF</Link>
-              </Button>
+            <div className="flex flex-row items-center gap-2">
+              <File className="w-4 h-4" />
+              <p>Lihat Laporan Lengkap</p>
             </div>
-          </>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            <CreditAnalysisCard
-              icon={<CheckCircle2 className="w-8 h-8" />}
-              title="85%"
-              description="Probabilitas Persetujuan"
-              bgColor="transparent"
-              iconColor="#007BFF"
-            />
-            <CreditAnalysisCard
-              icon={<TriangleAlert className="w-8 h-8" />}
-              title="Sedang"
-              description="Indikator Risiko"
-              bgColor="transparent"
-              iconColor="#FF9800"
-            />
-            {sidebarData.map((indicator) => (
-              <CreditAnalysisCard
-                key={indicator.name}
-                icon={
-                  indicatorIcons[indicator.name] || (
-                    <AreaChart className="w-8 h-8" />
-                  )
-                }
-                title={indicator.value}
-                description={indicator.name}
-                bgColor="transparent"
-                iconColor="#007BFF"
-              />
-            ))}
+            <div className="flex flex-row items-center gap-2">
+              <File className="w-4 h-4" />
+              <p>Lihat Laporan Lengkap</p>
+            </div>
+            <Button className="bg-blue-600 flex flex-row mx-4 mb-4">
+              <Download className="w-4 h-4" />
+              <Link href="/">Ekspor PDF</Link>
+            </Button>
           </div>
         )}
       </div>
