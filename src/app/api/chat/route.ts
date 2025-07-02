@@ -1,7 +1,8 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText, CoreMessage, createDataStreamResponse } from "ai";
-import { NextRequest } from "next/server";
+import { streamText, CoreMessage, StreamData } from "ai";
+import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { createClient } from "@/utils/supabase/server";
 
 export interface CloudflareEnv {
   AI: Ai | null;
@@ -11,7 +12,7 @@ export interface CloudflareEnv {
 // Get environment variables for OpenNext on Cloudflare
 function getCloudflareEnv(): CloudflareEnv {
   let apiKey = process.env.OPENAI_API_KEY; // Default for local dev
-  let ai = null;
+  let ai: Ai | null = null;
 
   // Check if we're in development or production
   const isDevelopment = process.env.NODE_ENV === "development";
@@ -97,154 +98,156 @@ function getCloudflareEnv(): CloudflareEnv {
 }
 
 export async function POST(request: NextRequest) {
-  return createDataStreamResponse({
-    async execute(dataStream) {
+  const supabase = await createClient();
+  const data = new StreamData();
+
+  try {
+    const {
+      messages,
+      applicationId,
+    }: { messages: CoreMessage[]; applicationId: string } =
+      await request.json();
+
+    if (!applicationId) {
+      return new Response("Missing applicationId", { status: 400 });
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    // 1. Get chat session
+    const { data: session, error: sessionError } = await supabase
+      .from("chat_sessions")
+      .select("id")
+      .eq("application_id", applicationId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (sessionError || !session) {
+      console.error("Chat session not found:", sessionError);
+      return new Response("Chat session not found", { status: 404 });
+    }
+    const sessionId = session.id;
+
+    // 2. Save user message
+    const userMessage = messages[messages.length - 1];
+    if (userMessage.role !== "user") {
+      return new Response("Last message must be from user", { status: 400 });
+    }
+
+    await supabase.from("chat_messages").insert({
+      session_id: sessionId,
+      sender_type: "user",
+      message_content: userMessage.content as string,
+    });
+
+    // 3. Fetch full chat history for context
+    const { data: history, error: historyError } = await supabase
+      .from("chat_messages")
+      .select("sender_type, message_content")
+      .eq("session_id", sessionId)
+      .order("sent_at", { ascending: true });
+
+    if (historyError) {
+      console.error("Error fetching chat history:", historyError);
+      return new Response("Error fetching history", { status: 500 });
+    }
+
+    const previousMessages: CoreMessage[] = history.map(
+      (msg: { sender_type: string; message_content: string }) => ({
+        role: msg.sender_type === "user" ? "user" : "assistant",
+        content: msg.message_content,
+      })
+    );
+
+    const userQuery = userMessage.content as string;
+
+    // 4. Setup AI and get response
+    const env = getCloudflareEnv();
+    const openai = createOpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: env.OPENAI_API_KEY,
+    });
+
+    let contextChunks = "";
+    if (env.AI) {
       try {
-        const requestBody: { messages?: CoreMessage[] } = await request.json();
-
-        if (!requestBody || !Array.isArray(requestBody.messages)) {
-          throw new Error("Invalid request: messages array is required");
-        }
-
-        const { messages } = requestBody;
-        const lastMessage = messages[messages.length - 1];
-
-        if (lastMessage.role !== "user") {
-          throw new Error("Last message must be from user");
-        }
-
-        const userQuery =
-          typeof lastMessage.content === "string"
-            ? lastMessage.content
-            : lastMessage.content
-                .map((part) =>
-                  part.type === "text" ? part.text : "[non-text content]"
-                )
-                .join(" ");
-
-        const env = getCloudflareEnv();
-        const openai = createOpenAI({
-          baseURL: "https://openrouter.ai/api/v1",
-          apiKey: env.OPENAI_API_KEY, // Use the standard apiKey property
-          headers: {
-            // OpenRouter recommends these headers for identification.
-            "HTTP-Referer": "https://sanf.ai", // TODO: Replace with your actual site URL
-            "X-Title": "SANF AI Credit Analysis", // TODO: Replace with your app name
-          },
+        data.append({ status: "Searching documents..." });
+        const autoragName =
+          process.env.AUTORAG_NAME || "sanf-credit-analysis-v2";
+        const searchResult = await env.AI.autorag(autoragName).search({
+          query: userQuery,
+          max_num_results: 5,
         });
 
-        let chunks = "";
-        if (env.AI) {
-          try {
-            dataStream.writeData({ status: "Searching documents..." });
-            const autoragName =
-              process.env.AUTORAG_NAME || "sanf-credit-analysis-v2";
-            const searchResult = await env.AI.autorag(autoragName).search({
-              query: userQuery,
-              max_num_results: 5,
-            });
-
-            if (searchResult.data && searchResult.data.length > 0) {
-              chunks = searchResult.data
-                .map((item) => {
-                  const data = item.content
-                    .map((content) => content.text)
-                    .join("\n\n");
-                  return `<file name="${item.filename}">${data}</file>`;
-                })
-                .join("\n\n");
-              dataStream.writeData({
-                status: `Found ${searchResult.data.length} documents.`,
-              });
-            } else {
-              dataStream.writeData({ status: "No documents found." });
-            }
-          } catch (autoragError) {
-            console.error("AutoRAG operation failed:", autoragError);
-            dataStream.writeData({ status: "Document search failed." });
-          }
+        if (searchResult.data && searchResult.data.length > 0) {
+          contextChunks = searchResult.data
+            .map((item) => {
+              const content = item.content.map((c) => c.text).join("\n\n");
+              return `<file name="${item.filename}">${content}</file>`;
+            })
+            .join("\n\n");
+          data.append({
+            status: `Found ${searchResult.data.length} documents.`,
+          });
+        } else {
+          data.append({ status: "No relevant documents found." });
         }
-
-        const systemMessage = {
-          role: "system" as const,
-          content: env.AI
-            ? `You are SANF AI, an advanced credit analysis assistant specializing in comprehensive financial risk assessment for Indonesian lending institutions. Your expertise covers:
-
-**FRAUD DETECTION:**
-- Analyze documents for inconsistencies, forgeries, or manipulated data
-- Identify suspicious patterns in financial statements, bank records, and identity documents
-- Flag unusual transaction patterns or income discrepancies
-- Detect synthetic or altered document elements
-
-**LENDING APPROVAL ANALYSIS:**
-- Evaluate creditworthiness based on income stability, debt-to-income ratios, and payment history
-- Assess loan-to-value ratios and collateral adequacy
-- Recommend approval, conditional approval, or rejection with clear reasoning
-- Suggest appropriate loan terms, interest rates, and credit limits
-
-**RISK ASSESSMENT:**
-- Calculate probability of default using provided financial data
-- Identify industry-specific risks and economic factors
-- Evaluate guarantor reliability and collateral value
-- Assess borrower's business viability and cash flow sustainability
-
-**DOCUMENT VALIDITY:**
-- Verify document authenticity and completeness
-- Check for required signatures, stamps, and legal compliance
-- Identify missing or outdated documentation
-- Validate data consistency across multiple documents
-
-**ANALYSIS EFFICIENCY:**
-- Provide rapid preliminary assessments within minutes
-- Prioritize critical risk factors for immediate attention
-- Generate structured reports with actionable insights
-- Streamline decision-making with clear recommendations
-
-Always respond in Indonesian language. When using provided documents, include 'Sumber: [filename1, filename2]' at the end. Structure your analysis with clear sections for each assessment area and provide specific, actionable recommendations.`
-            : "You are SANF AI, a credit analysis assistant specializing in fraud detection, lending approval, risk assessment, and document validity for Indonesian financial institutions. Answer questions in Indonesian language. Note: Document search is not available in this environment.",
-        };
-
-        const aiMessages: CoreMessage[] = [systemMessage];
-        if (chunks) {
-          aiMessages.push({ role: "user", content: chunks });
-        }
-        aiMessages.push(...messages.slice(0, -1), {
-          role: "user",
-          content: userQuery,
-        });
-
-        dataStream.writeData({ status: "Generating response..." });
-        const result = streamText({
-          model: openai("gpt-4o-mini"),
-          messages: aiMessages,
-          temperature: 0.7,
-          maxTokens: 1000,
-          onFinish() {
-            dataStream.writeData({ status: "completed" });
-          },
-        });
-
-        result.mergeIntoDataStream(dataStream);
-      } catch (error) {
-        console.error("Error in stream execution:", error);
-        throw error; // Throw error to be caught by onError
+      } catch (autoragError) {
+        console.error("AutoRAG operation failed:", autoragError);
+        data.append({ status: "Document search failed." });
       }
-    },
-    onError: (error) => {
-      console.error("Stream error:", error);
-      // Provide a more specific error message to the client
-      if (
-        error instanceof Error &&
-        (error.message.includes("401") ||
-          error.message.includes("No auth credentials"))
-      ) {
-        return "Authentication error. Please verify the API key is set correctly as a Cloudflare secret.";
-      }
-      return error instanceof Error
-        ? error.message
-        : "An unknown error occurred";
-    },
-  });
+    }
+
+    const systemMessage = `You are SANF AI, a credit analysis assistant for Indonesian financial institutions. Always respond in Indonesian. When using provided documents, include 'Sumber: [filename1, filename2]' at the end of your response.`;
+
+    const messagesForAI: CoreMessage[] = [
+      { role: "system", content: systemMessage },
+      ...previousMessages,
+    ];
+
+    if (contextChunks) {
+      messagesForAI.push({
+        role: "user",
+        content: `Here is some context from relevant documents:\n${contextChunks}`,
+      });
+    }
+    messagesForAI.push(userMessage);
+
+    data.append({ status: "Generating response..." });
+
+    const result = await streamText({
+      model: openai("gpt-4o-mini"),
+      messages: messagesForAI,
+      async onFinish(completion) {
+        // 5. Save AI response to database
+        await supabase.from("chat_messages").insert({
+          session_id: sessionId,
+          sender_type: "ai",
+          message_content: completion.text,
+        });
+        data.append({ status: "completed" });
+        data.close();
+      },
+    });
+
+    // Pipe the AI stream through our custom data stream
+    const stream = result.toDataStream();
+    data.close(); // Close the stream immediately, onFinish will handle DB write
+
+    return new NextResponse(stream, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  } catch (error) {
+    console.error("Error in chat route:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
+    return new Response(errorMessage, { status: 500 });
+  }
 }
 
 // Add OPTIONS handler for CORS preflight requests

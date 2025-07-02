@@ -167,7 +167,7 @@ export function SectionCardHistory() {
                     height={30}
                     width={30}
                     className="cursor-pointer"
-                    onClick={() => router.push(`/new-application/${app.id}`)}
+                    onClick={() => router.push(`/dashboard/1/new-application/${app.id}`)}
                   />
                 </div>
               </div>
