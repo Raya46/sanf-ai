@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,7 +31,7 @@ export async function DELETE(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -43,7 +43,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const applicationId = params.id;
+    const { id: applicationId } = await params;
 
     const { data, error } = await supabase
       .from("credit_applications")
