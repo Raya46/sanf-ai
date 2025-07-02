@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { ArrowUp } from "lucide-react";
 import { KeyboardEvent, useRef } from "react";
-import { ActiveView } from "@/app/(dashboard)/new-application/[...id]/page";
+import { ActiveView } from "@/app/dashboard/[projectId]/new-application/[applicationId]/page";
 import { ChatCard } from "@/components/new-application/ui/chat-card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

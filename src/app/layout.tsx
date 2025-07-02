@@ -1,4 +1,5 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
+import Providers from "./providers";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -13,15 +14,29 @@ export const metadata: Metadata = {
   description: "Created By Summon",
 };
 
-export default function RootLayout({
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return redirect("/login");
+  }
+
   return (
     <html lang="en">
       <body className={`${inter.variable} antialiased`}>
-        <SidebarProvider>{children}</SidebarProvider>
+        <Providers>
+          <SidebarProvider>{children}</SidebarProvider>
+        </Providers>
       </body>
     </html>
   );
