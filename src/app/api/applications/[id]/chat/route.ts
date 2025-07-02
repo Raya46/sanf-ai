@@ -1,12 +1,12 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, context: any) {
   try {
+    const { params }: { params: { id: string } } = context;
+
     const supabase = await createClient();
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -17,7 +17,6 @@ export async function GET(
 
     const applicationId = params.id;
 
-    // First, find the session associated with the application
     const { data: session, error: sessionError } = await supabase
       .from("chat_sessions")
       .select("id")
@@ -26,11 +25,9 @@ export async function GET(
       .single();
 
     if (sessionError || !session) {
-      // If no session, return empty array, not an error
       return NextResponse.json([]);
     }
 
-    // Then, fetch all messages for that session
     const { data: messages, error: messagesError } = await supabase
       .from("chat_messages")
       .select("id, sender_type, message_content")

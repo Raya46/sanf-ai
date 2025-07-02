@@ -45,7 +45,6 @@ export function ChatSection({
     handleInputChange,
     handleSubmit,
     isLoading,
-    error,
     data,
     setMessages,
   } = useChat({
@@ -56,7 +55,7 @@ export function ChatSection({
 
   useEffect(() => {
     setMessages(formattedInitialMessages);
-  }, [initialMessages]);
+  }, [formattedInitialMessages, setMessages]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {

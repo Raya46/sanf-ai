@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await params;
+  const { id } = params;
   const supabase = await createClient();
   const {
     data: { user },
@@ -30,7 +30,7 @@ export async function DELETE(
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -44,13 +44,6 @@ export async function GET(
     }
 
     const applicationId = params.id;
-
-    if (!applicationId) {
-      return NextResponse.json(
-        { error: "Application ID is required" },
-        { status: 400 }
-      );
-    }
 
     const { data, error } = await supabase
       .from("credit_applications")
