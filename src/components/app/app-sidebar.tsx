@@ -25,12 +25,12 @@ const sideBarItems = [
   },
   {
     title: "New Application",
-    url: "/dashboard/3/new-application",
+    url: "/dashboard/:projectId/new-application",
     icon: FilePlus,
   },
   {
     title: "Applications",
-    url: "/application",
+    url: "/dashboard/:projectId/application",
     icon: History,
   },
 ];
@@ -47,10 +47,18 @@ export function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar> & { user?: User }) {
   const [pathname, setPathname] = React.useState("");
+  const projectId = props.user?.id; // Get projectId from user prop
 
   React.useEffect(() => {
     setPathname(window.location.pathname);
   }, []);
+
+  const resolveUrl = (url: string) => {
+    if (projectId) {
+      return url.replace(":projectId", projectId);
+    }
+    return url;
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -77,38 +85,41 @@ export function AppSidebar({
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            {sideBarItems.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === item.url}
-                  className="group hover:bg-blue-50 duration-200 focus:text-primary data-[active=true]:text-primary"
-                >
-                  <Link href={item.url}>
-                    <div
-                      className={`w-8 h-8 group ${
-                        pathname === item.url
-                          ? "bg-blue-600"
-                          : "bg-blue-500 hover:bg-blue-600"
-                      } justify-center items-center flex rounded-lg transition-colors duration-200`}
-                    >
-                      {item.icon && (
-                        <item.icon className="h-5 w-5 text-white" />
-                      )}
-                    </div>
-                    <span
-                      className={`text-sm ${
-                        pathname === item.url
-                          ? "text-blue-600"
-                          : "text-gray-700 hover:text-blue-600"
-                      } font-medium`}
-                    >
-                      {item.title}
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {sideBarItems.map((item) => {
+              const resolvedUrl = resolveUrl(item.url);
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === resolvedUrl}
+                    className="group hover:bg-blue-50 duration-200 focus:text-primary data-[active=true]:text-primary"
+                  >
+                    <Link href={resolvedUrl}>
+                      <div
+                        className={`w-8 h-8 group ${
+                          pathname === resolvedUrl
+                            ? "bg-blue-600"
+                            : "bg-blue-500 hover:bg-blue-600"
+                        } justify-center items-center flex rounded-lg transition-colors duration-200`}
+                      >
+                        {item.icon && (
+                          <item.icon className="h-5 w-5 text-white" />
+                        )}
+                      </div>
+                      <span
+                        className={`text-sm ${
+                          pathname === resolvedUrl
+                            ? "text-blue-600"
+                            : "text-gray-700 hover:text-blue-600"
+                        } font-medium`}
+                      >
+                        {item.title}
+                      </span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroup>
 

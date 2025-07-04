@@ -305,8 +305,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    revalidatePath("/application");
-    revalidatePath(`/dashboard/[projectId]/new-application/${application.id}`);
+    revalidatePath(`/dashboard/${user.id}/application`);
+    revalidatePath(`/dashboard/${user.id}/new-application/${application.id}`);
     return NextResponse.json({ success: true, applicationId: application.id });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
