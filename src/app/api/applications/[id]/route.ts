@@ -1,12 +1,13 @@
 import { createClient } from "@/utils/supabase/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function DELETE(
-  request: NextRequest,
+export async function GET(
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   const supabase = await createClient();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -15,75 +16,64 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("credit_applications")
-    .delete()
+    .select(
+      `
+      *,
+      application_files (
+        id, file_name
+      )
+    `
+    )
     .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .single();
 
   if (error) {
-    console.error("Error deleting application:", error);
+    console.error("Error fetching application:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json(data);
 }
 
-export async function GET(
-  request: NextRequest,
+export async function PATCH(
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const { id } = await params;
+  const supabase = await createClient();
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    const { id: applicationId } = await params;
-
-    const { data, error } = await supabase
-      .from("credit_applications")
-      .select(
-        `
-        *,
-        application_files (
-          id,
-          file_name,
-          r2_object_key,
-          file_type
-        )
-      `
-      )
-      .eq("id", applicationId)
-      .eq("user_id", user.id)
-      .single();
-
-    if (error) {
-      console.error("Error fetching application details:", error.message);
-      if (error.code === "PGRST116") {
-        return NextResponse.json(
-          { error: "Application not found" },
-          { status: 404 }
-        );
-      }
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    if (!data) {
-      return NextResponse.json(
-        { error: "Application not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(data);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Server: Error fetching application:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const { ai_analysis } = (await request.json()) as { ai_analysis: string };
+
+  if (!ai_analysis) {
+    return NextResponse.json(
+      { error: "Missing ai_analysis content" },
+      { status: 400 }
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("credit_applications")
+    .update({ ai_analysis })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating AI analysis:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, data });
 }

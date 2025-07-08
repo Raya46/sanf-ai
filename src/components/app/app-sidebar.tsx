@@ -22,7 +22,7 @@ import { CreditListFile } from "@/components/new-application/ui/credit-list-file
 const sideBarItems = [
   {
     title: "Dashboard",
-    url: "/",
+    url: "/dashboard/:projectId",
     icon: PanelsTopLeft,
   },
   {
@@ -48,7 +48,10 @@ const accountItems = [
 export function AppSidebar({
   currentProjectId,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { user?: User; currentProjectId?: string }) {
+}: React.ComponentProps<typeof Sidebar> & {
+  user?: User;
+  currentProjectId?: string;
+}) {
   const pathname = usePathname();
   const projectId = currentProjectId || props.user?.id; // Prioritize currentProjectId
 
@@ -82,7 +85,8 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {pathname.includes("/new-application/") && pathname.split("/").length > 4 ? (
+        {pathname.includes("/new-application/:projectId") &&
+        pathname.split("/").length > 4 ? (
           <SidebarGroup>
             <SidebarMenu>
               <SidebarMenuItem>
