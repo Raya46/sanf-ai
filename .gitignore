@@ -38,7 +38,6 @@ yarn-error.log*
 .dev.vars
 .wrangler
 .dev.vars
-.open-next
 
 
 # typescript
