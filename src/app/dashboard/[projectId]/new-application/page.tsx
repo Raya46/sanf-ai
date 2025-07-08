@@ -5,7 +5,11 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
-export default async function NewApplicationPage() {
+export default async function NewApplicationPage({
+  params,
+}: {
+  params: { projectId: string };
+}) {
   const supabase = await createClient();
 
   const {
@@ -24,7 +28,7 @@ export default async function NewApplicationPage() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col">
             <h1 className="m-4 font-bold text-lg">New Credit Application</h1>
-            <SectionForm />
+            <SectionForm projectId={params.projectId} />
           </div>
         </div>
       </SidebarInset>

@@ -44,10 +44,11 @@ const accountItems = [
 ];
 
 export function AppSidebar({
+  currentProjectId,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { user?: User }) {
+}: React.ComponentProps<typeof Sidebar> & { user?: User; currentProjectId?: string }) {
   const [pathname, setPathname] = React.useState("");
-  const projectId = props.user?.id; // Get projectId from user prop
+  const projectId = currentProjectId || props.user?.id; // Prioritize currentProjectId
 
   React.useEffect(() => {
     setPathname(window.location.pathname);
