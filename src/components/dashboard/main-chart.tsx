@@ -1,17 +1,36 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import {
+  ComposedChart,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+  Bar,
+  Line,
+} from "recharts";
 
-const chartData = [
-  { period: "[A] 01/25 - 12/25", companyA: 4, companyB: 2, companyC: -1 },
-  { period: "[A] 01/24 - 12/24", companyA: 3, companyB: 1.5, companyC: -2 },
-  { period: "[A] 01/23 - 12/23", companyA: 2, companyB: 1, companyC: -1.5 },
-  { period: "[A] 01/22 - 12/22", companyA: 3.5, companyB: 0.5, companyC: -2.5 },
-  { period: "[A] 01/21 - 12/21", companyA: 2.5, companyB: 1.2, companyC: -3 },
-  { period: "[A] 01/20 - 12/20", companyA: 4.2, companyB: 0.8, companyC: -2.8 },
-  { period: "[A] 01/19 - 12/19", companyA: 3.8, companyB: 1.1, companyC: -1.8 },
+interface FinancialCandlestickData {
+  period: string;
+  startValue: number;
+  maxValue: number;
+  minValue: number;
+  endValue: number;
+}
+
+const chartData: FinancialCandlestickData[] = [
+  { period: "Jan 2025", startValue: 100, maxValue: 120, minValue: 90, endValue: 110 },
+  { period: "Feb 2025", startValue: 110, maxValue: 130, minValue: 105, endValue: 125 },
+  { period: "Mar 2025", startValue: 125, maxValue: 115, minValue: 95, endValue: 100 },
+  { period: "Apr 2025", startValue: 100, maxValue: 110, minValue: 98, endValue: 108 },
+  { period: "May 2025", startValue: 108, maxValue: 128, minValue: 100, endValue: 120 },
+  { period: "Jun 2025", startValue: 120, maxValue: 110, minValue: 90, endValue: 95 },
+  { period: "Jul 2025", startValue: 95, maxValue: 105, minValue: 85, endValue: 100 },
 ];
 
 const periods = [
@@ -24,6 +43,55 @@ interface MainChartProps {
   period: string;
   onPeriodChange: (period: string) => void;
 }
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white p-2 border border-gray-200 rounded shadow-md text-sm">
+        <p className="font-semibold">{`Period: ${label}`}</p>
+        <p>{`Start Value: ${data.startValue}`}</p>
+        <p>{`Max Value: ${data.maxValue}`}</p>
+        <p>{`Min Value: ${data.minValue}`}</p>
+        <p>{`End Value: ${data.endValue}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomCandlestick = (props: any) => {
+  const { x, y, width, startValue, maxValue, minValue, endValue } = props;
+
+  const isRising = endValue > startValue;
+  const color = isRising ? "#10B981" : "#EF4444"; // Green for up, Red for down
+
+  const rectY = Math.min(startValue, endValue);
+  const rectHeight = Math.abs(startValue - endValue);
+
+  return (
+    <g>
+      {/* Line for high and low */}
+      <line
+        x1={x + width / 2}
+        y1={maxValue}
+        x2={x + width / 2}
+        y2={minValue}
+        stroke={color}
+        strokeWidth={1}
+      />
+      {/* Rectangle for open and close */}
+      <rect
+        x={x}
+        y={rectY}
+        width={width}
+        height={rectHeight}
+        fill={color}
+        stroke={color}
+      />
+    </g>
+  );
+};
 
 export function MainChart({ period, onPeriodChange }: MainChartProps) {
   return (
@@ -57,10 +125,11 @@ export function MainChart({ period, onPeriodChange }: MainChartProps) {
 
       <div className="h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart
+          <ComposedChart
             data={chartData}
             margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
           >
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="period"
               tick={{ fill: "#4B5563", fontSize: 10 }}
@@ -68,27 +137,19 @@ export function MainChart({ period, onPeriodChange }: MainChartProps) {
               textAnchor="end"
               height={80}
             />
-            <YAxis tick={{ fill: "#4B5563", fontSize: 12 }} />
-            <Bar dataKey="companyA" fill="#3B82F6" />
-            <Bar dataKey="companyB" fill="#93C5FD" />
-            <Bar dataKey="companyC" fill="#1E40AF" />
-          </BarChart>
+            <YAxis tick={{ fill: "#4B5563", fontSize: 12 }} domain={["dataMin - 10", "dataMax + 10"]} />
+            <Tooltip content={<CustomTooltip />} />
+            <ReferenceLine y={105} stroke="red" strokeDasharray="3 3" label="Avg" />
+            <Bar
+              dataKey="endValue"
+              shape={<CustomCandlestick />}
+              isAnimationActive={true}
+              animationBegin={0}
+              animationDuration={300}
+              animationEasing="ease-out"
+            />
+          </ComposedChart>
         </ResponsiveContainer>
-      </div>
-
-      <div className="flex items-center justify-center gap-6 mt-4">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-blue-500 rounded"></div>
-          <span className="text-sm text-gray-600">Company A</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-blue-300 rounded"></div>
-          <span className="text-sm text-gray-600">Company B</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-blue-800 rounded"></div>
-          <span className="text-sm text-gray-600">Company C</span>
-        </div>
       </div>
     </div>
   );
