@@ -2,7 +2,6 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
-
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject, generateText } from "ai";
 import { AwsClient } from "aws4fetch";
@@ -27,7 +26,7 @@ const s3 = new AwsClient({
   region: "auto",
 });
 
-// --- AI Analysis Schema and Helpers ---
+// --- AI Analysis Schema ---
 const analysisSchema = z.object({
   ai_analysis_status: z
     .string()
@@ -81,13 +80,13 @@ const analysisSchema = z.object({
 });
 
 export interface CloudflareEnv {
-  AI: Ai | null;
+  AI: any; 
   OPENAI_API_KEY: string;
 }
 
 function getCloudflareEnv(): CloudflareEnv {
   let apiKey = process.env.OPENAI_API_KEY;
-  let ai: Ai | null = null;
+  let ai: any = null;
   const isDevelopment = process.env.NODE_ENV === "development";
 
   if (!isDevelopment) {
@@ -96,7 +95,7 @@ function getCloudflareEnv(): CloudflareEnv {
       ai = env.AI;
       apiKey = env.OPENAI_API_KEY;
     } catch (e) {
-      console.log(e);
+      console.log("Could not get Cloudflare context:", e);
     }
   }
 
@@ -104,22 +103,7 @@ function getCloudflareEnv(): CloudflareEnv {
   return { AI: ai, OPENAI_API_KEY: apiKey };
 }
 
-function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  console.warn(
-    `Truncating combined document text from ${text.length} to ${maxLength} characters.`
-  );
-  return text.slice(0, maxLength);
-}
-
-async function extractTextFromFile(file: File): Promise<string> {
-  console.warn(
-    "Using placeholder for text extraction. This only supports plain text."
-  );
-  return file.text();
-}
-
-// Existing GET function remains unchanged
+// --- GET Function ---
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -142,7 +126,7 @@ export async function GET() {
   return NextResponse.json(data);
 }
 
-// --- NEW UNIFIED POST FUNCTION ---
+// --- POST Function (Multimodal AI Analysis) ---
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -168,20 +152,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let allDocumentText = "";
     const uploadedFilesData = [];
+    const aiContent: (
+      | { type: "text"; text: string }
+      | { type: "image"; image: Buffer }
+    )[] = [
+      {
+        type: "text",
+        text: `You are an expert credit analyst AI. Analyze the provided financial documents (sent as image/file objects) for a loan application. Your tasks are:
+         1. Provide a general creditworthiness analysis (approval probability, risk, document validity).
+         2. Extract detailed monthly revenue data from the documents. Go back as far as possible, up to 36 months. The result must be an array of objects, each containing 'year', 'month' (1-12), and 'revenue'. If a month's data is not available, do not include it in the array.
+         Analyze the following document(s):`,
+      },
+    ];
 
-    // Process all files: Upload to R2 and extract text
     for (const file of files) {
       const r2Key = `docs/${user.id}/${uuidv4()}-${file.name}`;
       const buffer = Buffer.from(await file.arrayBuffer());
 
       await s3.fetch(`${endpoint}/${bucketName}/${r2Key}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": file.type,
-          "Content-Length": buffer.length.toString(),
-        },
+        headers: { "Content-Type": file.type, "Content-Length": buffer.length.toString() },
         body: buffer,
       });
 
@@ -192,33 +183,21 @@ export async function POST(request: NextRequest) {
         file_type: "document",
       });
 
-      const text = await extractTextFromFile(file);
-      allDocumentText += text + "\n\n---\n\n";
+      aiContent.push({ type: "image", image: buffer });
     }
 
-    // Run combined AI analysis
     const env = getCloudflareEnv();
     const openai = createOpenAI({
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: env.OPENAI_API_KEY,
     });
-
-    const documentText = truncateText(allDocumentText, 100000);
+    
     const { object: analysisResult } = await generateObject({
       model: openai("gpt-4o-mini"),
       schema: analysisSchema,
-      prompt: `You are an expert credit analyst AI. Analyze the provided financial documents for a loan application.
-
-      Your tasks are:
-      1.  Provide a general creditworthiness analysis (approval probability, risk, document validity).
-      2.  Extract detailed monthly revenue data from the documents. Go back as far as possible, up to 36 months. The result must be an array of objects, each containing 'year', 'month' (1-12), and 'revenue'. If a month's data is not available, do not include it in the array.
-
-      Combined Documents Content:
-      ${documentText}`,
+      prompt: `${aiContent}`,
     });
 
-    // --- Database Operations ---
-    // 1. Insert application with AI results
     const { data: application, error: applicationError } = await supabase
       .from("credit_applications")
       .insert({
@@ -231,10 +210,8 @@ export async function POST(request: NextRequest) {
         ai_analysis_status: analysisResult.ai_analysis_status,
         probability_approval: analysisResult.probability_approval,
         overall_indicator: analysisResult.overall_indicator,
-        document_validation_percentage:
-          analysisResult.document_validation_percentage,
-        estimated_analysis_time_minutes:
-          analysisResult.estimated_analysis_time_minutes,
+        document_validation_percentage: analysisResult.document_validation_percentage,
+        estimated_analysis_time_minutes: analysisResult.estimated_analysis_time_minutes,
         revenue: analysisResult.revenue_analysis,
       })
       .select()
@@ -242,72 +219,40 @@ export async function POST(request: NextRequest) {
 
     if (applicationError) {
       console.error("Error creating application:", applicationError);
-      return NextResponse.json(
-        { error: applicationError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: applicationError.message }, { status: 500 });
     }
 
-    // 2. Insert file records
     const filesToInsert = uploadedFilesData.map((file) => ({
       ...file,
       application_id: application.id,
     }));
-    const { error: filesError } = await supabase
-      .from("application_files")
-      .insert(filesToInsert);
+    await supabase.from("application_files").insert(filesToInsert);
 
-    if (filesError) {
-      console.error("Error inserting files:", filesError);
-      // TODO: Consider rolling back the application creation
-      return NextResponse.json({ error: filesError.message }, { status: 500 });
-    }
-
-    // 3. Create a chat session
-    const { data: session, error: sessionError } = await supabase
+    const { data: session } = await supabase
       .from("chat_sessions")
-      .insert({
-        application_id: application.id,
-        user_id: user.id,
-      })
+      .insert({ application_id: application.id, user_id: user.id })
       .select()
       .single();
 
-    if (sessionError) {
-      console.error("Error creating chat session:", sessionError);
-      return NextResponse.json(
-        { error: sessionError.message },
-        { status: 500 }
-      );
-    }
-
-    // 4. Generate and insert initial summary message from AI
-    const fileNames = files.map((f) => f.name).join(", ");
-    const { text: summary } = await generateText({
-      model: openai("gpt-4o-mini"),
-      prompt: `You are a credit analyst assistant. Based on the following documents, provide a concise opening summary (2-3 sentences) of the credit application. Mention the key entities or highlights. Documents Content: ${documentText}`,
-      system: `At the end of your summary, list the documents you used. Format it exactly like this: "Sumber: [filename1, filename2, ...]" using the following file names: ${fileNames}`,
-    });
-
-    const { error: messageError } = await supabase
-      .from("chat_messages")
-      .insert({
-        session_id: session.id,
-        sender_type: "ai",
-        message_content: summary,
+    if (session) {
+      const fileNames = files.map((f) => f.name).join(", ");
+      const summaryPrompt = `Based on a successful AI analysis of the files (${fileNames}), provide a concise opening summary (2-3 sentences) of the credit application. Key highlights were an approval probability of ${analysisResult.probability_approval}% with a risk indicator of ${analysisResult.overall_indicator}.`;
+      
+      const { text: summary } = await generateText({
+        model: openai("gpt-4o-mini"),
+        prompt: summaryPrompt,
+        system: `At the end of your summary, list the documents you used. Format it exactly like this: "Sumber: [filename1, filename2, ...]" using the following file names: ${fileNames}`,
       });
 
-    if (messageError) {
-      console.error("Error inserting initial AI message:", messageError);
-      return NextResponse.json(
-        { error: messageError.message },
-        { status: 500 }
-      );
+      await supabase
+        .from("chat_messages")
+        .insert({ session_id: session.id, sender_type: "ai", message_content: summary });
     }
 
-    revalidatePath("/application");
-    revalidatePath(`/dashboard/[projectId]/new-application/${application.id}`);
+    revalidatePath(`/dashboard/${user.id}/application`);
+    revalidatePath(`/dashboard/${user.id}/new-application/${application.id}`);
     return NextResponse.json({ success: true, applicationId: application.id });
+
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Server: Error processing application:", message);

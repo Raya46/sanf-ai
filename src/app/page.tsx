@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Building2,
   Truck,
@@ -17,15 +17,26 @@ import {
   CheckCircle,
   Clock,
   LogOut,
-} from "lucide-react"
+} from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { logout } from "@/app/auth/actions"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { logout } from "@/app/auth/actions";
 
 const creditAnalyses = [
   {
@@ -36,7 +47,7 @@ const creditAnalyses = [
     date: "Dec 15, 2024",
     riskScore: 720,
     status: "approved",
-    amount: "$450,000",
+    amount: "Rp 6.750.000.000",
     applicant: "Mountain Construction LLC",
   },
   {
@@ -47,7 +58,7 @@ const creditAnalyses = [
     date: "Dec 12, 2024",
     riskScore: 680,
     status: "under-review",
-    amount: "$2,100,000",
+    amount: "Rp 31.500.000.000",
     applicant: "TransLogistics Corp",
   },
   {
@@ -58,7 +69,7 @@ const creditAnalyses = [
     date: "Dec 10, 2024",
     riskScore: 750,
     status: "approved",
-    amount: "$850,000",
+    amount: "Rp 12.750.000.000",
     applicant: "Precision Manufacturing Inc",
   },
   {
@@ -69,7 +80,7 @@ const creditAnalyses = [
     date: "Dec 8, 2024",
     riskScore: 620,
     status: "pending",
-    amount: "$125,000",
+    amount: "Rp 1.875.000.000",
     applicant: "InnovateTech Solutions",
   },
   {
@@ -80,7 +91,7 @@ const creditAnalyses = [
     date: "Dec 5, 2024",
     riskScore: 695,
     status: "approved",
-    amount: "$320,000",
+    amount: "Rp 4.800.000.000",
     applicant: "Earthworks Contractors",
   },
   {
@@ -91,7 +102,7 @@ const creditAnalyses = [
     date: "Dec 3, 2024",
     riskScore: 710,
     status: "under-review",
-    amount: "$1,800,000",
+    amount: "Rp 27.000.000.000",
     applicant: "Highway Express LLC",
   },
   {
@@ -102,7 +113,7 @@ const creditAnalyses = [
     date: "Nov 28, 2024",
     riskScore: 665,
     status: "declined",
-    amount: "$675,000",
+    amount: "Rp 10.125.000.000",
     applicant: "AutoParts Manufacturing",
   },
   {
@@ -113,10 +124,10 @@ const creditAnalyses = [
     date: "Nov 25, 2024",
     riskScore: 640,
     status: "approved",
-    amount: "$95,000",
+    amount: "Rp 1.425.000.000",
     applicant: "Gourmet Bistro Group",
   },
-]
+];
 
 const segmentLabels = {
   all: "All Segments",
@@ -124,63 +135,71 @@ const segmentLabels = {
   trucking: "Trucking",
   "productive-financing": "Productive Financing",
   "new-business": "New Business",
-}
+};
 
 const statusColors = {
   approved: "bg-green-100 text-green-700 border-green-200",
   "under-review": "bg-amber-100 text-amber-700 border-amber-200",
   pending: "bg-blue-100 text-blue-700 border-blue-200",
   declined: "bg-red-100 text-red-700 border-red-200",
-}
+};
 
 const statusIcons = {
   approved: CheckCircle,
   "under-review": Clock,
   pending: AlertTriangle,
   declined: AlertTriangle,
-}
+};
 
 export default function Component() {
-  const [selectedSegment, setSelectedSegment] = useState("all")
-  const [viewMode, setViewMode] = useState("grid")
-  const [sortBy, setSortBy] = useState("most-recent")
-  const router = useRouter()
+  const [selectedSegment, setSelectedSegment] = useState("all");
+  const [viewMode, setViewMode] = useState("grid");
+  const [sortBy, setSortBy] = useState("most-recent");
+  const router = useRouter();
 
   const filteredAnalyses = creditAnalyses.filter(
-    (analysis) => selectedSegment === "all" || analysis.segment === selectedSegment,
-  )
+    (analysis) =>
+      selectedSegment === "all" || analysis.segment === selectedSegment
+  );
 
   const sortedAnalyses = [...filteredAnalyses].sort((a, b) => {
     switch (sortBy) {
       case "most-recent":
-        return new Date(b.date).getTime() - new Date(a.date).getTime()
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
       case "risk-score":
-        return b.riskScore - a.riskScore
+        return b.riskScore - a.riskScore;
       case "amount":
-        return Number.parseFloat(b.amount.replace(/[$,]/g, "")) - Number.parseFloat(a.amount.replace(/[$,]/g, ""))
+        return (
+          Number.parseFloat(b.amount.replace(/Rp|\s|\./g, "")) -
+          Number.parseFloat(a.amount.replace(/Rp|\s|\./g, ""))
+        );
       default:
-        return 0
+        return 0;
     }
-  })
+  });
 
   const getRiskScoreColor = (score: number) => {
-    if (score >= 700) return "text-green-600"
-    if (score >= 650) return "text-amber-600"
-    return "text-red-600"
-  }
+    if (score >= 700) return "text-green-600";
+    if (score >= 650) return "text-amber-600";
+    return "text-red-600";
+  };
 
   const handleLogout = async () => {
-    await logout()
-    router.push("/login")
-  }
+    await logout();
+    router.push("/login");
+  };
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <div className="container mx-auto px-6 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold mb-2 text-slate-900">Credit Analysis Dashboard</h1>
-            <p className="text-slate-600">Manage and review credit applications across all business segments</p>
+            <h1 className="text-4xl font-bold mb-2 text-slate-900">
+              Credit Analysis Dashboard
+            </h1>
+            <p className="text-slate-600">
+              Manage and review credit applications across all business segments
+            </p>
           </div>
           <Button
             variant="ghost"
@@ -200,9 +219,16 @@ export default function Component() {
           </Button>
 
           <div className="flex flex-col sm:flex-row gap-4 lg:ml-auto">
-            <Tabs value={selectedSegment} onValueChange={setSelectedSegment} className="w-full sm:w-auto">
+            <Tabs
+              value={selectedSegment}
+              onValueChange={setSelectedSegment}
+              className="w-full sm:w-auto"
+            >
               <TabsList className="bg-blue-50/80 border border-blue-200/50">
-                <TabsTrigger value="all" className="data-[state=active]:bg-white data-[state=active]:text-slate-900">
+                <TabsTrigger
+                  value="all"
+                  className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
+                >
                   All
                 </TabsTrigger>
                 <TabsTrigger
@@ -268,12 +294,15 @@ export default function Component() {
 
         <div
           className={
-            viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "space-y-4"
+            viewMode === "grid"
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              : "space-y-4"
           }
         >
           {sortedAnalyses.map((analysis) => {
-            const IconComponent = analysis.icon
-            const StatusIcon = statusIcons[analysis.status as keyof typeof statusIcons]
+            const IconComponent = analysis.icon;
+            const StatusIcon =
+              statusIcons[analysis.status as keyof typeof statusIcons];
 
             return (
               <Link
@@ -298,7 +327,11 @@ export default function Component() {
                             className="text-xs mb-2 border-blue-300/50 text-slate-700 bg-blue-50/40"
                           >
                             <IconComponent className="w-3 h-3 mr-1" />
-                            {segmentLabels[analysis.segment as keyof typeof segmentLabels]}
+                            {
+                              segmentLabels[
+                                analysis.segment as keyof typeof segmentLabels
+                              ]
+                            }
                           </Badge>
                         </div>
                       </div>
@@ -309,7 +342,7 @@ export default function Component() {
                             size="sm"
                             className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-slate-900"
                             tabIndex={-1}
-                            onClick={e => e.preventDefault()}
+                            onClick={(e) => e.preventDefault()}
                           >
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
@@ -318,25 +351,39 @@ export default function Component() {
                           <DropdownMenuItem>View Details</DropdownMenuItem>
                           <DropdownMenuItem>Edit Analysis</DropdownMenuItem>
                           <DropdownMenuItem>Export Report</DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600">
+                            Delete
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2">{analysis.title}</h3>
-                    <p className="text-sm text-slate-600 mb-3">{analysis.applicant}</p>
+                    <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2">
+                      {analysis.title}
+                    </h3>
+                    <p className="text-sm text-slate-600 mb-3">
+                      {analysis.applicant}
+                    </p>
 
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">Amount</span>
-                        <span className="text-sm font-medium text-slate-900">{analysis.amount}</span>
+                        <span className="text-sm font-medium text-slate-900">
+                          {analysis.amount}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-slate-500">Risk Score</span>
+                        <span className="text-xs text-slate-500">
+                          Risk Score
+                        </span>
                         <div className="flex items-center gap-1">
-                          <TrendingUp className={`w-3 h-3 ${getRiskScoreColor(analysis.riskScore)}`} />
-                          <span className={`text-sm font-medium ${getRiskScoreColor(analysis.riskScore)}`}>
+                          <TrendingUp
+                            className={`w-3 h-3 ${getRiskScoreColor(analysis.riskScore)}`}
+                          />
+                          <span
+                            className={`text-sm font-medium ${getRiskScoreColor(analysis.riskScore)}`}
+                          >
                             {analysis.riskScore}
                           </span>
                         </div>
@@ -344,7 +391,9 @@ export default function Component() {
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-500">{analysis.date}</span>
+                      <span className="text-xs text-slate-500">
+                        {analysis.date}
+                      </span>
                       <div className="flex items-center gap-1">
                         <Badge
                           className={`text-xs capitalize ${statusColors[analysis.status as keyof typeof statusColors]}`}
@@ -357,7 +406,7 @@ export default function Component() {
                   </CardContent>
                 </Card>
               </Link>
-            )
+            );
           })}
         </div>
 
@@ -375,5 +424,5 @@ export default function Component() {
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -2,7 +2,7 @@
 
 import { useChat, Message } from "@ai-sdk/react";
 import { ArrowUp } from "lucide-react";
-import { Fragment, KeyboardEvent, useEffect, useRef } from "react";
+import { Fragment, KeyboardEvent, useRef } from "react";
 import { ActiveView } from "@/app/dashboard/[projectId]/new-application/[applicationId]/page";
 import { ChatCard } from "@/components/new-application/ui/chat-card";
 import { Button } from "@/components/ui/button";
@@ -46,16 +46,12 @@ export function ChatSection({
     handleSubmit,
     isLoading,
     data,
-    setMessages,
   } = useChat({
     api: "/api/chat",
     body: { applicationId },
     initialMessages: formattedInitialMessages,
   });
 
-  useEffect(() => {
-    setMessages(formattedInitialMessages);
-  }, [formattedInitialMessages, setMessages]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {

@@ -23,7 +23,7 @@ interface StagedFile {
   docType: string;
 }
 
-export function SectionForm() {
+export function SectionForm({ projectId }: { projectId: string }) {
   const [user, setUser] = useState<User | null>(null);
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -121,7 +121,7 @@ export function SectionForm() {
       };
 
       if (result.success && result.applicationId) {
-        router.push(`/new-application/${result.applicationId}`);
+        router.push(`/dashboard/${projectId}/new-application/${result.applicationId}`);
       } else {
         console.error("Submission failed with error:", result.error);
         // TODO: Show an error message to the user

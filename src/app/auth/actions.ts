@@ -19,7 +19,7 @@ export async function login(prevState: string | undefined, formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/application");
+  redirect("/");
 }
 
 export async function signup(
