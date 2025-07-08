@@ -74,10 +74,10 @@ function getCloudflareEnv(): CloudflareEnv {
 
   if (!ai) {
     if (isDevelopment) {
-      console.log("🔄 Development mode: AI binding not available (expected)");
+      console.log("Development mode: AI binding not available (expected)");
       console.log("AutoRAG will work when deployed to Cloudflare Workers");
     } else {
-      console.error("❌ Production: Cloudflare AI binding not available");
+      console.error("Production: Cloudflare AI binding not available");
       console.error("This indicates an issue with:");
       console.error("1. Verify AI binding is configured in wrangler.jsonc");
       console.error(
@@ -88,7 +88,7 @@ function getCloudflareEnv(): CloudflareEnv {
       );
     }
   } else {
-    console.log("✅ AI binding successfully found and ready for AutoRAG");
+    console.log("AI binding successfully found and ready for AutoRAG");
   }
 
   return {
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
 
     data.append({ status: "Generating response..." });
 
-     const result = await streamText({
+    const result = await streamText({
       model: openai("gpt-4o-mini"),
       messages: messagesForAI,
       async onFinish(completion) {
@@ -230,7 +230,6 @@ export async function POST(request: NextRequest) {
           message_content: completion.text,
         });
 
-        // 'onFinish' adalah tempat yang tepat untuk menutup stream
         data.append({ status: "completed" });
         data.close();
       },
@@ -249,7 +248,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Add OPTIONS handler for CORS preflight requests
 export async function OPTIONS() {
   return new Response(null, {
     status: 204, // No Content

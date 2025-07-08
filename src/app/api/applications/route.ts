@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateObject, generateText } from "ai";
+import { generateObject } from "ai";
 import { AwsClient } from "aws4fetch";
 import { z } from "zod";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
@@ -32,6 +32,11 @@ const analysisSchema = z.object({
     .string()
     .describe(
       "The status of the AI analysis (e.g., 'Completed', 'Failed', 'Requires_Manual_Review')."
+    ),
+  ai_analysis: z
+    .string()
+    .describe(
+      "The full AI analysis report generated based on the documents and user context."
     ),
   probability_approval: z
     .number()
@@ -80,27 +85,55 @@ const analysisSchema = z.object({
 });
 
 export interface CloudflareEnv {
-  AI: any; 
+  AI: any;
   OPENAI_API_KEY: string;
 }
 
 function getCloudflareEnv(): CloudflareEnv {
-  let apiKey = process.env.OPENAI_API_KEY;
-  let ai: any = null;
-  const isDevelopment = process.env.NODE_ENV === "development";
+  try {
+    const { env } = getCloudflareContext() as { env: any };
 
-  if (!isDevelopment) {
-    try {
-      const { env } = getCloudflareContext() as { env: any };
-      ai = env.AI;
-      apiKey = env.OPENAI_API_KEY;
-    } catch (e) {
-      console.log("Could not get Cloudflare context:", e);
+    console.log(
+      "Successfully accessed Cloudflare context. Assuming production environment."
+    );
+
+    const apiKey = env.OPENAI_API_KEY;
+    const ai = env.AI;
+
+    if (!apiKey) {
+      console.error(
+        "CRITICAL: Cloudflare context found, but OPENAI_API_KEY secret is MISSING."
+      );
+      throw new Error(
+        "OPENAI_API_KEY secret not found in Cloudflare environment."
+      );
     }
-  }
 
-  if (!apiKey) throw new Error("OPENAI_API_KEY not found in environment");
-  return { AI: ai, OPENAI_API_KEY: apiKey };
+    console.log(
+      `Found OPENAI_API_KEY in Cloudflare secrets. Preview: ${apiKey.substring(0, 5)}...${apiKey.slice(-4)}`
+    );
+    return { AI: ai, OPENAI_API_KEY: apiKey };
+  } catch (e) {
+    console.log(
+      `Could not get Cloudflare context. Assuming local development environment.${e}`
+    );
+
+    const apiKey = process.env.OPENAI_API_KEY;
+
+    if (!apiKey) {
+      console.error(
+        "❌ CRITICAL: Running locally, but OPENAI_API_KEY is MISSING from .env file."
+      );
+      throw new Error(
+        "OPENAI_API_KEY not found in process.env for local development."
+      );
+    }
+
+    console.log(
+      `✅ Found OPENAI_API_KEY in local .env file. Preview: ${apiKey.substring(0, 5)}...${apiKey.slice(-4)}`
+    );
+    return { AI: null, OPENAI_API_KEY: apiKey };
+  }
 }
 
 // --- GET Function ---
@@ -139,10 +172,8 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData();
-    const company_name = formData.get("company_name") as string;
-    const application_type = formData.get("application_type") as string;
-    const contact_person = formData.get("contact_person") as string;
-    const contact_email = formData.get("contact_email") as string;
+    const analysis_template = formData.get("analysis_template") as string;
+    const risk_appetite = parseInt(formData.get("risk_appetite") as string);
     const files = formData.getAll("files") as File[];
 
     if (!files || files.length === 0) {
@@ -159,9 +190,12 @@ export async function POST(request: NextRequest) {
     )[] = [
       {
         type: "text",
-        text: `You are an expert credit analyst AI. Analyze the provided financial documents (sent as image/file objects) for a loan application. Your tasks are:
-         1. Provide a general creditworthiness analysis (approval probability, risk, document validity).
-         2. Extract detailed monthly revenue data from the documents. Go back as far as possible, up to 36 months. The result must be an array of objects, each containing 'year', 'month' (1-12), and 'revenue'. If a month's data is not available, do not include it in the array.
+        text: `You are an expert credit analyst AI. Analyze the provided financial documents (sent as image/file objects) for a loan application.
+         The user has selected the "${analysis_template}" template and has a risk appetite of ${risk_appetite}%.
+         Your tasks are:
+         1. Generate a comprehensive creditworthiness analysis report in **pure HTML format**. This report must start with a concise summary (2-3 sentences) of the credit application, highlighting key findings like approval probability and risk indicator. Use appropriate HTML tags for headings (<h1>, <h2>), paragraphs (<p>), bold text (<b> or <strong>), italic text (<i> or <em>), and lists (<ul>, <ol>, <li>). Ensure proper line breaks and spacing using HTML tags like <br> or by structuring content within block-level elements. **Do NOT use Markdown syntax (e.g., **bold**, *italic*, - list item**) in the output.** The entire report should be a single, well-formed HTML string, suitable for direct display or export.
+         2. Provide a general creditworthiness analysis (approval probability, risk, document validity).
+         3. Extract detailed monthly revenue data from the documents. Go back as far as possible, up to 36 months. The result must be an array of objects, each containing 'year', 'month' (1-12), and 'revenue'. If a month's data is not available, do not include it in the array.
          Analyze the following document(s):`,
       },
     ];
@@ -172,7 +206,10 @@ export async function POST(request: NextRequest) {
 
       await s3.fetch(`${endpoint}/${bucketName}/${r2Key}`, {
         method: "PUT",
-        headers: { "Content-Type": file.type, "Content-Length": buffer.length.toString() },
+        headers: {
+          "Content-Type": file.type,
+          "Content-Length": buffer.length.toString(),
+        },
         body: buffer,
       });
 
@@ -191,7 +228,7 @@ export async function POST(request: NextRequest) {
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: env.OPENAI_API_KEY,
     });
-    
+
     const { object: analysisResult } = await generateObject({
       model: openai("gpt-4o-mini"),
       schema: analysisSchema,
@@ -203,23 +240,27 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user.id,
         status: "completed",
-        company_name,
-        application_type,
-        contact_person,
-        contact_email,
+        analysis_template,
+        risk_appetite,
         ai_analysis_status: analysisResult.ai_analysis_status,
         probability_approval: analysisResult.probability_approval,
         overall_indicator: analysisResult.overall_indicator,
-        document_validation_percentage: analysisResult.document_validation_percentage,
-        estimated_analysis_time_minutes: analysisResult.estimated_analysis_time_minutes,
+        document_validation_percentage:
+          analysisResult.document_validation_percentage,
+        estimated_analysis_time_minutes:
+          analysisResult.estimated_analysis_time_minutes,
         revenue: analysisResult.revenue_analysis,
+        ai_analysis: analysisResult.ai_analysis,
       })
       .select()
       .single();
 
     if (applicationError) {
       console.error("Error creating application:", applicationError);
-      return NextResponse.json({ error: applicationError.message }, { status: 500 });
+      return NextResponse.json(
+        { error: applicationError.message },
+        { status: 500 }
+      );
     }
 
     const filesToInsert = uploadedFilesData.map((file) => ({
@@ -235,24 +276,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (session) {
-      const fileNames = files.map((f) => f.name).join(", ");
-      const summaryPrompt = `Based on a successful AI analysis of the files (${fileNames}), provide a concise opening summary (2-3 sentences) of the credit application. Key highlights were an approval probability of ${analysisResult.probability_approval}% with a risk indicator of ${analysisResult.overall_indicator}.`;
-      
-      const { text: summary } = await generateText({
-        model: openai("gpt-4o-mini"),
-        prompt: summaryPrompt,
-        system: `At the end of your summary, list the documents you used. Format it exactly like this: "Sumber: [filename1, filename2, ...]" using the following file names: ${fileNames}`,
+      // Insert the full AI analysis as the first message in the chat session
+      await supabase.from("chat_messages").insert({
+        session_id: session.id,
+        sender_type: "ai",
+        message_content: analysisResult.ai_analysis,
       });
-
-      await supabase
-        .from("chat_messages")
-        .insert({ session_id: session.id, sender_type: "ai", message_content: summary });
     }
 
     revalidatePath(`/dashboard/${user.id}/application`);
     revalidatePath(`/dashboard/${user.id}/new-application/${application.id}`);
     return NextResponse.json({ success: true, applicationId: application.id });
-
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Server: Error processing application:", message);

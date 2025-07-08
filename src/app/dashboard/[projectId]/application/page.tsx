@@ -1,7 +1,6 @@
 import { SiteHeader } from "@/components/app/app-header";
-import { AppSidebar } from "@/components/app/app-sidebar";
 import { SectionCardHistory } from "@/components/application/section-card-history";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarInset } from "@/components/ui/sidebar";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -17,8 +16,7 @@ export default async function NewApplicationPage() {
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar variant="inset" user={user} />
+    // <SidebarProvider>
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
@@ -28,6 +26,5 @@ export default async function NewApplicationPage() {
           </div>
         </div>
       </SidebarInset>
-    </SidebarProvider>
   );
 }
