@@ -1,4 +1,3 @@
-import { AppSidebar } from "@/components/app/app-sidebar";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";

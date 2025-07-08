@@ -38,24 +38,22 @@ const performanceCards = [
 // Mock data for ChatSection props
 const mockApplicationData: CreditApplication = {
   id: "mock-app-123",
-  status: "approved",
-  revenue: [
-    { year: 2024, month: 1, revenue: 100 },
-    { year: 2024, month: 2, revenue: 120 },
-    { year: 2024, month: 3, revenue: 110 },
-  ],
   created_at: new Date().toISOString(),
-  company_name: "Mock Company",
-  application_type: "Loan",
-  contact_person: "Jane Doe",
-  contact_email: "jane.doe@example.com",
+  user_id: "mock-user-123",
+  status: "approved",
+  analysis_template: "standard",
+  risk_appetite: 0.7,
   ai_analysis_status: "completed",
   probability_approval: 0.8,
   overall_indicator: "green",
   document_validation_percentage: 100,
   estimated_analysis_time_minutes: 5,
+  revenue: [
+    { year: 2024, month: 1, revenue: 100 },
+    { year: 2024, month: 2, revenue: 120 },
+    { year: 2024, month: 3, revenue: 110 },
+  ],
   application_files: [],
-  user_id: "mock-user-123", // Added missing required property
 };
 
 const mockInitialMessages: ChatMessage[] = [
