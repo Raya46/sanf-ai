@@ -1,8 +1,9 @@
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+import "pdfjs-dist/legacy/build/pdf.worker.mjs";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
-
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject, generateText } from "ai";
 import { AwsClient } from "aws4fetch";
@@ -113,10 +114,41 @@ function truncateText(text: string, maxLength: number): string {
 }
 
 async function extractTextFromFile(file: File): Promise<string> {
-  console.warn(
-    "Using placeholder for text extraction. This only supports plain text."
-  );
-  return file.text();
+  if (file.type !== "application/pdf") {
+    console.warn(`File bukan PDF: ${file.name}. Skipping.`);
+    return "";
+  }
+
+  console.log(`Extracting text from PDF: ${file.name} using pdfjs-dist`);
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    const doc = await pdfjs.getDocument(uint8Array).promise;
+    let allText = "";
+
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      const textContent = await page.getTextContent();
+      
+      const pageText = textContent.items.map(item => {
+          if ('str' in item) {
+              return item.str;
+          }
+          return '';
+      }).join(" ");
+      
+      allText += pageText + "\n";
+    }
+
+    return allText;
+    
+  } catch (error) {
+    console.error(`Gagal memproses PDF ${file.name} dengan pdfjs-dist:`, error);
+    return "";
+  }
 }
 
 // Existing GET function remains unchanged

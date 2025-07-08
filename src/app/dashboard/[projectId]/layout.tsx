@@ -8,8 +8,11 @@ export default async function DashboardLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { projectId: string };
+
+  params: Promise<{ projectId: string }>;
 }) {
+  const { projectId } = await params;
+
   const supabase = await createClient();
 
   const {
@@ -22,7 +25,7 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <AppSidebar variant="inset" user={user} currentProjectId={params.projectId} />
+      <AppSidebar variant="inset" user={user} currentProjectId={projectId} />
       <SidebarInset>{children}</SidebarInset>
     </>
   );
