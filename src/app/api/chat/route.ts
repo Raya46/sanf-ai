@@ -220,24 +220,23 @@ export async function POST(request: NextRequest) {
 
     data.append({ status: "Generating response..." });
 
-    const result = await streamText({
+     const result = await streamText({
       model: openai("gpt-4o-mini"),
       messages: messagesForAI,
       async onFinish(completion) {
-        // 5. Save AI response to database
         await supabase.from("chat_messages").insert({
           session_id: sessionId,
           sender_type: "ai",
           message_content: completion.text,
         });
+
+        // 'onFinish' adalah tempat yang tepat untuk menutup stream
         data.append({ status: "completed" });
         data.close();
       },
     });
 
-    // Pipe the AI stream through our custom data stream
     const stream = result.toDataStream();
-    data.close(); // Close the stream immediately, onFinish will handle DB write
 
     return new NextResponse(stream, {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
