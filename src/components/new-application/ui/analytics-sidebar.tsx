@@ -60,7 +60,7 @@ export function AnalyticsSidebar({
   }, [applicationId]);
 
   return (
-    <div className="sticky top-4 flex flex-col w-1/4 bg-white rounded-lg shadow-lg mr-4 p h-[calc(100vh-2rem)] overflow-y-auto">
+    <div className="sticky top-4 flex flex-col w-1/4 bg-white rounded-lg shadow-lg h-full overflow-y-auto">
       <h1 className="text-center font-bold my-4">Analytics & Status</h1>
       <div className="mx-4 mb-2">
         <Separator />

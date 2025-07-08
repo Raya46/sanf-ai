@@ -175,8 +175,8 @@ export function ChartBarNegative({ data }: ChartBarNegativeProps) {
                   key={item.name}
                   fill={
                     item.revenue >= 0
-                      ? "hsl(var(--chart-1))"
-                      : "hsl(var(--chart-2))"
+                      ? "hsl(210 90% 40%)" // A shade of blue
+                      : "hsl(210 90% 30%)" // A darker shade of blue for negative
                   }
                 />
               ))}

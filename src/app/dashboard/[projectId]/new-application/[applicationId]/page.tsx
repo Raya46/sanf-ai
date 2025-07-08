@@ -2,8 +2,6 @@
 
 import { ChatSection } from "@/components/new-application/ui/chat-section";
 import { AnalyticsSidebar } from "@/components/new-application/ui/analytics-sidebar";
-import { CreditSidebar } from "@/components/new-application/ui/credit-sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { CreditApplication, ChatMessage } from "@/lib/types";
@@ -72,26 +70,21 @@ export default function CreditChat() {
   }, [applicationId]);
 
   return (
-    <div className="bg-gray-200 h-screen">
-      <SidebarProvider>
-        <div className="flex h-full">
-          <CreditSidebar applicationId={applicationId} />
-          <ChatSection
-            activeView={activeView}
-            setActiveView={setActiveView}
-            applicationData={applicationData}
-            isLoadingData={isLoadingData}
-            errorData={errorData}
-            initialMessages={chatMessages}
-            isLoadingChat={isLoadingChat}
-            applicationId={applicationId}
-          />
-          <AnalyticsSidebar
-            applicationId={applicationId}
-            activeView={activeView}
-          />
-        </div>
-      </SidebarProvider>
+    <div className="flex h-screen p-4 gap-4">
+      <ChatSection
+        activeView={activeView}
+        setActiveView={setActiveView}
+        applicationData={applicationData}
+        isLoadingData={isLoadingData}
+        errorData={errorData}
+        initialMessages={chatMessages}
+        isLoadingChat={isLoadingChat}
+        applicationId={applicationId}
+      />
+      <AnalyticsSidebar
+        applicationId={applicationId}
+        activeView={activeView}
+      />
     </div>
   );
 }

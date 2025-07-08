@@ -2,6 +2,7 @@
 import { LogOut, PanelsTopLeft, FilePlus, History } from "lucide-react";
 import Link from "next/link";
 import React from "react";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +17,7 @@ import {
 } from "../ui/sidebar";
 import { logout } from "@/app/auth/actions";
 import { User } from "@supabase/supabase-js";
+import { CreditListFile } from "@/components/new-application/ui/credit-list-file";
 
 const sideBarItems = [
   {
@@ -47,12 +49,8 @@ export function AppSidebar({
   currentProjectId,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { user?: User; currentProjectId?: string }) {
-  const [pathname, setPathname] = React.useState("");
+  const pathname = usePathname();
   const projectId = currentProjectId || props.user?.id; // Prioritize currentProjectId
-
-  React.useEffect(() => {
-    setPathname(window.location.pathname);
-  }, []);
 
   const resolveUrl = (url: string) => {
     if (projectId) {
@@ -84,45 +82,55 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarMenu>
-            {sideBarItems.map((item) => {
-              const resolvedUrl = resolveUrl(item.url);
-              return (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === resolvedUrl}
-                    className="group hover:bg-blue-50 duration-200 focus:text-primary data-[active=true]:text-primary"
-                  >
-                    <Link href={resolvedUrl}>
-                      <div
-                        className={`w-8 h-8 group ${
-                          pathname === resolvedUrl
-                            ? "bg-blue-600"
-                            : "bg-blue-500 hover:bg-blue-600"
-                        } justify-center items-center flex rounded-lg transition-colors duration-200`}
-                      >
-                        {item.icon && (
-                          <item.icon className="h-5 w-5 text-white" />
-                        )}
-                      </div>
-                      <span
-                        className={`text-sm ${
-                          pathname === resolvedUrl
-                            ? "text-blue-600"
-                            : "text-gray-700 hover:text-blue-600"
-                        } font-medium`}
-                      >
-                        {item.title}
-                      </span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
-          </SidebarMenu>
-        </SidebarGroup>
+        {pathname.includes("/new-application/") && pathname.split("/").length > 4 ? (
+          <SidebarGroup>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <CreditListFile applicationId={pathname.split("/")[4]} />
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+        ) : (
+          <SidebarGroup>
+            <SidebarMenu>
+              {sideBarItems.map((item) => {
+                const resolvedUrl = resolveUrl(item.url);
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === resolvedUrl}
+                      className="group hover:bg-blue-50 duration-200 focus:text-primary data-[active=true]:text-primary"
+                    >
+                      <Link href={resolvedUrl}>
+                        <div
+                          className={`w-8 h-8 group ${
+                            pathname === resolvedUrl
+                              ? "bg-blue-600"
+                              : "bg-blue-500 hover:bg-blue-600"
+                          } justify-center items-center flex rounded-lg transition-colors duration-200`}
+                        >
+                          {item.icon && (
+                            <item.icon className="h-5 w-5 text-white" />
+                          )}
+                        </div>
+                        <span
+                          className={`text-sm ${
+                            pathname === resolvedUrl
+                              ? "text-blue-600"
+                              : "text-gray-700 hover:text-blue-600"
+                          } font-medium`}
+                        >
+                          {item.title}
+                        </span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wide text-gray-500">
