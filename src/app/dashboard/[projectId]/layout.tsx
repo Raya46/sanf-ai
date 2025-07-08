@@ -25,7 +25,6 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <AppSidebar variant="inset" user={user} currentProjectId={projectId} />
       <SidebarInset>{children}</SidebarInset>
     </>
   );

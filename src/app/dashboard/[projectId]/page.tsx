@@ -1,5 +1,4 @@
-import { SiteHeader } from "@/components/app/app-header";
-import { DashboardClient } from "@/components/app/dashboard-client";
+import { FinancialDashboard } from "@/components/dashboard/financial-dashboard";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -14,10 +13,5 @@ export default async function DashboardPage() {
     return redirect("/login");
   }
 
-  return (
-    <>
-      <SiteHeader />
-      <DashboardClient />
-    </>
-  );
+  return <FinancialDashboard />;
 }
