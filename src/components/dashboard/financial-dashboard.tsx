@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState } from "react";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
@@ -10,12 +10,27 @@ import { KeyRatiosSection } from "@/components/dashboard/key-ratios-section";
 import { MainChart } from "@/components/dashboard/main-chart";
 import { ChatSection } from "@/components/new-application/ui/chat-section";
 import { type ChatMessage, type CreditApplication } from "@/lib/types";
-import { type ActiveView } from "@/app/dashboard/[projectId]/new-application/[applicationId]/page";
+import { type ActiveView } from "@/app/dashboard/[projectId]/chat/[applicationId]/page";
 
 const mainMetrics = [
-  { label: "Total Revenue", value: "$12,405,134.65", hasInfo: true, trend: "negative" as const },
-  { label: "Gross Profit", value: "$8,195,001.05", hasInfo: true, trend: "positive" as const },
-  { label: "Operating Expenses", value: "$2,085,606.14", hasInfo: true, trend: "positive" as const },
+  {
+    label: "Total Revenue",
+    value: "$12,405,134.65",
+    hasInfo: true,
+    trend: "negative" as const,
+  },
+  {
+    label: "Gross Profit",
+    value: "$8,195,001.05",
+    hasInfo: true,
+    trend: "positive" as const,
+  },
+  {
+    label: "Operating Expenses",
+    value: "$2,085,606.14",
+    hasInfo: true,
+    trend: "positive" as const,
+  },
 ];
 
 const performanceCards = [
@@ -42,10 +57,12 @@ const mockApplicationData: CreditApplication = {
   user_id: "mock-user-123",
   status: "approved",
   analysis_template: "standard",
-  risk_appetite: 0.7,
+  risk_appetite: 70, // Changed to number as per type
+  company_type: "Productive", // Added new field
+  amount: 1000000, // Added new field
   ai_analysis_status: "completed",
-  probability_approval: 0.8,
-  overall_indicator: "green",
+  probability_approval: 80, // Changed to number as per type
+  overall_indicator: "MEDIUM_RISK", // Changed to string as per type
   document_validation_percentage: 100,
   estimated_analysis_time_minutes: 5,
   revenue: [
@@ -54,6 +71,7 @@ const mockApplicationData: CreditApplication = {
     { year: 2024, month: 3, revenue: 110 },
   ],
   application_files: [],
+  ai_analysis: "This is a mock AI analysis report.", // Added new field
 };
 
 const mockInitialMessages: ChatMessage[] = [
@@ -66,8 +84,10 @@ const mockInitialMessages: ChatMessage[] = [
 
 export function FinancialDashboard() {
   const [activeTab, setActiveTab] = useState("income-statements");
-  const [activeView, setActiveView] = useState<ActiveView>("credit-application");
-  const [initialMessages, setInitialMessages] = useState<ChatMessage[]>(mockInitialMessages);
+  const [activeView, setActiveView] =
+    useState<ActiveView>("credit-application");
+  const [initialMessages, setInitialMessages] =
+    useState<ChatMessage[]>(mockInitialMessages);
 
   return (
     <DashboardLayout>
@@ -75,7 +95,9 @@ export function FinancialDashboard() {
 
       <div className="flex-1 p-6 space-y-8">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Financial Analysis</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Financial Analysis
+          </h1>
           <h2 className="text-4xl font-bold text-gray-900 mb-8">Company</h2>
         </div>
 
@@ -109,7 +131,8 @@ export function FinancialDashboard() {
 
           {/* Main Chart */}
           <div className="lg:col-span-2">
-            <MainChart period={activeTab} onPeriodChange={setActiveTab} /> {/* Using activeTab for period */}
+            <MainChart period={activeTab} onPeriodChange={setActiveTab} />{" "}
+            {/* Using activeTab for period */}
           </div>
 
           {/* Right Sidebar - Replaced with ChatSection */}

@@ -82,6 +82,13 @@ const analysisSchema = z.object({
     .describe(
       "An array of calculated monthly revenue data for up to the last 36 months based on financial documents. Extract as much monthly data as is available."
     ),
+  company_type: z
+    .string()
+    .describe(
+      "A string to make type for company example:(Heavy Equipment, Trucking, Productive, New Business "
+    ),
+  amount: z.number().describe("An amount from company to analyze credit"),
+  analysis_template: z.string(),
 });
 
 export interface CloudflareEnv {
@@ -174,6 +181,8 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const analysis_template = formData.get("analysis_template") as string;
     const risk_appetite = parseInt(formData.get("risk_appetite") as string);
+    const company_type = formData.get("company_type") as string;
+    const amount = parseFloat(formData.get("amount") as string);
     const files = formData.getAll("files") as File[];
 
     if (!files || files.length === 0) {
@@ -191,7 +200,7 @@ export async function POST(request: NextRequest) {
       {
         type: "text",
         text: `You are an expert credit analyst AI. Analyze the provided financial documents (sent as image/file objects) for a loan application.
-         The user has selected the "${analysis_template}" template and has a risk appetite of ${risk_appetite}%.
+         The user has selected the "${analysis_template}" template, has a risk appetite of ${risk_appetite}%, the company type is "${company_type}", and the requested amount is ${amount}.
          Your tasks are:
          1. Generate a comprehensive creditworthiness analysis report in **pure HTML format**. This report must start with a concise summary (2-3 sentences) of the credit application, highlighting key findings like approval probability and risk indicator. Use appropriate HTML tags for headings (<h1>, <h2>), paragraphs (<p>), bold text (<b> or <strong>), italic text (<i> or <em>), and lists (<ul>, <ol>, <li>). Ensure proper line breaks and spacing using HTML tags like <br> or by structuring content within block-level elements. **Do NOT use Markdown syntax (e.g., **bold**, *italic*, - list item**) in the output.** The entire report should be a single, well-formed HTML string, suitable for direct display or export.
          2. Provide a general creditworthiness analysis (approval probability, risk, document validity).
@@ -242,6 +251,8 @@ export async function POST(request: NextRequest) {
         status: "completed",
         analysis_template,
         risk_appetite,
+        company_type,
+        amount,
         ai_analysis_status: analysisResult.ai_analysis_status,
         probability_approval: analysisResult.probability_approval,
         overall_indicator: analysisResult.overall_indicator,

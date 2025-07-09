@@ -3,6 +3,7 @@ import { Download, Plus, X, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import { CardDescription } from "../ui/card";
+import { Input } from "../ui/input"; // Re-add Input import
 import {
   Select,
   SelectContent,
@@ -31,7 +32,7 @@ interface StagedFile {
   docType: string;
 }
 
-export function SectionForm({ projectId }: { projectId: string }) {
+export function SectionForm() {
   const [user, setUser] = useState<User | null>(null);
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,6 +43,8 @@ export function SectionForm({ projectId }: { projectId: string }) {
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [selectedDocType, setSelectedDocType] = useState("pdf"); // Default to PDF
   const [riskAppetite, setRiskAppetite] = useState([50]); // Default to 50%
+  const [companyType, setCompanyType] = useState("");
+  const [amount, setAmount] = useState<number | "">("");
 
   // Original form fields (might be integrated into steps or removed)
 
@@ -135,19 +138,17 @@ export function SectionForm({ projectId }: { projectId: string }) {
     setIsModalOpen(true); // Open the loading modal
 
     try {
-      // 1. Create a single FormData object for everything
       const formData = new FormData();
 
-      // 2. Append all form fields, including new ones
       formData.append("analysis_template", selectedTemplate);
       formData.append("risk_appetite", riskAppetite[0].toString()); // Slider value is an array
+      formData.append("company_type", companyType);
+      formData.append("amount", amount.toString());
 
-      // 3. Append all staged files under the same key 'files'
       for (const stagedFile of stagedFiles) {
         formData.append("files", stagedFile.file);
       }
 
-      // 4. Send a single request to the new unified endpoint
       const response = await fetch("/api/applications", {
         method: "POST",
         body: formData, // No 'Content-Type' header needed, browser sets it for FormData
@@ -166,15 +167,13 @@ export function SectionForm({ projectId }: { projectId: string }) {
 
       if (result.success && result.applicationId) {
         router.push(
-          `/dashboard/${projectId}/new-application/${result.applicationId}`
+          `/dashboard/${result.applicationId}/chat/${result.applicationId}`
         );
       } else {
         console.error("Submission failed with error:", result.error);
-        // TODO: Show an error message to the user
       }
     } catch (error) {
       console.error("An error occurred during submission:", error);
-      // TODO: Show a generic error message to the user
     } finally {
       setIsSubmitting(false);
       setIsModalOpen(false); // Close the loading modal
@@ -191,7 +190,6 @@ export function SectionForm({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex flex-col gap-8 mt-4 mx-4 flex-1">
-      {/* Step 1: Choose Credit Analysis Template */}
       {currentStep === 1 && (
         <div className="flex flex-col gap-4 w-full flex-1">
           <h1 className="text-2xl font-bold">
@@ -223,8 +221,41 @@ export function SectionForm({ projectId }: { projectId: string }) {
               </SelectItem>
             </SelectContent>
           </Select>
+
+          <p>Company Type</p>
+          <Select onValueChange={setCompanyType} value={companyType}>
+            <SelectTrigger className="w-full" aria-label="Select company type">
+              <SelectValue placeholder="Select company type" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="Heavy Equipment" className="rounded-lg">
+                Heavy Equipment
+              </SelectItem>
+              <SelectItem value="Trucking" className="rounded-lg">
+                Trucking
+              </SelectItem>
+              <SelectItem value="Productive" className="rounded-lg">
+                Productive
+              </SelectItem>
+              <SelectItem value="New Business" className="rounded-lg">
+                New Business
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          <p>Amount</p>
+          <Input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(parseFloat(e.target.value) || "")}
+            placeholder="Enter amount"
+          />
+
           <div className="flex justify-end">
-            <Button onClick={handleNextStep} disabled={!selectedTemplate}>
+            <Button
+              onClick={handleNextStep}
+              disabled={!selectedTemplate || !companyType || amount === ""}
+            >
               Next
             </Button>
           </div>

@@ -69,10 +69,27 @@ export async function POST(
       apiKey: env.OPENAI_API_KEY,
     });
 
+    // Fetch application data to get company_type and amount
+    const { data: application, error: appError } = await supabase
+      .from("credit_applications")
+      .select("company_type, amount")
+      .eq("id", applicationId)
+      .single();
+
+    if (appError || !application) {
+      console.error(
+        "Error fetching application data for enhancement:",
+        appError
+      );
+      return new Response("Application data not found", { status: 404 });
+    }
+
+    const { company_type, amount } = application;
+
     const messagesForAI: CoreMessage[] = [
       {
         role: "system",
-        content: `You are an AI assistant tasked with enhancing a credit analysis report. The current report content is provided. Enhance it based on the user's prompt. Only output the enhanced report content in **pure HTML format**. Ensure proper line breaks and spacing using HTML tags like <br> or by structuring content within block-level elements. Do NOT use Markdown syntax (e.g., **bold**, *italic*, - list item) in the output.`,
+        content: `You are an AI assistant tasked with enhancing a credit analysis report. The current report content is provided. The company type is "${company_type}" and the requested amount is ${amount}. Enhance the report based on the user's prompt. Only output the enhanced report content in **pure HTML format**. Ensure proper line breaks and spacing using HTML tags like <br> or by structuring content within block-level elements. Do NOT use Markdown syntax (e.g., **bold**, *italic*, - list item) in the output.`,
       },
       {
         role: "assistant",
