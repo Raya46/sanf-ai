@@ -46,7 +46,10 @@ export function SectionForm() {
   const [companyType, setCompanyType] = useState("");
   const [amount, setAmount] = useState<number | "">("");
 
-  // Original form fields (might be integrated into steps or removed)
+  // Original form fields
+  const [companyName, setCompanyName] = useState("");
+  const [contactPerson, setContactPerson] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
 
   // Loading modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -144,6 +147,9 @@ export function SectionForm() {
       formData.append("risk_appetite", riskAppetite[0].toString()); // Slider value is an array
       formData.append("company_type", companyType);
       formData.append("amount", amount.toString());
+      formData.append("company_name", companyName);
+      formData.append("contact_person", contactPerson);
+      formData.append("contact_email", contactEmail);
 
       for (const stagedFile of stagedFiles) {
         formData.append("files", stagedFile.file);
@@ -251,10 +257,38 @@ export function SectionForm() {
             placeholder="Enter amount"
           />
 
+          <p>Company Name</p>
+          <Input
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            placeholder="Enter company name"
+          />
+
+          <p>Contact Person</p>
+          <Input
+            value={contactPerson}
+            onChange={(e) => setContactPerson(e.target.value)}
+            placeholder="Enter contact person name"
+          />
+
+          <p>Contact Email</p>
+          <Input
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            placeholder="Enter contact email"
+          />
+
           <div className="flex justify-end">
             <Button
               onClick={handleNextStep}
-              disabled={!selectedTemplate || !companyType || amount === ""}
+              disabled={
+                !selectedTemplate ||
+                !companyType ||
+                amount === "" ||
+                companyName.trim() === "" ||
+                contactPerson.trim() === "" ||
+                contactEmail.trim() === ""
+              }
             >
               Next
             </Button>

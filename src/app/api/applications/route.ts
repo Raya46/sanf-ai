@@ -182,6 +182,9 @@ export async function POST(request: NextRequest) {
     const analysis_template = formData.get("analysis_template") as string;
     const risk_appetite = parseInt(formData.get("risk_appetite") as string);
     const company_type = formData.get("company_type") as string;
+    const company_name = formData.get("company_name") as string;
+    const contact_person = formData.get("contact_person") as string;
+    const contact_email = formData.get("contact_email") as string;
     const amount = parseFloat(formData.get("amount") as string);
     const files = formData.getAll("files") as File[];
 
@@ -253,6 +256,9 @@ export async function POST(request: NextRequest) {
         risk_appetite,
         company_type,
         amount,
+        company_name,
+        contact_person,
+        contact_email,
         ai_analysis_status: analysisResult.ai_analysis_status,
         probability_approval: analysisResult.probability_approval,
         overall_indicator: analysisResult.overall_indicator,

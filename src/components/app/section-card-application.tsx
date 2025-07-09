@@ -16,7 +16,7 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>Total Revenue</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            $1,250.00
+            Rp 1.250.000
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -38,7 +38,7 @@ export function SectionCards() {
         <CardHeader>
           <CardDescription>New Customers</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            1,234
+            1.234
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
