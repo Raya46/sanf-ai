@@ -213,7 +213,10 @@ export default function Component() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6 mb-8">
-          <Button className="bg-slate-900 hover:bg-slate-800 text-white border-slate-300 w-fit">
+          <Button
+            onClick={() => router.push("/dashboard/new-application")}
+            className="bg-slate-900 hover:bg-slate-800 text-white border-slate-300 w-fit"
+          >
             <Plus className="w-4 h-4 mr-2" />
             New Analysis
           </Button>

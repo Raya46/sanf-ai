@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Sparkles, Download, User, LogOut } from "lucide-react";
+import { Sparkles, Download, User, LogOut, ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { logout } from "@/app/auth/actions";
 
@@ -15,11 +15,16 @@ export function DashboardHeader() {
   };
 
   const navigateToCreditAnalystAI = () => {
-    router.push(`/dashboard/${placeholderProjectId}/new-application/${placeholderApplicationId}`);
+    router.push(
+      `/dashboard/${placeholderProjectId}/chat/${placeholderApplicationId}`
+    );
   };
 
   return (
-    <header className="flex items-center justify-end p-4 bg-white border-b border-gray-200">
+    <header className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+      <Button onClick={() => router.push("/")}>
+        <ChevronLeft />
+      </Button>
       <div className="flex items-center gap-3">
         <Button className="bg-blue-500 hover:bg-blue-600 text-white">
           <Sparkles className="w-4 h-4 mr-2" />

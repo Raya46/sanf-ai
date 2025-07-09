@@ -116,10 +116,6 @@ export function PdfExportModal({
       }
 
       onClose();
-      // Redirect to dashboard/projectId
-      if (applicationData?.user_id) {
-        router.push(`/dashboard/${applicationData.user_id}/application`);
-      }
     } catch (error) {
       console.error("Error updating AI analysis:", error);
       // TODO: Show error to user

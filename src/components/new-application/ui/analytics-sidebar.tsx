@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PdfExportModal } from "./pdf-export-modal";
 
 import { CreditApplication } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 interface AnalyticsSidebarProps {
   activeView: "credit-application" | "macroeconomics";
@@ -30,6 +31,7 @@ export function AnalyticsSidebar({
     useState<CreditApplication | null>(null);
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     if (!applicationId) {
@@ -139,12 +141,18 @@ export function AnalyticsSidebar({
                 <p>Lihat Laporan Lengkap</p>
               </div>
               <Button
-                className="bg-blue-600 flex flex-row mx-4 mb-4"
+                className="bg-blue-600 flex flex-row mx-4"
                 onClick={() => setIsModalOpen(true)}
                 disabled={!applicationData}
               >
                 <Download className="w-4 h-4" />
                 <span>Ekspor PDF</span>
+              </Button>
+              <Button
+                className="mx-4"
+                onClick={() => router.push(`/dashboard/${applicationId}`)}
+              >
+                <span>Dashboard</span>
               </Button>
             </div>
           )}

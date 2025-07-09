@@ -1,0 +1,18 @@
+{
+  "/api/applications/[id]/chat/route": "/api/applications/[id]/chat",
+  "/_not-found/page": "/_not-found",
+  "/api/applications/[id]/enhance-ai/route": "/api/applications/[id]/enhance-ai",
+  "/api/applications/[id]/route": "/api/applications/[id]",
+  "/api/applications/route": "/api/applications",
+  "/api/applications/stats/route": "/api/applications/stats",
+  "/api/chat/route": "/api/chat",
+  "/api/macroeconomics/route": "/api/macroeconomics",
+  "/favicon.ico/route": "/favicon.ico",
+  "/login/page": "/login",
+  "/dashboard/new-application/page": "/dashboard/new-application",
+  "/page": "/",
+  "/register/page": "/register",
+  "/dashboard/[projectId]/application/page": "/dashboard/[projectId]/application",
+  "/dashboard/[projectId]/page": "/dashboard/[projectId]",
+  "/dashboard/[projectId]/chat/[applicationId]/page": "/dashboard/[projectId]/chat/[applicationId]"
+}
