@@ -49,7 +49,12 @@ export function StepSegmentationTemplate({
     const params = riskParametersData[selectedTemplate] || {};
     setEditableParams(Object.entries(params));
     setRiskParameters(params);
-  }, [selectedTemplate, setRiskParameters]); // Hanya bergantung pada selectedTemplate
+  }, [
+    selectedTemplate,
+    setRiskParameters,
+    requiredDocuments,
+    riskParametersData,
+  ]);
 
   const handleDocChange = (
     index: number,

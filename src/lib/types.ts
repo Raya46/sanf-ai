@@ -17,6 +17,11 @@ export interface ChatMessage {
   message_content: string;
 }
 
+export interface KeyRatioData {
+  ratio: number;
+  target: number;
+}
+
 export interface CreditApplication {
   id: string;
   created_at: string;
@@ -32,6 +37,10 @@ export interface CreditApplication {
   document_validation_percentage: number;
   estimated_analysis_time_minutes: number;
   revenue: RevenueData[];
+  gross_profit: number;
+  operating_expenses: number;
+  ebitda: number;
   application_files: ApplicationFile[];
   ai_analysis?: string; // New field for the full AI analysis report
+  key_ratios?: Record<string, KeyRatioData>; // New field for key ratios
 }

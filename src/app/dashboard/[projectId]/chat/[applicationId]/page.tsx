@@ -81,10 +81,7 @@ export default function CreditChat() {
         isLoadingChat={isLoadingChat}
         applicationId={applicationId}
       />
-      <AnalyticsSidebar
-        applicationId={applicationId}
-        activeView={activeView}
-      />
+      <AnalyticsSidebar applicationId={applicationId} activeView={activeView} />
     </div>
   );
 }

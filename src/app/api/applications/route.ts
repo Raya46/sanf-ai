@@ -26,25 +26,14 @@ const s3 = new AwsClient({
   region: "auto",
 });
 
-// --- Skema Zod untuk Analisis AI (Final) ---
-
-// Skema untuk satu rasio keuangan
 const RatioSchema = z.object({
-  average_value: z
+  target: z.number().describe("The target or benchmark value for this ratio."),
+  ratio: z
     .number()
-    .describe("The average industry benchmark value for this ratio."),
-  credit_applicant_value: z
-    .number()
-    .describe("The calculated value of this ratio for the credit applicant."),
-  comparison: z
-    .object({
-      average: z.number(),
-      applicant: z.number(),
-    })
-    .describe("A comparison object, often used for charting purposes."),
+    .describe("The applicant's calculated value for this ratio."),
 });
 
-// Skema utama yang mendefinisikan output dari AI
+// Skema utama yang menggunakan RatioSchema baru
 const analysisSchema = z.object({
   ai_analysis_status: z
     .string()
@@ -76,7 +65,7 @@ const analysisSchema = z.object({
     .describe(
       "Estimated time in minutes for a human to perform a similar analysis."
     ),
-  revenue_analysis: z
+  revenue: z
     .array(
       z.object({
         year: z.number().describe("The year for the revenue data point."),
@@ -85,27 +74,18 @@ const analysisSchema = z.object({
       })
     )
     .max(36)
-    .describe("An array of monthly revenue data for up to 36 months."),
+    .describe("An array of monthly revenue data for up to the last 36 months."),
 
-  // PERMINTAAN BARU: AI harus mengekstrak data ini
-  risk_appetite: z
-    .number()
-    .describe(
-      "Extract the risk appetite value defined by the user if available, otherwise use a default of 50."
-    ),
+  risk_appetite: z.number().describe("The risk appetite value."),
   operating_expenses: z
     .number()
-    .describe(
-      "Extract the total operating expenses from the financial statements."
-    ),
+    .describe("The total operating expenses from the financial statements."),
   gross_profit: z
     .number()
-    .describe("Extract the gross profit from the financial statements."),
-  ebitda: z
-    .number()
-    .describe("Extract or calculate the EBITDA from the financial statements."),
+    .describe("The gross profit from the financial statements."),
+  ebitda: z.number().describe("The EBITDA from the financial statements."),
 
-  // PERMINTAAN REVISI: Struktur JSONB baru untuk key_ratios
+  // Bagian ini sekarang menggunakan RatioSchema yang baru
   key_ratios: z
     .object({
       quick_ratio: RatioSchema,
@@ -193,9 +173,6 @@ export async function POST(request: NextRequest) {
     const contact_person = formData.get("contact_person") as string;
     const contact_email = formData.get("contact_email") as string;
     const amount = parseFloat(formData.get("amount") as string);
-    const risk_appetite_input = parseFloat(
-      formData.get("risk_appetite") as string
-    );
     const risk_parameters = formData.get("risk_parameters") as string;
     const ai_context = formData.get("ai_context") as string;
     const files = formData.getAll("files") as File[];
@@ -220,11 +197,15 @@ export async function POST(request: NextRequest) {
         company_name,
         contact_person,
         contact_email,
-        risk_appetite: risk_appetite_input, // Simpan input user awal
         risk_parameters: JSON.parse(risk_parameters),
       })
       .select("id")
       .single();
+
+    await supabase.from("chat_sessions").insert({
+      application_id: application?.id,
+      user_id: user.id,
+    });
 
     if (initialInsertError) {
       console.error("Error creating initial application:", initialInsertError);
@@ -245,13 +226,13 @@ export async function POST(request: NextRequest) {
       {
         type: "text",
         text: `You are a world-class credit analyst AI. Analyze the provided documents for a loan application.
-        - Initial User Inputs: Company Name: ${company_name}, Template: ${analysis_template}, Amount: ${amount}, Risk Appetite: ${risk_appetite_input}%, Custom Risk Parameters: ${risk_parameters}.
+        - Initial User Inputs: Company Name: ${company_name}, Template: ${analysis_template}, Amount: ${amount}, Custom Risk Parameters: ${risk_parameters}.
         - Additional User Context: ${ai_context || "None"}
         
         Your tasks are:
         1.  Generate a comprehensive analysis report in **pure HTML format**.
         2.  Calculate and provide all financial metrics and ratios as defined in the schema, including operating expenses, gross profit, EBITDA, and all key ratios.
-        3.  Provide all other requested data points like approval probability and risk indicators.
+        3.  Provide all other requested data points like approval probability and risk indicators, and generate a risk_appetite value based on the provided risk_parameters.
         Analyze the following document(s) to fulfill these tasks:`,
       },
     ];
@@ -306,13 +287,13 @@ export async function POST(request: NextRequest) {
           analysisResult.document_validation_percentage,
         estimated_analysis_time_minutes:
           analysisResult.estimated_analysis_time_minutes,
-        revenue_analysis: analysisResult.revenue_analysis,
+        revenue: analysisResult.revenue,
         ai_analysis: analysisResult.ai_analysis,
-        // Menyimpan data finansial hasil ekstraksi AI
         operating_expenses: analysisResult.operating_expenses,
         gross_profit: analysisResult.gross_profit,
         ebitda: analysisResult.ebitda,
         key_ratios: analysisResult.key_ratios,
+        risk_appetite: analysisResult.risk_appetite, // Update risk_appetite with AI generated value
       })
       .eq("id", application.id);
 

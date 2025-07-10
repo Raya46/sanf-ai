@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import {
@@ -12,7 +12,7 @@ import {
   Tooltip,
   ReferenceLine,
   Bar,
-  Line,
+  Customized,
 } from "recharts";
 
 interface FinancialCandlestickData {
@@ -23,25 +23,28 @@ interface FinancialCandlestickData {
   endValue: number;
 }
 
-const chartData: FinancialCandlestickData[] = [
-  { period: "Jan 2025", startValue: 100, maxValue: 120, minValue: 90, endValue: 110 },
-  { period: "Feb 2025", startValue: 110, maxValue: 130, minValue: 105, endValue: 125 },
-  { period: "Mar 2025", startValue: 125, maxValue: 115, minValue: 95, endValue: 100 },
-  { period: "Apr 2025", startValue: 100, maxValue: 110, minValue: 98, endValue: 108 },
-  { period: "May 2025", startValue: 108, maxValue: 128, minValue: 100, endValue: 120 },
-  { period: "Jun 2025", startValue: 120, maxValue: 110, minValue: 90, endValue: 95 },
-  { period: "Jul 2025", startValue: 95, maxValue: 105, minValue: 85, endValue: 100 },
-];
-
 const periods = [
   { id: "annually", label: "Annually" },
   { id: "quarterly", label: "Quarterly" },
   { id: "monthly", label: "Monthly" },
 ];
 
+interface CustomCandlestickProps {
+  data: FinancialCandlestickData[];
+  xAxisMap: Record<string, { scale: (value: any) => number }>;
+  yAxisMap: Record<string, { scale: (value: any) => number }>;
+  offset: any;
+  height: number;
+}
+
 interface MainChartProps {
   period: string;
   onPeriodChange: (period: string) => void;
+  revenueData: {
+    year: number;
+    month: number;
+    revenue: number;
+  }[];
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -59,41 +62,160 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   }
   return null;
 };
+const CustomCandlestick = ({
+  data,
+  xAxisMap,
+  yAxisMap,
+  offset,
+}: CustomCandlestickProps) => {
+  const xAxis = Object.values(xAxisMap)[0];
+  const yAxis = Object.values(yAxisMap)[0];
 
-const CustomCandlestick = (props: any) => {
-  const { x, y, width, startValue, maxValue, minValue, endValue } = props;
-
-  const isRising = endValue > startValue;
-  const color = isRising ? "#10B981" : "#EF4444"; // Green for up, Red for down
-
-  const rectY = Math.min(startValue, endValue);
-  const rectHeight = Math.abs(startValue - endValue);
+  const xScale = xAxis.scale;
+  const yScale = yAxis.scale;
+  const barWidth = 10;
 
   return (
     <g>
-      {/* Line for high and low */}
-      <line
-        x1={x + width / 2}
-        y1={maxValue}
-        x2={x + width / 2}
-        y2={minValue}
-        stroke={color}
-        strokeWidth={1}
-      />
-      {/* Rectangle for open and close */}
-      <rect
-        x={x}
-        y={rectY}
-        width={width}
-        height={rectHeight}
-        fill={color}
-        stroke={color}
-      />
+      {data.map((entry, index) => {
+        const x = xScale(entry.period) - barWidth / 2;
+        const yStart = yScale(entry.startValue);
+        const yEnd = yScale(entry.endValue);
+        const yHigh = yScale(entry.maxValue);
+        const yLow = yScale(entry.minValue);
+
+        const rectY = Math.min(yStart, yEnd);
+        const rectHeight = Math.abs(yStart - yEnd) || 1;
+        const isRising = entry.endValue > entry.startValue;
+        const color = isRising ? "#10B981" : "#EF4444";
+
+        return (
+          <g key={`candlestick-${index}`}>
+            <line
+              x1={x + barWidth / 2}
+              y1={yHigh}
+              x2={x + barWidth / 2}
+              y2={yLow}
+              stroke={color}
+              strokeWidth={1}
+            />
+            <rect
+              x={x}
+              y={rectY}
+              width={barWidth}
+              height={rectHeight}
+              fill={color}
+              stroke={color}
+            />
+          </g>
+        );
+      })}
     </g>
   );
 };
 
-export function MainChart({ period, onPeriodChange }: MainChartProps) {
+export function MainChart({
+  period,
+  onPeriodChange,
+  revenueData,
+}: MainChartProps) {
+  const normalizePeriod = (p: string): "annually" | "quarterly" | "monthly" => {
+    if (p === "annually" || p === "quarterly" || p === "monthly") return p;
+    return "monthly";
+  };
+
+  const transformRevenueToCandlestick = (
+    data: { year: number; month: number; revenue: number }[]
+  ): FinancialCandlestickData[] => {
+    return data.map((item, index, array) => {
+      const prev = array[index - 1]?.revenue ?? item.revenue;
+      const next = array[index + 1]?.revenue ?? item.revenue;
+
+      return {
+        period: `${item.year}-${String(item.month).padStart(2, "0")}`,
+        startValue: prev,
+        maxValue: Math.max(prev, item.revenue, next),
+        minValue: Math.min(prev, item.revenue, next),
+        endValue: item.revenue,
+      };
+    });
+  };
+
+  const getFilteredData = useCallback(
+    (p: string) => {
+      const transformed = transformRevenueToCandlestick(revenueData);
+
+      if (p === "annually") {
+        const grouped = Object.values(
+          transformed.reduce(
+            (acc, curr) => {
+              const year = curr.period.split("-")[0];
+              if (!acc[year]) acc[year] = [];
+              acc[year].push(curr);
+              return acc;
+            },
+            {} as Record<string, FinancialCandlestickData[]>
+          )
+        ).map((yearGroup) => {
+          const first = yearGroup[0];
+          const last = yearGroup[yearGroup.length - 1];
+          return {
+            period: first.period.split("-")[0],
+            startValue: first.startValue,
+            endValue: last.endValue,
+            maxValue: Math.max(...yearGroup.map((d) => d.maxValue)),
+            minValue: Math.min(...yearGroup.map((d) => d.minValue)),
+          };
+        });
+        return grouped;
+      }
+
+      if (p === "quarterly") {
+        const quarters = ["Q1", "Q2", "Q3", "Q4"];
+        const grouped = Object.values(
+          transformed.reduce(
+            (acc, curr) => {
+              const [year, month] = curr.period.split("-").map(Number);
+              const quarter = Math.ceil(month / 3);
+              const key = `${year} ${quarters[quarter - 1]}`;
+              if (!acc[key]) acc[key] = [];
+              acc[key].push(curr);
+              return acc;
+            },
+            {} as Record<string, FinancialCandlestickData[]>
+          )
+        ).map((group) => {
+          const first = group[0];
+          const last = group[group.length - 1];
+          return {
+            period: `${first.period.split("-")[0]} Q${Math.ceil(
+              Number(first.period.split("-")[1]) / 3
+            )}`,
+            startValue: first.startValue,
+            endValue: last.endValue,
+            maxValue: Math.max(...group.map((d) => d.maxValue)),
+            minValue: Math.min(...group.map((d) => d.minValue)),
+          };
+        });
+        return grouped;
+      }
+
+      return transformed; // default to monthly
+    },
+    [revenueData]
+  );
+
+  const chartData = useMemo(
+    () => getFilteredData(normalizePeriod(period)),
+    [period, getFilteredData]
+  );
+
+  const averageRevenue =
+    chartData.reduce(
+      (sum: number, item: FinancialCandlestickData) => sum + item.endValue,
+      0
+    ) / chartData.length || 0;
+
   return (
     <div className="bg-white rounded-lg p-6 border border-gray-200">
       <div className="flex items-center justify-between mb-6">
@@ -101,11 +223,11 @@ export function MainChart({ period, onPeriodChange }: MainChartProps) {
           {periods.map((p) => (
             <Button
               key={p.id}
-              variant={period === p.id ? "default" : "ghost"}
+              variant={normalizePeriod(period) === p.id ? "default" : "ghost"}
               size="sm"
               onClick={() => onPeriodChange(p.id)}
               className={
-                period === p.id
+                normalizePeriod(period) === p.id
                   ? "bg-blue-500 hover:bg-blue-600 text-white text-xs"
                   : "text-gray-600 hover:text-gray-900 text-xs"
               }
@@ -137,16 +259,28 @@ export function MainChart({ period, onPeriodChange }: MainChartProps) {
               textAnchor="end"
               height={80}
             />
-            <YAxis tick={{ fill: "#4B5563", fontSize: 12 }} domain={["dataMin - 10", "dataMax + 10"]} />
+            <YAxis
+              tick={{ fill: "#4B5563", fontSize: 12 }}
+              domain={["auto", "auto"]}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <ReferenceLine y={105} stroke="red" strokeDasharray="3 3" label="Avg" />
-            <Bar
-              dataKey="endValue"
-              shape={<CustomCandlestick />}
-              isAnimationActive={true}
-              animationBegin={0}
-              animationDuration={300}
-              animationEasing="ease-out"
+            <ReferenceLine
+              y={averageRevenue}
+              stroke="red"
+              strokeDasharray="3 3"
+              label="Avg"
+            />
+            <Bar dataKey="endValue" fill="transparent" />
+            <Customized
+              component={(props: any) => (
+                <CustomCandlestick
+                  data={chartData}
+                  xAxisMap={props.xAxisMap}
+                  yAxisMap={props.yAxisMap}
+                  offset={props.offset}
+                  height={props.height}
+                />
+              )}
             />
           </ComposedChart>
         </ResponsiveContainer>

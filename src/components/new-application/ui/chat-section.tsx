@@ -41,8 +41,7 @@ export function ChatSection({
 
   const { messages, input, handleInputChange, handleSubmit, isLoading, data } =
     useChat({
-      api: "/api/chat",
-      body: { applicationId },
+      api: `/api/applications/${applicationId}/chat`,
       initialMessages: formattedInitialMessages,
     });
 

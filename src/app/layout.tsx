@@ -2,10 +2,16 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import Providers from "./providers";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+// const inter = Inter({
+//   variable: "--font-inter",
+//   subsets: ["latin"],
+// });
+
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
 });
 
@@ -21,7 +27,7 @@ export default async function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} antialiased`}>
+      <body className={`${manrope.variable} font-sans antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>
