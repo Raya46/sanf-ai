@@ -10,28 +10,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 
-interface StepCompanyDataProps {
-  companyName: string;
-  setCompanyName: (name: string) => void;
-  companyAddress: string;
-  setCompanyAddress: (address: string) => void;
-  companyPhone: string;
-  setCompanyPhone: (phone: string) => void;
-  yearEstablished: number | "";
-  setYearEstablished: (year: number | "") => void;
-  npwp: string;
-  setNpwp: (npwp: string) => void;
-  companyEmail: string;
-  setCompanyEmail: (email: string) => void;
-  businessField: string;
-  setBusinessField: (field: string) => void;
-  numEmployees: number | "";
-  setNumEmployees: (num: number | "") => void;
-  handlePreviousStep: () => void;
-  handleNextStep: () => void;
-  businessFields: { value: string; label: string }[];
-}
-
 export function StepCompanyData({
   companyName,
   setCompanyName,
@@ -49,8 +27,6 @@ export function StepCompanyData({
   setBusinessField,
   numEmployees,
   setNumEmployees,
-  handlePreviousStep,
-  handleNextStep,
   businessFields,
 }: StepCompanyDataProps) {
   return (
@@ -155,12 +131,6 @@ export function StepCompanyData({
             />
           </div>
         </div>
-      </div>
-      <div className="flex justify-between mt-4">
-        <Button variant="outline" onClick={handlePreviousStep}>
-          Previous
-        </Button>
-        <Button onClick={handleNextStep}>Next</Button>
       </div>
     </div>
   );

@@ -15,209 +15,25 @@ import { useCallback, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "../ui/button";
 import { DocumentUploadStep } from "./ui/document-step-card";
-import { StepSegmentationTemplate } from "./step-segmentation-template";
-import { StepCompanyData } from "./step-company-data";
-
-interface StagedFile {
-  file: File;
-  key: string;
-  docType: string;
-}
-
-interface DocumentRequirement {
-  id: string;
-  name: string;
-  format: string;
-  details: string;
-  fileName?: string;
-  description?: string;
-  status: "uploaded" | "missing" | "validated" | "pending_validation";
-}
-
-const initialDocuments: DocumentRequirement[] = [
-  {
-    id: "rekening_koran",
-    name: "1. Rekening Koran 3 bulan",
-    format: "PDF",
-    details: "Periode: Apr-Jun 2025",
-    status: "missing",
-  },
-  {
-    id: "loi_kerjasama",
-    name: "2. LOI Kerjasama",
-    format: "PDF",
-    details: "Pihak: PT Bohir Jaya",
-    status: "missing",
-  },
-  {
-    id: "rekapan_sales",
-    name: "3. Rekapan Sales 3 bulan",
-    format: "PDF/Excel",
-    details: "Periode: Apr-Jun 2025",
-    status: "missing",
-  },
-  {
-    id: "laporan_keuangan",
-    name: "4. Laporan Keuangan 2 tahun",
-    format: "PDF",
-    details: "Periode: 2023-2024",
-    status: "missing",
-  },
-  {
-    id: "invoice_proyek",
-    name: "5. Invoice Proyek 2 bulan",
-    format: "PDF",
-    details: "Periode: Apr-Mei 2025",
-    status: "missing",
-  },
-  {
-    id: "dokumen_collateral",
-    name: "6. Dokumen Collateral",
-    format: "PDF",
-    details: "Detail: Sertifikat tanah sebagai jaminan",
-    status: "missing",
-  },
-  {
-    id: "legalitas_usaha",
-    name: "Legalitas Usaha",
-    format: "PDF",
-    details: "Dokumen: KTP, NPWP, Akta, NIB, SK Menkeu",
-    status: "missing",
-  },
-  {
-    id: "company_profile",
-    name: "Company Profile",
-    format: "PDF",
-    details: "Detail: Profil perusahaan lengkap",
-    status: "missing",
-  },
-];
-
-const applicationTypes = [
-  { value: "heavy_equipment", label: "Pembiayaan Alat Berat" },
-  { value: "trucking", label: "Trucking" },
-  { value: "other", label: "Lain-lain" },
-];
-const analysisTemplates: { [key: string]: { value: string; label: string }[] } =
-  {
-    heavy_equipment: [
-      {
-        value: "heavy_equipment_template_1",
-        label: "Template Pembiayaan Alat Berat 1",
-      },
-      {
-        value: "heavy_equipment_template_2",
-        label: "Template Pembiayaan Alat Berat 2",
-      },
-    ],
-    trucking: [{ value: "trucking_template_1", label: "Template Trucking 1" }],
-    other: [{ value: "other_template_1", label: "Template Lain-lain 1" }],
-  };
-const requiredDocuments: { [key: string]: DocumentRequirement[] } = {
-  heavy_equipment_template_1: [
-    {
-      id: "rekening_koran",
-      name: "Rekening Koran 3 bulan",
-      format: "PDF",
-      details: "Periode: Apr-Jun 2025",
-      status: "missing",
-    },
-    {
-      id: "loi_kerjasama",
-      name: "LOI Kerjasama",
-      format: "PDF",
-      details: "Pihak: PT Bohir Jaya",
-      status: "missing",
-    },
-    {
-      id: "rekapan_sales",
-      name: "Rekapan Sales 3 bulan",
-      format: "PDF/Excel",
-      details: "Periode: Apr-Jun 2025",
-      status: "missing",
-    },
-    {
-      id: "laporan_keuangan",
-      name: "Laporan Keuangan 2 tahun",
-      format: "PDF",
-      details: "Periode: 2023-2024",
-      status: "missing",
-    },
-    {
-      id: "invoice_proyek",
-      name: "Invoice Proyek 2 bulan",
-      format: "PDF",
-      details: "Periode: Apr-Mei 2025",
-      status: "missing",
-    },
-    {
-      id: "dokumen_collateral",
-      name: "Dokumen Collateral",
-      format: "PDF",
-      details: "Detail: Sertifikat tanah sebagai jaminan",
-      status: "missing",
-    },
-    {
-      id: "legalitas_usaha",
-      name: "Legalitas Usaha",
-      format: "PDF",
-      details: "Dokumen: KTP, NPWP, Akta, NIB, SK Menkeu",
-      status: "missing",
-    },
-    {
-      id: "company_profile",
-      name: "Company Profile",
-      format: "PDF",
-      details: "Detail: Profil perusahaan lengkap",
-      status: "missing",
-    },
-  ],
-};
-const riskParametersData: {
-  [key: string]: { [key: string]: string | number };
-} = {
-  heavy_equipment_template_1: {
-    derMaksimal: 3.5,
-    quickRatio: 1.2,
-    cashRatio: 0.8,
-    totalPenjualan: "> Rp5 miliar/tahun",
-    usiaPerusahaan: "≥ 2 tahun",
-    dscr: "≥ 1.3",
-  },
-  heavy_equipment_template_2: {
-    derMaksimal: 4.0,
-    quickRatio: 1.0,
-    cashRatio: 0.7,
-    totalPenjualan: "> Rp4 miliar/tahun",
-    usiaPerusahaan: "≥ 1 tahun",
-    dscr: "≥ 1.2",
-  },
-  trucking_template_1: {
-    derMaksimal: 3.0,
-    quickRatio: 1.5,
-    cashRatio: 1.0,
-    totalPenjualan: "> Rp3 miliar/tahun",
-    usiaPerusahaan: "≥ 3 tahun",
-    dscr: "≥ 1.5",
-  },
-  other_template_1: {
-    derMaksimal: 5.0,
-    quickRatio: 0.9,
-    cashRatio: 0.6,
-    totalPenjualan: "> Rp2 miliar/tahun",
-    usiaPerusahaan: "≥ 0.5 tahun",
-    dscr: "≥ 1.0",
-  },
-};
-const businessFields = [
-  { value: "pertambangan", label: "Pertambangan" },
-  { value: "manufaktur", label: "Manufaktur" },
-  { value: "jasa", label: "Jasa" },
-  { value: "perdagangan", label: "Perdagangan" },
-  { value: "konstruksi", label: "Konstruksi" },
-  { value: "transportasi", label: "Transportasi" },
-  { value: "lainnya", label: "Lainnya" },
-];
+import { StepSegmentationTemplate } from "./ui/step-segmentation-template";
+import { StepCompanyData } from "./ui/step-company-data";
+import { StepAnalysisContext } from "./ui/step-analysis-context";
+import {
+  Stepper,
+  StepperDescription,
+  StepperIndicator,
+  StepperItem,
+  StepperSeparator,
+  StepperTrigger,
+} from "../ui/stepper";
+import {
+  analysisTemplates,
+  applicationTypes,
+  businessFields,
+  initialDocuments,
+  requiredDocuments,
+  riskParametersData,
+} from "@/data/analyze-data-template";
 
 export function SectionForm() {
   const [user, setUser] = useState<User | null>(null);
@@ -266,7 +82,7 @@ export function SectionForm() {
     if (selectedTemplate && requiredDocuments[selectedTemplate]) {
       setUploadedDocuments(requiredDocuments[selectedTemplate]);
     } else {
-      setUploadedDocuments(initialDocuments); // Use initialDocuments when no template is selected
+      setUploadedDocuments(initialDocuments);
     }
   }, [selectedTemplate]);
 
@@ -404,48 +220,89 @@ export function SectionForm() {
     totalDocumentsRequired > 0
       ? (documentsUploadedCount / totalDocumentsRequired) * 100
       : 0;
+  const steps = [
+    { id: 1, label: "Setup", description: "Pilih segmentasi" },
+    { id: 2, label: "Aplikasi Kredit", description: "Isi data perusahaan" },
+    { id: 3, label: "Upload Dokumen", description: "Unggah dokumen wajib" },
+    { id: 4, label: "Input Konteks AI", description: "Review dan submit" },
+  ];
 
   return (
     <div className="flex flex-col gap-8 mt-4 mx-4 flex-1">
+      <Stepper
+        value={currentStep}
+        onValueChange={setCurrentStep}
+        className="w-full"
+      >
+        {steps.map(({ id, label, description }) => (
+          <StepperItem key={id} step={id} className="not-last:flex-1">
+            <StepperTrigger>
+              <div className="flex items-center gap-2">
+                <StepperIndicator />
+                <div>
+                  <h1>{label}</h1>
+                  <StepperDescription>{description}</StepperDescription>
+                </div>
+              </div>
+            </StepperTrigger>
+            {id < steps.length && <StepperSeparator />}
+          </StepperItem>
+        ))}
+      </Stepper>
       {currentStep === 1 && (
-        <StepSegmentationTemplate
-          applicationType={applicationType}
-          setApplicationType={setApplicationType}
-          selectedTemplate={selectedTemplate}
-          setSelectedTemplate={setSelectedTemplate}
-          riskParameters={riskParameters}
-          setRiskParameters={setRiskParameters}
-          handleNextStep={handleNextStep}
-          analysisTemplates={analysisTemplates}
-          applicationTypes={applicationTypes}
-          requiredDocuments={requiredDocuments}
-          riskParametersData={riskParametersData}
-        />
+        <>
+          <StepSegmentationTemplate
+            applicationType={applicationType}
+            setApplicationType={setApplicationType}
+            selectedTemplate={selectedTemplate}
+            setSelectedTemplate={setSelectedTemplate}
+            riskParameters={riskParameters}
+            setRiskParameters={setRiskParameters}
+            analysisTemplates={analysisTemplates}
+            applicationTypes={applicationTypes}
+            requiredDocuments={requiredDocuments}
+            riskParametersData={riskParametersData}
+          />
+          <div className="flex justify-between mt-4">
+            <Button variant="outline" onClick={handlePreviousStep}>
+              Previous
+            </Button>
+            <Button onClick={handleNextStep}>Next</Button>
+          </div>
+        </>
       )}
 
       {/* Step 2: Company Data */}
       {currentStep === 2 && (
-        <StepCompanyData
-          companyName={companyName}
-          setCompanyName={setCompanyName}
-          companyAddress={companyAddress}
-          setCompanyAddress={setCompanyAddress}
-          companyPhone={companyPhone}
-          setCompanyPhone={setCompanyPhone}
-          yearEstablished={yearEstablished}
-          setYearEstablished={setYearEstablished}
-          npwp={npwp}
-          setNpwp={setNpwp}
-          companyEmail={companyEmail}
-          setCompanyEmail={setCompanyEmail}
-          businessField={businessField}
-          setBusinessField={setBusinessField}
-          numEmployees={numEmployees}
-          setNumEmployees={setNumEmployees}
-          handlePreviousStep={handlePreviousStep}
-          handleNextStep={handleNextStep}
-          businessFields={businessFields}
-        />
+        <>
+          <StepCompanyData
+            companyName={companyName}
+            setCompanyName={setCompanyName}
+            companyAddress={companyAddress}
+            setCompanyAddress={setCompanyAddress}
+            companyPhone={companyPhone}
+            setCompanyPhone={setCompanyPhone}
+            yearEstablished={yearEstablished}
+            setYearEstablished={setYearEstablished}
+            npwp={npwp}
+            setNpwp={setNpwp}
+            companyEmail={companyEmail}
+            setCompanyEmail={setCompanyEmail}
+            businessField={businessField}
+            setBusinessField={setBusinessField}
+            numEmployees={numEmployees}
+            setNumEmployees={setNumEmployees}
+            handlePreviousStep={handlePreviousStep}
+            handleNextStep={handleNextStep}
+            businessFields={businessFields}
+          />
+          <div className="flex justify-between mt-4">
+            <Button variant="outline" onClick={handlePreviousStep}>
+              Previous
+            </Button>
+            <Button onClick={handleNextStep}>Next</Button>
+          </div>
+        </>
       )}
 
       {/* Step 3: Upload Documents */}
@@ -474,12 +331,28 @@ export function SectionForm() {
             <Button variant="outline" onClick={handlePreviousStep}>
               Previous
             </Button>
-            <Button
-              onClick={handleNextStep}
-              disabled={documentsUploadedCount !== totalDocumentsRequired}
-            >
-              Next
+            <Button onClick={handleNextStep}>Next</Button>
+          </div>
+        </div>
+      )}
+      {currentStep === 4 && (
+        <div className="flex flex-col gap-4 w-full flex-1">
+          <StepAnalysisContext
+            companyName={companyName}
+            applicationTypeLabel={
+              applicationTypes.find((type) => type.value === applicationType)
+                ?.label || "Tidak Diketahui"
+            }
+            documentStatus={`${documentsUploadedCount}/${totalDocumentsRequired} Lengkap`}
+            financingValue="Rp 5.500.000.000"
+            onBack={handlePreviousStep}
+            onSubmit={handleSubmit}
+          />
+          <div className="flex justify-between mt-4">
+            <Button variant="outline" onClick={handlePreviousStep}>
+              Previous
             </Button>
+            <Button onClick={handleSubmit}>Analisa AI</Button>
           </div>
         </div>
       )}
