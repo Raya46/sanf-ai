@@ -23,7 +23,7 @@ export function CombinedMetricsCard({ metrics, title }: CombinedMetricsCardProps
   return (
     <div className="bg-white rounded-lg h-full p-6 border border-gray-200 shadow-sm relative">
       <div className="flex justify-between items-center pb-6 border-b border-gray-200 mb-6">
-        <h2 className="text-3xl font-semibold text-sanf-primary">{title}</h2>
+        <h2 className="text-3xl font-bold text-sanf-primary">{title}</h2>
         <a href="#" className="text-sanf-primary hover:underline text-sm">Expand view</a>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12">

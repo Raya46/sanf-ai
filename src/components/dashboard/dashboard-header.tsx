@@ -26,7 +26,7 @@ export function DashboardHeader() {
         <Button className="bg-white" onClick={() => router.push("/")}>
           <ChevronLeft className="text-black" />
         </Button>
-        <h1 className="text-4xl font-bold text-white">
+        <h1 className="text-4xl font-sans font-bold text-white">
           Financial Analysis Company
         </h1>
       </div>
