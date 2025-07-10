@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,6 +17,7 @@ import {
   CheckCircle,
   Clock,
   LogOut,
+  LucideIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -38,103 +39,54 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { logout } from "@/app/auth/actions";
 
-const creditAnalyses = [
-  {
-    id: 1,
-    title: "Heavy Equipment Lease Analysis - CAT 320D",
-    segment: "heavy-equipment",
-    icon: Building2,
-    date: "Dec 15, 2024",
-    riskScore: 720,
-    status: "approved",
-    amount: "Rp 6.750.000.000",
-    applicant: "Mountain Construction LLC",
-  },
-  {
-    id: 2,
-    title: "Fleet Financing Assessment - 15 Truck Portfolio",
-    segment: "trucking",
-    icon: Truck,
-    date: "Dec 12, 2024",
-    riskScore: 680,
-    status: "under-review",
-    amount: "Rp 31.500.000.000",
-    applicant: "TransLogistics Corp",
-  },
-  {
-    id: 3,
-    title: "Manufacturing Equipment Credit Line",
-    segment: "productive-financing",
-    icon: DollarSign,
-    date: "Dec 10, 2024",
-    riskScore: 750,
-    status: "approved",
-    amount: "Rp 12.750.000.000",
-    applicant: "Precision Manufacturing Inc",
-  },
-  {
-    id: 4,
-    title: "Startup Equipment Financing - Tech Company",
-    segment: "new-business",
-    icon: Briefcase,
-    date: "Dec 8, 2024",
-    riskScore: 620,
-    status: "pending",
-    amount: "Rp 1.875.000.000",
-    applicant: "InnovateTech Solutions",
-  },
-  {
-    id: 5,
-    title: "Excavator Purchase Analysis - JCB 220X",
-    segment: "heavy-equipment",
-    icon: Building2,
-    date: "Dec 5, 2024",
-    riskScore: 695,
-    status: "approved",
-    amount: "Rp 4.800.000.000",
-    applicant: "Earthworks Contractors",
-  },
-  {
-    id: 6,
-    title: "Long-Haul Trucking Fleet Expansion",
-    segment: "trucking",
-    icon: Truck,
-    date: "Dec 3, 2024",
-    riskScore: 710,
-    status: "under-review",
-    amount: "Rp 27.000.000.000",
-    applicant: "Highway Express LLC",
-  },
-  {
-    id: 7,
-    title: "Production Line Equipment Financing",
-    segment: "productive-financing",
-    icon: DollarSign,
-    date: "Nov 28, 2024",
-    riskScore: 665,
-    status: "declined",
-    amount: "Rp 10.125.000.000",
-    applicant: "AutoParts Manufacturing",
-  },
-  {
-    id: 8,
-    title: "New Restaurant Equipment Package",
-    segment: "new-business",
-    icon: Briefcase,
-    date: "Nov 25, 2024",
-    riskScore: 640,
-    status: "approved",
-    amount: "Rp 1.425.000.000",
-    applicant: "Gourmet Bistro Group",
-  },
-];
+interface Application {
+  id: number;
+  title: string;
+  segment: string;
+  icon: LucideIcon;
+  date: string;
+  riskScore: number;
+  status: string;
+  amount: string;
+  applicant: string;
+}
+
+interface CreditApplicationData {
+  id: number;
+  user_id: string;
+  submitted_at: string;
+  status: string;
+  ai_analysis_status: string;
+  probability_approval: number;
+  overall_indicator: string;
+  document_validation_percentage: number;
+  estimated_analysis_time_minutes: number;
+  contact_person: string;
+  contact_email: string;
+  company_name: string;
+  revenue: any; // Assuming this can be complex, or define a more specific type if known
+  ai_analysis: string;
+  company_type: string;
+  amount: number;
+  analysis_template: string;
+  risk_appetite: number;
+}
+
+const companyTypeIcons: { [key: string]: LucideIcon } = {
+  "heavy-equipment": Building2,
+  trucking: Truck,
+  productive: DollarSign,
+  "new-business": Briefcase,
+  unknown: Briefcase, // Default icon for unknown company types
+};
 
 const segmentLabels = {
-  all: "All Segments",
-  "heavy-equipment": "Heavy Equipment",
-  trucking: "Trucking",
-  "productive-financing": "Productive Financing",
-  "new-business": "New Business",
+  all: "Semua Segmen",
+  "heavy-equipment": "Alat Berat",
+  trucking: "Truk",
+  productive: "Pembiayaan Produktif",
+  "new-business": "Bisnis Baru",
+  unknown: "Segmen Tidak Diketahui",
 };
 
 const statusColors = {
@@ -142,6 +94,7 @@ const statusColors = {
   "under-review": "bg-amber-100 text-amber-700 border-amber-200",
   pending: "bg-blue-100 text-blue-700 border-blue-200",
   declined: "bg-red-100 text-red-700 border-red-200",
+  unknown: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
 const statusIcons = {
@@ -149,13 +102,79 @@ const statusIcons = {
   "under-review": Clock,
   pending: AlertTriangle,
   declined: AlertTriangle,
+  unknown: AlertTriangle,
+};
+
+const statusTranslations: { [key: string]: string } = {
+  approved: "Disetujui",
+  "under-review": "Dalam Peninjauan",
+  pending: "Tertunda",
+  declined: "Ditolak",
+  unknown: "Tidak Diketahui",
 };
 
 export default function Component() {
   const [selectedSegment, setSelectedSegment] = useState("all");
   const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("most-recent");
+  const [creditAnalyses, setCreditAnalyses] = useState<Application[]>([]);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const response = await fetch("/api/applications");
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push("/login");
+            return;
+          }
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data: CreditApplicationData[] = await response.json();
+
+        const formattedData: Application[] = data.map((app) => {
+          const companyTypeRaw = app.company_type || "unknown";
+          const companyTypeKey = companyTypeRaw
+            .toLowerCase()
+            .replace(/\s/g, "-"); // Normalize to "heavy-equipment", "trucking", etc.
+          const IconComponent =
+            companyTypeIcons[companyTypeKey] || companyTypeIcons["unknown"];
+          const formattedAmount = app.amount
+            ? `Rp ${new Intl.NumberFormat("id-ID").format(app.amount)}`
+            : "Rp 0";
+          const riskScore = app.probability_approval ?? 0;
+          const status = app.ai_analysis_status || "unknown";
+          const title = app.analysis_template || "Unknown Analysis";
+          const applicant = app.company_name || "Unknown Applicant"; // Map to company_name
+          const date = app.submitted_at
+            ? new Date(app.submitted_at).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })
+            : "Unknown Date";
+
+          return {
+            id: app.id,
+            title: title,
+            segment: companyTypeKey, // Use the normalized key for segment
+            icon: IconComponent,
+            date: date,
+            riskScore: riskScore,
+            status: status,
+            amount: formattedAmount,
+            applicant: applicant,
+          };
+        });
+        setCreditAnalyses(formattedData);
+      } catch (error) {
+        console.error("Error fetching applications:", error);
+      }
+    };
+
+    fetchApplications();
+  }, [router]);
 
   const filteredAnalyses = creditAnalyses.filter(
     (analysis) =>
@@ -195,10 +214,10 @@ export default function Component() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold mb-2 text-slate-900">
-              Credit Analysis Dashboard
+              Dasbor Analisis Kredit
             </h1>
             <p className="text-slate-600">
-              Manage and review credit applications across all business segments
+              Kelola dan tinjau aplikasi kredit di semua segmen bisnis
             </p>
           </div>
           <Button
@@ -218,7 +237,7 @@ export default function Component() {
             className="bg-slate-900 hover:bg-slate-800 text-white border-slate-300 w-fit"
           >
             <Plus className="w-4 h-4 mr-2" />
-            New Analysis
+            Analisis Baru
           </Button>
 
           <div className="flex flex-col sm:flex-row gap-4 lg:ml-auto">
@@ -232,31 +251,31 @@ export default function Component() {
                   value="all"
                   className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
                 >
-                  All
+                  Semua
                 </TabsTrigger>
                 <TabsTrigger
                   value="heavy-equipment"
                   className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
                 >
-                  Heavy Equipment
+                  Alat Berat
                 </TabsTrigger>
                 <TabsTrigger
                   value="trucking"
                   className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
                 >
-                  Trucking
+                  Truk
                 </TabsTrigger>
                 <TabsTrigger
-                  value="productive-financing"
+                  value="productive"
                   className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
                 >
-                  Productive
+                  Produktif
                 </TabsTrigger>
                 <TabsTrigger
                   value="new-business"
                   className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
                 >
-                  New Business
+                  Bisnis Baru
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -286,9 +305,9 @@ export default function Component() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-blue-50/95 backdrop-blur-md border border-blue-200/50">
-                  <SelectItem value="most-recent">Most Recent</SelectItem>
-                  <SelectItem value="risk-score">Risk Score</SelectItem>
-                  <SelectItem value="amount">Amount</SelectItem>
+                  <SelectItem value="most-recent">Terbaru</SelectItem>
+                  <SelectItem value="risk-score">Skor Risiko</SelectItem>
+                  <SelectItem value="amount">Jumlah</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -305,7 +324,8 @@ export default function Component() {
           {sortedAnalyses.map((analysis) => {
             const IconComponent = analysis.icon;
             const StatusIcon =
-              statusIcons[analysis.status as keyof typeof statusIcons];
+              statusIcons[analysis.status as keyof typeof statusIcons] ||
+              AlertTriangle; // Memberi fallback
 
             return (
               <Link
@@ -351,11 +371,11 @@ export default function Component() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="bg-blue-50/95 backdrop-blur-md border border-blue-200/50">
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Edit Analysis</DropdownMenuItem>
-                          <DropdownMenuItem>Export Report</DropdownMenuItem>
+                          <DropdownMenuItem>Lihat Detail</DropdownMenuItem>
+                          <DropdownMenuItem>Edit Analisis</DropdownMenuItem>
+                          <DropdownMenuItem>Ekspor Laporan</DropdownMenuItem>
                           <DropdownMenuItem className="text-red-600">
-                            Delete
+                            Hapus
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -371,14 +391,14 @@ export default function Component() {
 
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-slate-500">Amount</span>
+                        <span className="text-xs text-slate-500">Jumlah</span>
                         <span className="text-sm font-medium text-slate-900">
                           {analysis.amount}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">
-                          Risk Score
+                          Skor Risiko
                         </span>
                         <div className="flex items-center gap-1">
                           <TrendingUp
@@ -402,7 +422,8 @@ export default function Component() {
                           className={`text-xs capitalize ${statusColors[analysis.status as keyof typeof statusColors]}`}
                         >
                           <StatusIcon className="w-3 h-3 mr-1" />
-                          {analysis.status.replace("-", " ")}
+                          {statusTranslations[analysis.status] ||
+                            analysis.status}
                         </Badge>
                       </div>
                     </div>
@@ -417,11 +438,13 @@ export default function Component() {
           <div className="text-center py-12">
             <div className="text-slate-600 mb-4">
               <Briefcase className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No credit analyses found for the selected segment.</p>
+              <p>
+                Tidak ada analisis kredit ditemukan untuk segmen yang dipilih.
+              </p>
             </div>
             <Button className="bg-slate-900 hover:bg-slate-800 text-white">
               <Plus className="w-4 h-4 mr-2" />
-              Create New Analysis
+              Buat Analisis Baru
             </Button>
           </div>
         )}

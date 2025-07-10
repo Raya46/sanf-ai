@@ -12,22 +12,26 @@ import { ChatSection } from "@/components/new-application/ui/chat-section";
 import { type ChatMessage, type CreditApplication } from "@/lib/types";
 import { type ActiveView } from "@/app/dashboard/[projectId]/chat/[applicationId]/page";
 
+const formatToRupiah = (amount: number) => {
+  return `Rp ${new Intl.NumberFormat("id-ID").format(amount)}`;
+};
+
 const mainMetrics = [
   {
     label: "Total Revenue",
-    value: "$12,405,134.65",
+    value: formatToRupiah(12405134.65),
     hasInfo: true,
     trend: "negative" as const,
   },
   {
     label: "Gross Profit",
-    value: "$8,195,001.05",
+    value: formatToRupiah(8195001.05),
     hasInfo: true,
     trend: "positive" as const,
   },
   {
     label: "Operating Expenses",
-    value: "$2,085,606.14",
+    value: formatToRupiah(2085606.14),
     hasInfo: true,
     trend: "positive" as const,
   },
@@ -36,14 +40,14 @@ const mainMetrics = [
 const performanceCards = [
   {
     title: "Total Revenue",
-    value: "$805,134.65",
+    value: formatToRupiah(805134.65),
     delta: "+21.6%",
     deltaType: "positive" as const,
     trend: "up" as const,
   },
   {
     title: "EBITDA",
-    value: "$405,134.65",
+    value: formatToRupiah(405134.65),
     delta: "-6.9%",
     deltaType: "negative" as const,
     trend: "down" as const,

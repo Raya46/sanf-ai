@@ -1,21 +1,4 @@
 "use client";
-import { Download, Plus, X, LoaderCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { Button } from "../ui/button";
-import { CardDescription } from "../ui/card";
-import { Input } from "../ui/input"; // Re-add Input import
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { useDropzone } from "react-dropzone";
-import { useCallback, useState, useEffect, useMemo } from "react";
-import { v4 as uuidv4 } from "uuid";
-import { createClient } from "@/utils/supabase/client";
-import { User } from "@supabase/supabase-js";
 import {
   Dialog,
   DialogContent,
@@ -23,8 +6,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
+import { createClient } from "@/utils/supabase/client";
+import { User } from "@supabase/supabase-js";
+import { LoaderCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+import { Button } from "../ui/button";
+import { DocumentUploadStep } from "./ui/document-step-card";
+import { StepSegmentationTemplate } from "./step-segmentation-template";
+import { StepCompanyData } from "./step-company-data";
 
 interface StagedFile {
   file: File;
@@ -32,23 +24,227 @@ interface StagedFile {
   docType: string;
 }
 
+interface DocumentRequirement {
+  id: string;
+  name: string;
+  format: string;
+  details: string;
+  fileName?: string;
+  description?: string;
+  status: "uploaded" | "missing" | "validated" | "pending_validation";
+}
+
+const initialDocuments: DocumentRequirement[] = [
+  {
+    id: "rekening_koran",
+    name: "1. Rekening Koran 3 bulan",
+    format: "PDF",
+    details: "Periode: Apr-Jun 2025",
+    status: "missing",
+  },
+  {
+    id: "loi_kerjasama",
+    name: "2. LOI Kerjasama",
+    format: "PDF",
+    details: "Pihak: PT Bohir Jaya",
+    status: "missing",
+  },
+  {
+    id: "rekapan_sales",
+    name: "3. Rekapan Sales 3 bulan",
+    format: "PDF/Excel",
+    details: "Periode: Apr-Jun 2025",
+    status: "missing",
+  },
+  {
+    id: "laporan_keuangan",
+    name: "4. Laporan Keuangan 2 tahun",
+    format: "PDF",
+    details: "Periode: 2023-2024",
+    status: "missing",
+  },
+  {
+    id: "invoice_proyek",
+    name: "5. Invoice Proyek 2 bulan",
+    format: "PDF",
+    details: "Periode: Apr-Mei 2025",
+    status: "missing",
+  },
+  {
+    id: "dokumen_collateral",
+    name: "6. Dokumen Collateral",
+    format: "PDF",
+    details: "Detail: Sertifikat tanah sebagai jaminan",
+    status: "missing",
+  },
+  {
+    id: "legalitas_usaha",
+    name: "Legalitas Usaha",
+    format: "PDF",
+    details: "Dokumen: KTP, NPWP, Akta, NIB, SK Menkeu",
+    status: "missing",
+  },
+  {
+    id: "company_profile",
+    name: "Company Profile",
+    format: "PDF",
+    details: "Detail: Profil perusahaan lengkap",
+    status: "missing",
+  },
+];
+
+const applicationTypes = [
+  { value: "heavy_equipment", label: "Pembiayaan Alat Berat" },
+  { value: "trucking", label: "Trucking" },
+  { value: "other", label: "Lain-lain" },
+];
+const analysisTemplates: { [key: string]: { value: string; label: string }[] } =
+  {
+    heavy_equipment: [
+      {
+        value: "heavy_equipment_template_1",
+        label: "Template Pembiayaan Alat Berat 1",
+      },
+      {
+        value: "heavy_equipment_template_2",
+        label: "Template Pembiayaan Alat Berat 2",
+      },
+    ],
+    trucking: [{ value: "trucking_template_1", label: "Template Trucking 1" }],
+    other: [{ value: "other_template_1", label: "Template Lain-lain 1" }],
+  };
+const requiredDocuments: { [key: string]: DocumentRequirement[] } = {
+  heavy_equipment_template_1: [
+    {
+      id: "rekening_koran",
+      name: "Rekening Koran 3 bulan",
+      format: "PDF",
+      details: "Periode: Apr-Jun 2025",
+      status: "missing",
+    },
+    {
+      id: "loi_kerjasama",
+      name: "LOI Kerjasama",
+      format: "PDF",
+      details: "Pihak: PT Bohir Jaya",
+      status: "missing",
+    },
+    {
+      id: "rekapan_sales",
+      name: "Rekapan Sales 3 bulan",
+      format: "PDF/Excel",
+      details: "Periode: Apr-Jun 2025",
+      status: "missing",
+    },
+    {
+      id: "laporan_keuangan",
+      name: "Laporan Keuangan 2 tahun",
+      format: "PDF",
+      details: "Periode: 2023-2024",
+      status: "missing",
+    },
+    {
+      id: "invoice_proyek",
+      name: "Invoice Proyek 2 bulan",
+      format: "PDF",
+      details: "Periode: Apr-Mei 2025",
+      status: "missing",
+    },
+    {
+      id: "dokumen_collateral",
+      name: "Dokumen Collateral",
+      format: "PDF",
+      details: "Detail: Sertifikat tanah sebagai jaminan",
+      status: "missing",
+    },
+    {
+      id: "legalitas_usaha",
+      name: "Legalitas Usaha",
+      format: "PDF",
+      details: "Dokumen: KTP, NPWP, Akta, NIB, SK Menkeu",
+      status: "missing",
+    },
+    {
+      id: "company_profile",
+      name: "Company Profile",
+      format: "PDF",
+      details: "Detail: Profil perusahaan lengkap",
+      status: "missing",
+    },
+  ],
+};
+const riskParametersData: {
+  [key: string]: { [key: string]: string | number };
+} = {
+  heavy_equipment_template_1: {
+    derMaksimal: 3.5,
+    quickRatio: 1.2,
+    cashRatio: 0.8,
+    totalPenjualan: "> Rp5 miliar/tahun",
+    usiaPerusahaan: "≥ 2 tahun",
+    dscr: "≥ 1.3",
+  },
+  heavy_equipment_template_2: {
+    derMaksimal: 4.0,
+    quickRatio: 1.0,
+    cashRatio: 0.7,
+    totalPenjualan: "> Rp4 miliar/tahun",
+    usiaPerusahaan: "≥ 1 tahun",
+    dscr: "≥ 1.2",
+  },
+  trucking_template_1: {
+    derMaksimal: 3.0,
+    quickRatio: 1.5,
+    cashRatio: 1.0,
+    totalPenjualan: "> Rp3 miliar/tahun",
+    usiaPerusahaan: "≥ 3 tahun",
+    dscr: "≥ 1.5",
+  },
+  other_template_1: {
+    derMaksimal: 5.0,
+    quickRatio: 0.9,
+    cashRatio: 0.6,
+    totalPenjualan: "> Rp2 miliar/tahun",
+    usiaPerusahaan: "≥ 0.5 tahun",
+    dscr: "≥ 1.0",
+  },
+};
+const businessFields = [
+  { value: "pertambangan", label: "Pertambangan" },
+  { value: "manufaktur", label: "Manufaktur" },
+  { value: "jasa", label: "Jasa" },
+  { value: "perdagangan", label: "Perdagangan" },
+  { value: "konstruksi", label: "Konstruksi" },
+  { value: "transportasi", label: "Transportasi" },
+  { value: "lainnya", label: "Lainnya" },
+];
+
 export function SectionForm() {
   const [user, setUser] = useState<User | null>(null);
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  // Step-by-step form state
   const [currentStep, setCurrentStep] = useState(1);
+  const [applicationType, setApplicationType] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [selectedDocType, setSelectedDocType] = useState("pdf"); // Default to PDF
-  const [riskAppetite, setRiskAppetite] = useState([50]); // Default to 50%
-  const [companyType, setCompanyType] = useState("");
-  const [amount, setAmount] = useState<number | "">("");
+  const [riskParameters, setRiskParameters] = useState<{
+    [key: string]: number | string;
+  }>({});
 
-  // Original form fields (might be integrated into steps or removed)
+  const [uploadedDocuments, setUploadedDocuments] = useState<
+    DocumentRequirement[]
+  >([]);
 
-  // Loading modal state
+  const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [companyPhone, setCompanyPhone] = useState("");
+  const [yearEstablished, setYearEstablished] = useState<number | "">("");
+  const [npwp, setNpwp] = useState("");
+  const [companyEmail, setCompanyEmail] = useState("");
+  const [businessField, setBusinessField] = useState("");
+  const [numEmployees, setNumEmployees] = useState<number | "">("");
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [processingMessage, setProcessingMessage] = useState(
     "Starting analysis..."
@@ -66,7 +262,14 @@ export function SectionForm() {
     fetchUser();
   }, []);
 
-  // Update progress message during submission (simulated)
+  useEffect(() => {
+    if (selectedTemplate && requiredDocuments[selectedTemplate]) {
+      setUploadedDocuments(requiredDocuments[selectedTemplate]);
+    } else {
+      setUploadedDocuments(initialDocuments); // Use initialDocuments when no template is selected
+    }
+  }, [selectedTemplate]);
+
   useEffect(() => {
     if (isSubmitting) {
       const messages = [
@@ -77,11 +280,10 @@ export function SectionForm() {
       ];
       let currentMessageIndex = 0;
       const interval = setInterval(() => {
-        setProcessingMessage(messages[currentMessageIndex]);
+        setProcessingMessage(messages[currentMessageIndex % messages.length]);
         setProgress((prev) => Math.min(prev + 25, 100));
-        currentMessageIndex = (currentMessageIndex + 1) % messages.length;
-      }, 1500); // Change message every 1.5 seconds
-
+        currentMessageIndex++;
+      }, 1500);
       return () => clearInterval(interval);
     } else {
       setProcessingMessage("Starting analysis...");
@@ -89,94 +291,94 @@ export function SectionForm() {
     }
   }, [isSubmitting]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles = acceptedFiles.map((file) => {
-      return {
-        file,
-        docType: "document",
-        key: `document-${uuidv4()}.pdf`,
-      };
-    });
-    setStagedFiles((prevFiles) => [...prevFiles, ...newFiles]);
+  const handleDocumentUpload = useCallback(
+    (docId: string, acceptedFiles: File[]) => {
+      if (acceptedFiles.length === 0) return;
+      const file = acceptedFiles[0];
+
+      setUploadedDocuments((prevDocs) =>
+        prevDocs.map((doc) =>
+          doc.id === docId
+            ? { ...doc, fileName: file.name, status: "uploaded" }
+            : doc
+        )
+      );
+
+      setStagedFiles((prevFiles) => [
+        ...prevFiles.filter((f) => f.docType !== docId),
+        { file, docType: docId, key: `${docId}-${uuidv4()}` },
+      ]);
+    },
+    []
+  );
+
+  const removeFile = useCallback((docId: string) => {
+    setUploadedDocuments((prevDocs) =>
+      prevDocs.map((doc) =>
+        doc.id === docId
+          ? { ...doc, fileName: undefined, status: "missing" }
+          : doc
+      )
+    );
+    setStagedFiles((prevFiles) => prevFiles.filter((f) => f.docType !== docId));
   }, []);
-
-  const acceptedFileTypes = useMemo(() => {
-    const types: { [key: string]: string[] } = {
-      "application/pdf": [],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [],
-      "application/msword": [],
-    };
-
-    if (selectedDocType === "pdf") {
-      types["application/pdf"] = [".pdf"];
-    } else if (selectedDocType === "docx") {
-      types[
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      ] = [".docx"];
-      types["application/msword"] = [".doc"];
-    }
-    return types;
-  }, [selectedDocType]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: acceptedFileTypes,
-  });
-
-  const removeFile = (key: string) => {
-    setStagedFiles((prevFiles) => prevFiles.filter((f) => f.key !== key));
-  };
 
   const handleSubmit = async () => {
     if (!user || stagedFiles.length === 0) {
       console.error("User not found or no files staged.");
+      alert("Harap unggah semua dokumen wajib terlebih dahulu.");
       return;
     }
-
     setIsSubmitting(true);
-    setIsModalOpen(true); // Open the loading modal
+    setIsModalOpen(true);
 
     try {
       const formData = new FormData();
-
+      formData.append("application_type", applicationType);
       formData.append("analysis_template", selectedTemplate);
-      formData.append("risk_appetite", riskAppetite[0].toString()); // Slider value is an array
-      formData.append("company_type", companyType);
-      formData.append("amount", amount.toString());
+      formData.append("risk_parameters", JSON.stringify(riskParameters));
+      formData.append("company_name", companyName);
+      formData.append("company_address", companyAddress);
+      formData.append("company_phone", companyPhone);
+      formData.append("year_established", yearEstablished.toString());
+      formData.append("npwp", npwp);
+      formData.append("company_email", companyEmail);
+      formData.append("business_field", businessField);
+      formData.append("num_employees", numEmployees.toString());
 
       for (const stagedFile of stagedFiles) {
-        formData.append("files", stagedFile.file);
+        formData.append("files", stagedFile.file, stagedFile.file.name);
       }
 
       const response = await fetch("/api/applications", {
         method: "POST",
-        body: formData, // No 'Content-Type' header needed, browser sets it for FormData
+        body: formData,
       });
 
       if (!response.ok) {
         const errorResult = (await response.json()) as { error?: string };
         throw new Error(errorResult.error || "Submission failed");
       }
-
       const result = (await response.json()) as {
         success: boolean;
         applicationId?: string;
         error?: string;
       };
-
       if (result.success && result.applicationId) {
-        router.push(
-          `/dashboard/${result.applicationId}/chat/${result.applicationId}`
-        );
+        router.push(`/dashboard/application/${result.applicationId}`);
       } else {
-        console.error("Submission failed with error:", result.error);
+        throw new Error(
+          result.error || "Submission failed with an unknown error."
+        );
       }
     } catch (error) {
       console.error("An error occurred during submission:", error);
+      alert(
+        error instanceof Error ? error.message : "An unknown error occurred"
+      );
     } finally {
       setIsSubmitting(false);
-      setIsModalOpen(false); // Close the loading modal
+      setIsModalOpen(false);
     }
   };
 
@@ -188,201 +390,95 @@ export function SectionForm() {
     setCurrentStep((prev) => prev - 1);
   };
 
+  const currentTemplateData = selectedTemplate
+    ? analysisTemplates[applicationType]?.find(
+        (template) => template.value === selectedTemplate
+      )
+    : null;
+
+  const documentsUploadedCount = uploadedDocuments.filter(
+    (doc) => doc.status === "uploaded" || doc.status === "validated"
+  ).length;
+  const totalDocumentsRequired = uploadedDocuments.length;
+  const completenessPercentage =
+    totalDocumentsRequired > 0
+      ? (documentsUploadedCount / totalDocumentsRequired) * 100
+      : 0;
+
   return (
     <div className="flex flex-col gap-8 mt-4 mx-4 flex-1">
       {currentStep === 1 && (
-        <div className="flex flex-col gap-4 w-full flex-1">
-          <h1 className="text-2xl font-bold">
-            Step 1: Choose Analysis Template
-          </h1>
-          <p>Select the type of credit analysis you need.</p>
-          <Select onValueChange={setSelectedTemplate} value={selectedTemplate}>
-            <SelectTrigger
-              className="w-full"
-              aria-label="Select analysis template"
-            >
-              <SelectValue placeholder="Select a template" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem
-                value="standard_credit_analysis"
-                className="rounded-lg"
-              >
-                Standard Credit Analysis
-              </SelectItem>
-              <SelectItem value="sme_loan_analysis" className="rounded-lg">
-                SME Loan Analysis
-              </SelectItem>
-              <SelectItem
-                value="corporate_finance_analysis"
-                className="rounded-lg"
-              >
-                Corporate Finance Analysis
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <p>Company Type</p>
-          <Select onValueChange={setCompanyType} value={companyType}>
-            <SelectTrigger className="w-full" aria-label="Select company type">
-              <SelectValue placeholder="Select company type" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="Heavy Equipment" className="rounded-lg">
-                Heavy Equipment
-              </SelectItem>
-              <SelectItem value="Trucking" className="rounded-lg">
-                Trucking
-              </SelectItem>
-              <SelectItem value="Productive" className="rounded-lg">
-                Productive
-              </SelectItem>
-              <SelectItem value="New Business" className="rounded-lg">
-                New Business
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <p>Amount</p>
-          <Input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(parseFloat(e.target.value) || "")}
-            placeholder="Enter amount"
-          />
-
-          <div className="flex justify-end">
-            <Button
-              onClick={handleNextStep}
-              disabled={!selectedTemplate || !companyType || amount === ""}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+        <StepSegmentationTemplate
+          applicationType={applicationType}
+          setApplicationType={setApplicationType}
+          selectedTemplate={selectedTemplate}
+          setSelectedTemplate={setSelectedTemplate}
+          riskParameters={riskParameters}
+          setRiskParameters={setRiskParameters}
+          handleNextStep={handleNextStep}
+          analysisTemplates={analysisTemplates}
+          applicationTypes={applicationTypes}
+          requiredDocuments={requiredDocuments}
+          riskParametersData={riskParametersData}
+        />
       )}
 
-      {/* Step 2: Choose Document Type & Upload File */}
+      {/* Step 2: Company Data */}
       {currentStep === 2 && (
-        <div className="flex flex-col gap-4 w-full flex-1">
-          <h1 className="text-2xl font-bold">Step 2: Upload Documents</h1>
-          <p>Select document type and upload your files (PDF or Word).</p>
-
-          <Select onValueChange={setSelectedDocType} value={selectedDocType}>
-            <SelectTrigger className="w-full" aria-label="Select document type">
-              <SelectValue placeholder="Select document type" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="pdf" className="rounded-lg">
-                PDF (.pdf)
-              </SelectItem>
-              <SelectItem value="docx" className="rounded-lg">
-                Word (.docx, .doc)
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <div
-            {...getRootProps()}
-            className={`flex flex-col items-center justify-center border border-dashed rounded-lg p-4 bg-[#FBFDFF] ${
-              isDragActive ? "border-green-500" : "border-blue-400"
-            }`}
-          >
-            <input {...getInputProps()} />
-            <div className="py-10 text-center">
-              <Download color="#007BFF" size={40} className="mb-4 mx-auto" />
-              <div className="flex gap-1 justify-center">
-                {isDragActive ? (
-                  <p className="text-green-500 font-bold">
-                    Drop the files here ...
-                  </p>
-                ) : (
-                  <>
-                    <p>
-                      Drag & drop {selectedDocType.toUpperCase()} files here or
-                    </p>
-                    <p className="text-blue-500 font-bold">Browse</p>
-                  </>
-                )}
-              </div>
-              <CardDescription className="mt-2">
-                Supports {selectedDocType.toUpperCase()} only. Please upload at
-                least 1 document.
-              </CardDescription>
-            </div>
-          </div>
-          {stagedFiles.length > 0 && (
-            <div className="p-4 border border-dashed rounded-lg flex flex-wrap gap-2">
-              {stagedFiles.map((stagedFile) => (
-                <div
-                  key={stagedFile.key}
-                  className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md text-sm"
-                >
-                  <p className="truncate max-w-[150px]">
-                    {stagedFile.file.name}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5 p-0"
-                    onClick={() => removeFile(stagedFile.key)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={handlePreviousStep}>
-              Previous
-            </Button>
-            <Button
-              onClick={handleNextStep}
-              disabled={stagedFiles.length === 0}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+        <StepCompanyData
+          companyName={companyName}
+          setCompanyName={setCompanyName}
+          companyAddress={companyAddress}
+          setCompanyAddress={setCompanyAddress}
+          companyPhone={companyPhone}
+          setCompanyPhone={setCompanyPhone}
+          yearEstablished={yearEstablished}
+          setYearEstablished={setYearEstablished}
+          npwp={npwp}
+          setNpwp={setNpwp}
+          companyEmail={companyEmail}
+          setCompanyEmail={setCompanyEmail}
+          businessField={businessField}
+          setBusinessField={setBusinessField}
+          numEmployees={numEmployees}
+          setNumEmployees={setNumEmployees}
+          handlePreviousStep={handlePreviousStep}
+          handleNextStep={handleNextStep}
+          businessFields={businessFields}
+        />
       )}
 
-      {/* Step 3: Choose Risk Appetite */}
+      {/* Step 3: Upload Documents */}
       {currentStep === 3 && (
         <div className="flex flex-col gap-4 w-full flex-1">
-          <h1 className="text-2xl font-bold">Step 3: Choose Risk Appetite</h1>
-          <p>
-            Adjust the slider to set your desired risk appetite for the
-            analysis.
+          <h1 className="text-2xl font-bold">
+            Dokumen Wajib - {currentTemplateData?.label}
+          </h1>
+          <p className="text-sm text-gray-500">
+            Semua dokumen harus diunggah dan tervalidasi sebelum melanjutkan ke
+            tahap berikutnya.
           </p>
-          <div className="flex flex-col items-center gap-4 p-4 border rounded-lg">
-            <p className="text-lg font-semibold">
-              Risk Appetite: {riskAppetite[0]}%
-            </p>
-            <Slider
-              defaultValue={[50]}
-              max={100}
-              step={1}
-              onValueChange={setRiskAppetite}
-              className="w-3/4"
+
+          <div className="flex flex-col gap-4 mt-4">
+            <DocumentUploadStep
+              documents={uploadedDocuments}
+              handleDocumentUpload={handleDocumentUpload}
+              handleFileRemove={removeFile}
+              completenessPercentage={completenessPercentage}
+              documentsUploadedCount={documentsUploadedCount}
+              totalDocumentsRequired={totalDocumentsRequired}
             />
           </div>
-          <div className="flex justify-between">
+
+          <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={handlePreviousStep}>
               Previous
             </Button>
             <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting || stagedFiles.length === 0}
+              onClick={handleNextStep}
+              disabled={documentsUploadedCount !== totalDocumentsRequired}
             >
-              {isSubmitting ? (
-                <LoaderCircle className="animate-spin mr-2" />
-              ) : (
-                <Plus className="mr-2" />
-              )}
-              <span>
-                {isSubmitting ? "Submitting..." : "Submit Application"}
-              </span>
+              Next
             </Button>
           </div>
         </div>
