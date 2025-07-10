@@ -21,32 +21,37 @@ export function DashboardHeader() {
   };
 
   return (
-    <header className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-      <Button onClick={() => router.push("/")}>
-        <ChevronLeft />
-      </Button>
+    <header className="flex justify-between items-center p-4 py-8 bg-[#182d7c] border-gray-200">
+      <div className="flex items-center gap-4">
+        <Button className="bg-white hover:bg-sanf-secondary" onClick={() => router.push("/")}>
+          <ChevronLeft className="text-black" />
+        </Button>
+        <h1 className="text-4xl font-sans font-bold text-white">
+          Financial Analysis Company
+        </h1>
+      </div>
       <div className="flex items-center gap-3">
-        <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+        <Button variant="ring" className="bg-white text-black">
           <Sparkles className="w-4 h-4 mr-2" />
           View AI Analysis
         </Button>
         <Button
-          size="sm"
-          className="bg-purple-500 hover:bg-purple-600 text-white"
+          variant="ring" 
+          className="bg-white text-black"
           onClick={navigateToCreditAnalystAI}
         >
           Credit Analyst AI Agent
         </Button>
         <Button
           size="icon"
-          className="bg-green-500 hover:bg-green-600 text-white"
+          className="bg-white hover:bg-sanf-secondary text-black"
         >
           <Download className="w-4 h-4" />
         </Button>
         <Button
           size="icon"
           variant="ghost"
-          className="text-gray-600 hover:text-gray-900"
+          className="bg-white hover:bg-sanf-secondary hover:text-black  "
           onClick={handleLogout}
         >
           <LogOut className="w-4 h-4" />

@@ -18,7 +18,7 @@ export function MetricTrendCard({
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-base font-semibold text-purple-600">{title}</span>
+        <span className="text-base font-bold text-sanf-primary">{title}</span>
         {trend === "up" ? (
           <ArrowUp className="h-5 w-5 text-green-500" />
         ) : (
