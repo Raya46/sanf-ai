@@ -11,6 +11,13 @@ import { MainChart } from "@/components/dashboard/main-chart";
 import { ChatSection } from "@/components/new-application/ui/chat-section";
 import { type ChatMessage, type CreditApplication } from "@/lib/types";
 import { type ActiveView } from "@/app/dashboard/[projectId]/chat/[applicationId]/page";
+const tabs = [
+  { id: "income-statements", label: "INCOME STATEMENTS" },
+  { id: "balance-sheet", label: "BALANCE SHEET" },
+  { id: "cash-flow", label: "CASH FLOW" },
+  { id: "ratios", label: "RATIOS" },
+  { id: "industry-data", label: "INDUSTRY DATA" },
+];
 
 const formatToRupiah = (amount: number) => {
   return `Rp ${new Intl.NumberFormat("id-ID").format(amount)}`;
@@ -93,6 +100,8 @@ export function FinancialDashboard() {
   const [initialMessages, setInitialMessages] =
     useState<ChatMessage[]>(mockInitialMessages);
 
+  const currentTabLabel = tabs.find(tab => tab.id === activeTab)?.label || "Dashboard";
+
   return (
     <DashboardLayout>
       <DashboardHeader />
@@ -100,11 +109,11 @@ export function FinancialDashboard() {
       <div className="flex-1 bg-indigo-100/50 space-y-8">
 
         {/* Main Metrics Section - Combined Card and Performance Cards */}
-        <div className="px-6 pt-6">
-          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="px-6 pt-12">
+          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} tabs={tabs} />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <CombinedMetricsCard metrics={mainMetrics} />
+              <CombinedMetricsCard metrics={mainMetrics} title={currentTabLabel} />
             </div>
             <div className="flex flex-col gap-4">
               {performanceCards.map((card) => (
