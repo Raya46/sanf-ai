@@ -97,37 +97,32 @@ export function FinancialDashboard() {
     <DashboardLayout>
       <DashboardHeader />
 
-      <div className="flex-1 p-6 space-y-8">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Financial Analysis
-          </h1>
-          <h2 className="text-4xl font-bold text-gray-900 mb-8">Company</h2>
-        </div>
-
-        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="flex-1 bg-indigo-100/50 space-y-8">
 
         {/* Main Metrics Section - Combined Card and Performance Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <CombinedMetricsCard metrics={mainMetrics} />
-          </div>
-          <div className="flex flex-col gap-4">
-            {performanceCards.map((card) => (
-              <MetricTrendCard
-                key={card.title}
-                title={card.title}
-                value={card.value}
-                delta={card.delta}
-                deltaType={card.deltaType}
-                trend={card.trend}
-              />
-            ))}
+        <div className="px-6 pt-6">
+          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <CombinedMetricsCard metrics={mainMetrics} />
+            </div>
+            <div className="flex flex-col gap-4">
+              {performanceCards.map((card) => (
+                <MetricTrendCard
+                  key={card.title}
+                  title={card.title}
+                  value={card.value}
+                  delta={card.delta}
+                  deltaType={card.deltaType}
+                  trend={card.trend}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="px-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Sidebar */}
           <div>
             <KeyRatiosSection />

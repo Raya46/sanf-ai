@@ -14,19 +14,15 @@ export const metadata: Metadata = {
   description: "Created By Summon",
 };
 
-
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-
   return (
     <html lang="en">
       <body className={`${inter.variable} antialiased`}>
-        <Providers>
-          <SidebarProvider>{children}</SidebarProvider>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
