@@ -53,7 +53,7 @@ export function TabNavigation({ activeTab, onTabChange, tabs }: TabNavigationPro
             }}
             onClick={() => onTabChange(tab.id)}
             className={`relative z-20 px-4 py-2 uppercase font-medium cursor-pointer transition-colors duration-200
-              ${activeTab === tab.id ? "text-white" : "text-gray-300 hover:text-gray-100"}
+              ${activeTab === tab.id ? "text-white" : "text-gray-400 hover:text-gray-100"}
             `}
           >
             {tab.label}

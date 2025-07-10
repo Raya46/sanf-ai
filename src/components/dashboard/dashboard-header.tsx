@@ -23,7 +23,7 @@ export function DashboardHeader() {
   return (
     <header className="flex justify-between items-center p-4 py-8 bg-[#182d7c] border-gray-200">
       <div className="flex items-center gap-4">
-        <Button className="bg-white" onClick={() => router.push("/")}>
+        <Button className="bg-white hover:bg-sanf-secondary" onClick={() => router.push("/")}>
           <ChevronLeft className="text-black" />
         </Button>
         <h1 className="text-4xl font-sans font-bold text-white">
