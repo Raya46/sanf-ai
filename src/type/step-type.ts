@@ -48,8 +48,8 @@ interface StepCompanyDataProps {
   setCompanyEmail: (email: string) => void;
   businessField: string;
   setBusinessField: (field: string) => void;
-  numEmployees: number | "";
-  setNumEmployees: (num: number | "") => void;
+  numSubmission: number | "";
+  setNumSubmission: (num: number | "") => void;
   handlePreviousStep: () => void;
   handleNextStep: () => void;
   businessFields: { value: string; label: string }[];

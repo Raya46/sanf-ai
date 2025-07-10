@@ -59,7 +59,7 @@ export function SectionForm() {
   const [npwp, setNpwp] = useState("");
   const [companyEmail, setCompanyEmail] = useState("");
   const [businessField, setBusinessField] = useState("");
-  const [numEmployees, setNumEmployees] = useState<number | "">("");
+  const [numSubmssion, setNumSubmssion] = useState<number | "">("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [processingMessage, setProcessingMessage] = useState(
@@ -160,7 +160,7 @@ export function SectionForm() {
       formData.append("npwp", npwp);
       formData.append("company_email", companyEmail);
       formData.append("business_field", businessField);
-      formData.append("num_employees", numEmployees.toString());
+      formData.append("num_employees", numSubmssion.toString());
 
       for (const stagedFile of stagedFiles) {
         formData.append("files", stagedFile.file, stagedFile.file.name);
@@ -181,7 +181,7 @@ export function SectionForm() {
         error?: string;
       };
       if (result.success && result.applicationId) {
-        router.push(`/dashboard/application/${result.applicationId}`);
+        router.push(`/dashboard/${result.applicationId}`);
       } else {
         throw new Error(
           result.error || "Submission failed with an unknown error."
@@ -290,8 +290,8 @@ export function SectionForm() {
             setCompanyEmail={setCompanyEmail}
             businessField={businessField}
             setBusinessField={setBusinessField}
-            numEmployees={numEmployees}
-            setNumEmployees={setNumEmployees}
+            numSubmission={numSubmssion}
+            setNumSubmission={setNumSubmssion}
             handlePreviousStep={handlePreviousStep}
             handleNextStep={handleNextStep}
             businessFields={businessFields}

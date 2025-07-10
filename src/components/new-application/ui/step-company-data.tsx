@@ -25,8 +25,8 @@ export function StepCompanyData({
   setCompanyEmail,
   businessField,
   setBusinessField,
-  numEmployees,
-  setNumEmployees,
+  numSubmission,
+  setNumSubmission,
   businessFields,
 }: StepCompanyDataProps) {
   return (
@@ -121,13 +121,13 @@ export function StepCompanyData({
             </Select>
           </div>
           <div>
-            <Label htmlFor="numEmployees">Jumlah Karyawan</Label>
+            <Label htmlFor="numSubmission">Nominal Pengajuan</Label>
             <Input
-              id="numEmployees"
+              id="numSubmission"
               type="number"
-              value={numEmployees}
-              onChange={(e) => setNumEmployees(parseInt(e.target.value) || "")}
-              placeholder="Masukkan jumlah karyawan"
+              value={numSubmission}
+              onChange={(e) => setNumSubmission(parseInt(e.target.value) || "")}
+              placeholder="Masukkan nominal pengajuan"
             />
           </div>
         </div>
