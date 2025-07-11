@@ -9,7 +9,11 @@ interface TabNavigationProps {
   tabs: { id: string; label: string }[];
 }
 
-export function TabNavigation({ activeTab, onTabChange, tabs }: TabNavigationProps) {
+export function TabNavigation({
+  activeTab,
+  onTabChange,
+  tabs,
+}: TabNavigationProps) {
   const tabsRef = useRef<(HTMLDivElement | null)[]>([]);
   const [activeTabStyle, setActiveTabStyle] = useState({ left: 0, width: 0 });
 
@@ -24,7 +28,7 @@ export function TabNavigation({ activeTab, onTabChange, tabs }: TabNavigationPro
         });
       }
     }
-  }, [activeTab]);
+  }, [activeTab, tabs]);
 
   return (
     <>
@@ -64,4 +68,3 @@ export function TabNavigation({ activeTab, onTabChange, tabs }: TabNavigationPro
     </>
   );
 }
-

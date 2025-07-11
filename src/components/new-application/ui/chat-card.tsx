@@ -27,7 +27,7 @@ export function ChatCard({
         <div
           className={cn(
             "prose prose-sm max-w-none prose-p:my-0 prose-ul:my-2 prose-ol:my-2 prose-headings:my-2",
-            isUser ? "text-white" : "text-black",
+            isUser ? "text-white" : "text-black"
           )}
         >
           <ReactMarkdown>{chat}</ReactMarkdown>

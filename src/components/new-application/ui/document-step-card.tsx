@@ -8,83 +8,6 @@ import { Download, X } from "lucide-react";
 import { useCallback } from "react";
 import { FileRejection, useDropzone } from "react-dropzone";
 
-// Tipe data untuk setiap dokumen
-interface DocumentRequirement {
-  id: string;
-  name: string;
-  format: string;
-  details: string;
-  fileName?: string;
-  description?: string;
-  status: "uploaded" | "missing" | "validated" | "pending_validation";
-}
-
-// Data awal berdasarkan list yang Anda berikan
-const initialDocuments: DocumentRequirement[] = [
-  {
-    id: "rekening_koran",
-    name: "1. Rekening Koran 3 bulan",
-    format: "PDF",
-    details: "Periode: Apr-Jun 2025",
-    fileName: "rekening_koran_apr-jun2025.pdf",
-    status: "missing",
-  },
-  {
-    id: "loi_kerjasama",
-    name: "2. LOI Kerjasama",
-    format: "PDF",
-    details: "Pihak: PT Bohir Jaya",
-    fileName: "loi_bohir_jaya.pdf",
-    status: "missing",
-  },
-  {
-    id: "rekapan_sales",
-    name: "3. Rekapan Sales 3 bulan",
-    format: "PDF/Excel",
-    details: "Periode: Apr-Jun 2025",
-    fileName: "rekapan_sales_Q2_2025.xlsx",
-    status: "missing",
-  },
-  {
-    id: "laporan_keuangan",
-    name: "4. Laporan Keuangan 2 tahun",
-    format: "PDF",
-    details: "Periode: 2023-2024",
-    fileName: "lapkeu_2023-2024.pdf",
-    status: "missing",
-  },
-  {
-    id: "invoice_proyek",
-    name: "5. Invoice Proyek 2 bulan",
-    format: "PDF",
-    details: "Periode: Apr-Mei 2025",
-    fileName: "invoice_apr-mei_2025.pdf",
-    status: "missing",
-  },
-  {
-    id: "dokumen_collateral",
-    name: "6. Dokumen Collateral",
-    format: "PDF",
-    details: "Detail: Sertifikat tanah sebagai jaminan",
-    status: "missing",
-  },
-  {
-    id: "legalitas_usaha",
-    name: "7. Legalitas Usaha",
-    format: "PDF",
-    details: "Dokumen: KTP, NPWP, Akta, NIB, SK Menkeu",
-    status: "missing",
-  },
-  {
-    id: "company_profile",
-    name: "8. Company Profile",
-    format: "PDF",
-    details: "Detail: Profil perusahaan lengkap",
-    status: "missing",
-  },
-];
-
-// Komponen kecil untuk area Dropzone
 function FileUploader({
   onFileUpload,
 }: {
@@ -106,7 +29,7 @@ function FileUploader({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     multiple: false,
-    maxSize: 10 * 1024 * 1024, // 10 MB
+    maxSize: 10 * 1024 * 1024,
   });
 
   return (
@@ -137,15 +60,6 @@ function FileUploader({
       </div>
     </div>
   );
-}
-
-interface DocumentUploadStepProps {
-  documents: DocumentRequirement[];
-  handleDocumentUpload: (docId: string, files: File[]) => void;
-  handleFileRemove: (docId: string) => void;
-  completenessPercentage: number;
-  documentsUploadedCount: number;
-  totalDocumentsRequired: number;
 }
 
 export function DocumentUploadStep({
@@ -190,7 +104,6 @@ export function DocumentUploadStep({
             </div>
             <p className="text-sm text-gray-500">{doc.details}</p>
 
-            {/* Tampilan Kondisional: Menampilkan nama file atau area upload */}
             {doc.fileName ? (
               <div className="mt-2 flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 p-2">
                 <p className="flex-grow cursor-pointer font-medium text-blue-600">

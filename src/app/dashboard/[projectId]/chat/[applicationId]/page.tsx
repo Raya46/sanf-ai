@@ -5,6 +5,7 @@ import { AnalyticsSidebar } from "@/components/new-application/ui/analytics-side
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { CreditApplication, ChatMessage } from "@/lib/types";
+import { ChartBarNegative } from "@/components/new-application/ui/negative-bar-chart";
 
 export type ActiveView = "credit-application" | "macroeconomics";
 
@@ -47,9 +48,14 @@ export default function CreditChat() {
     fetchData();
   }, [applicationId]);
 
-  // Fetch chat history
+  // Log applicationData setiap kali berubah
   useEffect(() => {
-    if (!applicationId) return;
+    console.log("applicationData:", applicationData);
+  }, [applicationData]);
+
+  // Fetch chat history hanya setelah applicationData berhasil diambil
+  useEffect(() => {
+    if (!applicationId || !applicationData) return;
     const fetchChat = async () => {
       setIsLoadingChat(true);
       try {
@@ -67,24 +73,26 @@ export default function CreditChat() {
       }
     };
     fetchChat();
-  }, [applicationId]);
+  }, [applicationId, applicationData]);
 
   return (
     <div className="flex h-screen p-4 gap-4">
-      <ChatSection
-        activeView={activeView}
-        setActiveView={setActiveView}
-        applicationData={applicationData}
-        isLoadingData={isLoadingData}
-        errorData={errorData}
-        initialMessages={chatMessages}
-        isLoadingChat={isLoadingChat}
-        applicationId={applicationId}
-      />
-      <AnalyticsSidebar
-        applicationId={applicationId}
-        activeView={activeView}
-      />
+      {/* Chat Section */}
+      <div className="flex flex-col flex-1 gap-4">
+        {/* ChartBarNegative hanya dirender di dalam ChatSection, tidak perlu di sini */}
+        <ChatSection
+          activeView={activeView}
+          setActiveView={setActiveView}
+          applicationData={applicationData}
+          isLoadingData={isLoadingData}
+          errorData={errorData}
+          initialMessages={chatMessages}
+          isLoadingChat={isLoadingChat}
+          applicationId={applicationId}
+        />
+      </div>
+      {/* Sidebar */}
+      <AnalyticsSidebar applicationId={applicationId} activeView={activeView} />
     </div>
   );
 }

@@ -7,45 +7,80 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CategoryBar } from "@/components/app/ui/category-chart";
+import { type CreditApplication } from "@/lib/types";
 
-const ratios = [
-  "Quick Ratio",
-  "Current Ratio",
-  "Debt to Equity Ratio",
-  "Debt to EBITDA",
-  "Total Liabilities Ratio",
-  "EBITDA Interest Coverage Ratio",
-  "Debt Service Coverage Ratio",
-];
+interface KeyRatiosSectionProps {
+  applicationData: CreditApplication;
+}
 
-const ratioData: { [key: string]: { average: number; applicant: number } } = {
-  "Quick Ratio": { average: 1.2, applicant: 0.8 },
-  "Current Ratio": { average: 2.0, applicant: 1.5 },
-  "Debt to Equity Ratio": { average: 0.5, applicant: 1.2 },
-  "Debt to EBITDA": { average: 3.0, applicant: 4.5 },
-  "Total Liabilities Ratio": { average: 0.6, applicant: 0.8 },
-  "EBITDA Interest Coverage Ratio": { average: 5.0, applicant: 2.5 },
-  "Debt Service Coverage Ratio": { average: 1.5, applicant: 0.9 },
-};
+export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
+  const ratios = [
+    {
+      label: "Quick Ratio",
+      key: "quick_ratio",
+      info: "Measures a company's ability to meet its short-term obligations with its most liquid assets.",
+    },
+    {
+      label: "Current Ratio",
+      key: "current_ratio",
+      info: "Indicates a company's ability to pay off its short-term liabilities with its current assets.",
+    },
+    {
+      label: "Debt to EBITDA",
+      key: "debt_to_ebitda",
+      info: "Assesses a company's ability to pay off its incurred debt.",
+    },
+    {
+      label: "Debt to Equity Ratio",
+      key: "debt_to_equity_ratio",
+      info: "Measures the proportion of equity and debt used to finance a company's assets.",
+    },
+    {
+      label: "Total Liabilities Ratio",
+      key: "total_liabilities_ratio",
+      info: "Indicates the proportion of a company's assets that are financed by debt.",
+    },
+    {
+      label: "Debt Service Coverage Ratio",
+      key: "debt_service_coverage_ratio",
+      info: "Measures a company's ability to pay its current debt obligations.",
+    },
+    {
+      label: "EBITDA Interest Coverage Ratio",
+      key: "ebitda_interest_coverage_ratio",
+      info: "Measures a company's ability to pay interest on its outstanding debt.",
+    },
+  ];
 
-export function KeyRatiosSection() {
+  const getRatioValue = (ratioKey: keyof typeof applicationData.key_ratios) => {
+    return applicationData.key_ratios?.[ratioKey]?.ratio || 0;
+  };
+
+  const getTargetValue = (
+    ratioKey: keyof typeof applicationData.key_ratios
+  ) => {
+    return applicationData.key_ratios?.[ratioKey]?.target || 0;
+  };
   return (
     <div className="bg-white rounded-lg p-6 border border-gray-200">
       <h3 className="text-lg font-semibold text-blue-600 mb-4">Key Ratios</h3>
       <div className="space-y-3">
         {ratios.map((ratio) => {
-          const data = ratioData[ratio];
-          const targetValue = data.average;
-          const ratioValue = data.applicant;
+          const ratioValue = getRatioValue(
+            ratio.key as keyof typeof applicationData.key_ratios
+          );
+          const targetValue = getTargetValue(
+            ratio.key as keyof typeof applicationData.key_ratios
+          );
           const maxValue = Math.max(targetValue, ratioValue) * 1.2; // Add some buffer
 
           return (
             <div
-              key={ratio}
+              key={ratio.key}
               className="py-2 border-b border-gray-200 last:border-b-0"
             >
               <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-700 text-sm">{ratio}</span>
+                <span className="text-gray-700 text-sm">{ratio.label}</span>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -58,7 +93,7 @@ export function KeyRatiosSection() {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Information about {ratio}</p>
+                      <p>{ratio.info}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

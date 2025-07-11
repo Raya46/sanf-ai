@@ -8,29 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-
-interface StepCompanyDataProps {
-  companyName: string;
-  setCompanyName: (name: string) => void;
-  companyAddress: string;
-  setCompanyAddress: (address: string) => void;
-  companyPhone: string;
-  setCompanyPhone: (phone: string) => void;
-  yearEstablished: number | "";
-  setYearEstablished: (year: number | "") => void;
-  npwp: string;
-  setNpwp: (npwp: string) => void;
-  companyEmail: string;
-  setCompanyEmail: (email: string) => void;
-  businessField: string;
-  setBusinessField: (field: string) => void;
-  numEmployees: number | "";
-  setNumEmployees: (num: number | "") => void;
-  handlePreviousStep: () => void;
-  handleNextStep: () => void;
-  businessFields: { value: string; label: string }[];
-}
 
 export function StepCompanyData({
   companyName,
@@ -47,10 +24,8 @@ export function StepCompanyData({
   setCompanyEmail,
   businessField,
   setBusinessField,
-  numEmployees,
-  setNumEmployees,
-  handlePreviousStep,
-  handleNextStep,
+  numSubmission,
+  setNumSubmission,
   businessFields,
 }: StepCompanyDataProps) {
   return (
@@ -145,22 +120,16 @@ export function StepCompanyData({
             </Select>
           </div>
           <div>
-            <Label htmlFor="numEmployees">Jumlah Karyawan</Label>
+            <Label htmlFor="numSubmission">Nominal Pengajuan</Label>
             <Input
-              id="numEmployees"
+              id="numSubmission"
               type="number"
-              value={numEmployees}
-              onChange={(e) => setNumEmployees(parseInt(e.target.value) || "")}
-              placeholder="Masukkan jumlah karyawan"
+              value={numSubmission}
+              onChange={(e) => setNumSubmission(parseInt(e.target.value) || "")}
+              placeholder="Masukkan nominal pengajuan"
             />
           </div>
         </div>
-      </div>
-      <div className="flex justify-between mt-4">
-        <Button variant="outline" onClick={handlePreviousStep}>
-          Previous
-        </Button>
-        <Button onClick={handleNextStep}>Next</Button>
       </div>
     </div>
   );

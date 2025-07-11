@@ -11,6 +11,7 @@ import { MainChart } from "@/components/dashboard/main-chart";
 import { ChatSection } from "@/components/new-application/ui/chat-section";
 import { type ChatMessage, type CreditApplication } from "@/lib/types";
 import { type ActiveView } from "@/app/dashboard/[projectId]/chat/[applicationId]/page";
+
 const tabs = [
   { id: "income-statements", label: "INCOME STATEMENTS" },
   { id: "balance-sheet", label: "BALANCE SHEET" },
@@ -23,97 +24,91 @@ const formatToRupiah = (amount: number) => {
   return `Rp ${new Intl.NumberFormat("id-ID").format(amount)}`;
 };
 
-const mainMetrics = [
-  {
-    label: "Total Revenue",
-    value: formatToRupiah(12405134.65),
-    hasInfo: true,
-    trend: "negative" as const,
-  },
-  {
-    label: "Gross Profit",
-    value: formatToRupiah(8195001.05),
-    hasInfo: true,
-    trend: "positive" as const,
-  },
-  {
-    label: "Operating Expenses",
-    value: formatToRupiah(2085606.14),
-    hasInfo: true,
-    trend: "positive" as const,
-  },
-];
+export function FinancialDashboard({
+  applicationData,
+}: {
+  applicationData: CreditApplication;
+}) {
+  const mainMetrics = [
+    {
+      label: "Total Revenue",
+      value: formatToRupiah(
+        applicationData.revenue.reduce((sum, item) => sum + item.revenue, 0) ||
+          0
+      ),
+      hasInfo: true,
+      trend: "negative" as const,
+    },
+    {
+      label: "Gross Profit",
+      value: formatToRupiah(applicationData.gross_profit), // Example calculation
+      hasInfo: true,
+      trend: "positive" as const,
+    },
+    {
+      label: "Operating Expenses",
+      value: formatToRupiah(applicationData.operating_expenses), // Example calculation
+      hasInfo: true,
+      trend: "positive" as const,
+    },
+  ];
 
-const performanceCards = [
-  {
-    title: "Total Revenue",
-    value: formatToRupiah(805134.65),
-    delta: "+21.6%",
-    deltaType: "positive" as const,
-    trend: "up" as const,
-  },
-  {
-    title: "EBITDA",
-    value: formatToRupiah(405134.65),
-    delta: "-6.9%",
-    deltaType: "negative" as const,
-    trend: "down" as const,
-  },
-];
+  const performanceCards = [
+    {
+      title: "Total Revenue",
+      value: formatToRupiah(
+        applicationData.revenue.reduce((sum, item) => sum + item.revenue, 0) ||
+          0
+      ),
+      delta: "+21.6%", // Placeholder
+      deltaType: "positive" as const,
+      trend: "up" as const,
+    },
+    {
+      title: "EBITDA",
+      value: formatToRupiah(applicationData.ebitda), // Example calculation
+      delta: "-6.9%", // Placeholder
+      deltaType: "negative" as const,
+      trend: "down" as const,
+    },
+  ];
 
-// Mock data for ChatSection props
-const mockApplicationData: CreditApplication = {
-  id: "mock-app-123",
-  created_at: new Date().toISOString(),
-  user_id: "mock-user-123",
-  status: "approved",
-  analysis_template: "standard",
-  risk_appetite: 70, // Changed to number as per type
-  company_type: "Productive", // Added new field
-  amount: 1000000, // Added new field
-  ai_analysis_status: "completed",
-  probability_approval: 80, // Changed to number as per type
-  overall_indicator: "MEDIUM_RISK", // Changed to string as per type
-  document_validation_percentage: 100,
-  estimated_analysis_time_minutes: 5,
-  revenue: [
-    { year: 2024, month: 1, revenue: 100 },
-    { year: 2024, month: 2, revenue: 120 },
-    { year: 2024, month: 3, revenue: 110 },
-  ],
-  application_files: [],
-  ai_analysis: "This is a mock AI analysis report.", // Added new field
-};
+  const initialMessages: ChatMessage[] = [
+    {
+      id: "1",
+      sender_type: "ai",
+      message_content:
+        applicationData.ai_analysis || "No AI analysis available.",
+    },
+  ];
 
-const mockInitialMessages: ChatMessage[] = [
-  {
-    id: "1",
-    sender_type: "ai",
-    message_content: "Hello! How can I assist you with this application?",
-  },
-];
-
-export function FinancialDashboard() {
   const [activeTab, setActiveTab] = useState("income-statements");
   const [activeView, setActiveView] =
     useState<ActiveView>("credit-application");
-  const [initialMessages, setInitialMessages] =
-    useState<ChatMessage[]>(mockInitialMessages);
+  const [chatMessages, setChatMessages] =
+    useState<ChatMessage[]>(initialMessages);
 
-  const currentTabLabel = tabs.find(tab => tab.id === activeTab)?.label || "Dashboard";
+  const currentTabLabel =
+    tabs.find((tab) => tab.id === activeTab)?.label || "Dashboard";
 
   return (
     <DashboardLayout>
       <DashboardHeader />
 
       <div className="flex-1 bg-indigo-100/50 space-y-8">
-
         {/* Main Metrics Section - Combined Card and Performance Cards */}
         <div className="px-6 pt-12">
-          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} tabs={tabs} />
+          <TabNavigation
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabs={tabs}
+          />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <CombinedMetricsCard metrics={mainMetrics} title={currentTabLabel} />
+              <CombinedMetricsCard
+                metrics={mainMetrics}
+                title={currentTabLabel}
+              />
             </div>
             <div className="flex flex-col gap-4">
               {performanceCards.map((card) => (
@@ -134,12 +129,16 @@ export function FinancialDashboard() {
         <div className="px-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Sidebar */}
           <div>
-            <KeyRatiosSection />
+            <KeyRatiosSection applicationData={applicationData} />
           </div>
 
           {/* Main Chart */}
           <div className="lg:col-span-2">
-            <MainChart period={activeTab} onPeriodChange={setActiveTab} />{" "}
+            <MainChart
+              period={activeTab}
+              onPeriodChange={setActiveTab}
+              revenueData={applicationData.revenue}
+            />
             {/* Using activeTab for period */}
           </div>
 
@@ -148,12 +147,12 @@ export function FinancialDashboard() {
             <ChatSection
               activeView={activeView}
               setActiveView={setActiveView}
-              applicationData={mockApplicationData}
-              isLoadingData={false} // Mock value
-              errorData={null} // Mock value
-              initialMessages={initialMessages}
-              isLoadingChat={false} // Mock value
-              applicationId={mockApplicationData.id}
+              applicationData={applicationData}
+              isLoadingData={false}
+              errorData={null}
+              initialMessages={chatMessages}
+              isLoadingChat={false}
+              applicationId={applicationData.id}
             />
           </div>
         </div>

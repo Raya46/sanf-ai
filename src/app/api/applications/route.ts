@@ -7,7 +7,7 @@ import { generateObject } from "ai";
 import { AwsClient } from "aws4fetch";
 import { z } from "zod";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-
+import nodemailer from "nodemailer";
 // --- R2 Configuration ---
 const accessKeyId = process.env.R2_ACCESS_KEY_ID || "";
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || "";
@@ -26,18 +26,21 @@ const s3 = new AwsClient({
   region: "auto",
 });
 
-// --- AI Analysis Schema ---
+const RatioSchema = z.object({
+  target: z.number().describe("The target or benchmark value for this ratio."),
+  ratio: z
+    .number()
+    .describe("The applicant's calculated value for this ratio."),
+});
+
+// Skema utama yang menggunakan RatioSchema baru
 const analysisSchema = z.object({
   ai_analysis_status: z
     .string()
-    .describe(
-      "The status of the AI analysis (e.g., 'Completed', 'Failed', 'Requires_Manual_Review')."
-    ),
+    .describe("The status of the AI analysis (e.g., 'Completed', 'Failed')."),
   ai_analysis: z
     .string()
-    .describe(
-      "The full AI analysis report generated based on the documents and user context."
-    ),
+    .describe("The full AI analysis report from uploaded Document"),
   probability_approval: z
     .number()
     .min(0)
@@ -60,73 +63,68 @@ const analysisSchema = z.object({
     .describe(
       "Estimated time in minutes for a human to perform a similar analysis."
     ),
-  revenue_analysis: z
+  revenue: z
     .array(
       z.object({
-        year: z
-          .number()
-          .describe("The year for the revenue data point, e.g., 2023."),
-        month: z
-          .number()
-          .min(1)
-          .max(12)
-          .describe("The month number (1-12) for the revenue data point."),
-        revenue: z
-          .number()
-          .describe(
-            "The calculated revenue for that month. Can be positive or negative."
-          ),
+        year: z.number().describe("The year for the revenue data point."),
+        month: z.number().min(1).max(12).describe("The month number (1-12)."),
+        revenue: z.number().describe("The calculated revenue for that month."),
       })
     )
     .max(36)
+    .describe("An array of monthly revenue data for up to the last 36 months."),
+
+  risk_appetite: z.number().describe("The risk appetite value."),
+  operating_expenses: z
+    .number()
+    .describe("The total operating expenses from the financial statements."),
+  gross_profit: z
+    .number()
+    .describe("The gross profit from the financial statements."),
+  ebitda: z.number().describe("The EBITDA from the financial statements."),
+
+  // Bagian ini sekarang menggunakan RatioSchema yang baru
+  key_ratios: z
+    .object({
+      quick_ratio: RatioSchema,
+      current_ratio: RatioSchema,
+      debt_to_equity_ratio: RatioSchema,
+      debt_to_ebitda: RatioSchema,
+      total_liabilities_ratio: RatioSchema,
+      ebitda_interest_coverage_ratio: RatioSchema,
+      debt_service_coverage_ratio: RatioSchema,
+    })
     .describe(
-      "An array of calculated monthly revenue data for up to the last 36 months based on financial documents. Extract as much monthly data as is available."
+      "An object containing detailed breakdowns of key financial ratios."
     ),
-  company_type: z
-    .string()
-    .describe(
-      "A string to make type for company example:(Heavy Equipment, Trucking, Productive, New Business "
-    ),
-  amount: z.number().describe("An amount from company to analyze credit"),
-  analysis_template: z.string(),
 });
 
+// --- Fungsi Helper & GET (Tidak berubah) ---
 export interface CloudflareEnv {
   AI: any;
   OPENAI_API_KEY: string;
 }
-
 function getCloudflareEnv(): CloudflareEnv {
   try {
     const { env } = getCloudflareContext() as { env: any };
-
     console.log(
-      "Successfully accessed Cloudflare context. Assuming production environment."
+      "✅ Successfully accessed Cloudflare context. Assuming production environment."
     );
-
     const apiKey = env.OPENAI_API_KEY;
-    const ai = env.AI;
-
     if (!apiKey) {
       console.error(
-        "CRITICAL: Cloudflare context found, but OPENAI_API_KEY secret is MISSING."
+        "❌ CRITICAL: Cloudflare context found, but OPENAI_API_KEY secret is MISSING."
       );
       throw new Error(
         "OPENAI_API_KEY secret not found in Cloudflare environment."
       );
     }
-
-    console.log(
-      `Found OPENAI_API_KEY in Cloudflare secrets. Preview: ${apiKey.substring(0, 5)}...${apiKey.slice(-4)}`
-    );
-    return { AI: ai, OPENAI_API_KEY: apiKey };
+    return { AI: env.AI, OPENAI_API_KEY: apiKey };
   } catch (e) {
     console.log(
-      `Could not get Cloudflare context. Assuming local development environment.${e}`
+      "Could not get Cloudflare context. Assuming local development environment."
     );
-
     const apiKey = process.env.OPENAI_API_KEY;
-
     if (!apiKey) {
       console.error(
         "❌ CRITICAL: Running locally, but OPENAI_API_KEY is MISSING from .env file."
@@ -135,57 +133,46 @@ function getCloudflareEnv(): CloudflareEnv {
         "OPENAI_API_KEY not found in process.env for local development."
       );
     }
-
-    console.log(
-      `✅ Found OPENAI_API_KEY in local .env file. Preview: ${apiKey.substring(0, 5)}...${apiKey.slice(-4)}`
-    );
     return { AI: null, OPENAI_API_KEY: apiKey };
   }
 }
-
-// --- GET Function ---
 export async function GET() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const { data, error } = await supabase
     .from("credit_applications")
     .select("*")
     .eq("user_id", user.id);
-
-  if (error) {
+  if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
   return NextResponse.json(data);
 }
 
-// --- POST Function (Multimodal AI Analysis) ---
+// --- Fungsi POST Utama (Logika Baru) ---
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
-    if (!user) {
+    if (!user)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const formData = await request.formData();
+
+    // LANGKAH 1: Ambil semua data dari form
     const analysis_template = formData.get("analysis_template") as string;
-    const risk_appetite = parseInt(formData.get("risk_appetite") as string);
     const company_type = formData.get("company_type") as string;
     const company_name = formData.get("company_name") as string;
     const contact_person = formData.get("contact_person") as string;
     const contact_email = formData.get("contact_email") as string;
     const amount = parseFloat(formData.get("amount") as string);
+    const risk_parameters = formData.get("risk_parameters") as string;
+    const ai_context = formData.get("ai_context") as string;
     const files = formData.getAll("files") as File[];
 
     if (!files || files.length === 0) {
@@ -195,6 +182,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // LANGKAH 2: Buat catatan aplikasi awal di database dengan status 'pending'
+    console.log("Step 1: Creating initial application record...");
+    const { data: application, error: initialInsertError } = await supabase
+      .from("credit_applications")
+      .insert({
+        user_id: user.id,
+        status: "pending_analysis",
+        analysis_template,
+        company_type,
+        amount,
+        company_name,
+        contact_person,
+        contact_email,
+        risk_parameters: JSON.parse(risk_parameters),
+      })
+      .select("id")
+      .single();
+
+    await supabase.from("chat_sessions").insert({
+      application_id: application?.id,
+      user_id: user.id,
+    });
+
+    if (initialInsertError) {
+      console.error("Error creating initial application:", initialInsertError);
+      return NextResponse.json(
+        { error: initialInsertError.message },
+        { status: 500 }
+      );
+    }
+    console.log(`Initial record created with ID: ${application.id}`);
+
+    // LANGKAH 3: Upload file ke R2 dan siapkan prompt AI
+    console.log("Step 2: Uploading files and preparing AI context...");
     const uploadedFilesData = [];
     const aiContent: (
       | { type: "text"; text: string }
@@ -202,18 +223,20 @@ export async function POST(request: NextRequest) {
     )[] = [
       {
         type: "text",
-        text: `You are an expert credit analyst AI. Analyze the provided financial documents (sent as image/file objects) for a loan application.
-         The user has selected the "${analysis_template}" template, has a risk appetite of ${risk_appetite}%, the company type is "${company_type}", and the requested amount is ${amount}.
-         Your tasks are:
-         1. Generate a comprehensive creditworthiness analysis report in **pure HTML format**. This report must start with a concise summary (2-3 sentences) of the credit application, highlighting key findings like approval probability and risk indicator. Use appropriate HTML tags for headings (<h1>, <h2>), paragraphs (<p>), bold text (<b> or <strong>), italic text (<i> or <em>), and lists (<ul>, <ol>, <li>). Ensure proper line breaks and spacing using HTML tags like <br> or by structuring content within block-level elements. **Do NOT use Markdown syntax (e.g., **bold**, *italic*, - list item**) in the output.** The entire report should be a single, well-formed HTML string, suitable for direct display or export.
-         2. Provide a general creditworthiness analysis (approval probability, risk, document validity).
-         3. Extract detailed monthly revenue data from the documents. Go back as far as possible, up to 36 months. The result must be an array of objects, each containing 'year', 'month' (1-12), and 'revenue'. If a month's data is not available, do not include it in the array.
-         Analyze the following document(s):`,
+        text: `You are a world-class credit analyst AI. Analyze the provided documents for a loan application.
+        - Initial User Inputs: Company Name: ${company_name}, Template: ${analysis_template}, Amount: ${amount}, Custom Risk Parameters: ${risk_parameters}.
+        - Additional User Context: ${ai_context || "None"}
+        
+        Your tasks are:
+        1.  Generate a comprehensive analysis report in **pure HTML format**.
+        2.  Calculate and provide all financial metrics and ratios as defined in the schema, including operating expenses, gross profit, EBITDA, and all key ratios.
+        3.  Provide all other requested data points like approval probability and risk indicators, and generate a risk_appetite value based on the provided risk_parameters.
+        Analyze the following document(s) to fulfill these tasks:`,
       },
     ];
 
     for (const file of files) {
-      const r2Key = `docs/${user.id}/${uuidv4()}-${file.name}`;
+      const r2Key = `docs/${user.id}/${application.id}/${uuidv4()}-${file.name}`;
       const buffer = Buffer.from(await file.arrayBuffer());
 
       await s3.fetch(`${endpoint}/${bucketName}/${r2Key}`, {
@@ -224,17 +247,19 @@ export async function POST(request: NextRequest) {
         },
         body: buffer,
       });
-
       uploadedFilesData.push({
+        application_id: application.id,
         file_name: file.name,
         r2_object_key: r2Key,
         file_size_bytes: file.size,
         file_type: "document",
       });
-
       aiContent.push({ type: "image", image: buffer });
     }
+    await supabase.from("application_files").insert(uploadedFilesData);
 
+    // LANGKAH 4: Jalankan Analisis AI
+    console.log("Step 3: Starting AI analysis...");
     const env = getCloudflareEnv();
     const openai = createOpenAI({
       baseURL: "https://openrouter.ai/api/v1",
@@ -247,18 +272,12 @@ export async function POST(request: NextRequest) {
       prompt: `${aiContent}`,
     });
 
-    const { data: application, error: applicationError } = await supabase
+    // LANGKAH 5: Update catatan di database dengan hasil AI
+    console.log("Step 4: AI analysis completed. Updating database record...");
+    const { error: updateError } = await supabase
       .from("credit_applications")
-      .insert({
-        user_id: user.id,
-        status: "completed",
-        analysis_template,
-        risk_appetite,
-        company_type,
-        amount,
-        company_name,
-        contact_person,
-        contact_email,
+      .update({
+        status: "completed", // Ubah status menjadi 'completed'
         ai_analysis_status: analysisResult.ai_analysis_status,
         probability_approval: analysisResult.probability_approval,
         overall_indicator: analysisResult.overall_indicator,
@@ -266,47 +285,78 @@ export async function POST(request: NextRequest) {
           analysisResult.document_validation_percentage,
         estimated_analysis_time_minutes:
           analysisResult.estimated_analysis_time_minutes,
-        revenue: analysisResult.revenue_analysis,
+        revenue: analysisResult.revenue,
         ai_analysis: analysisResult.ai_analysis,
+        operating_expenses: analysisResult.operating_expenses,
+        gross_profit: analysisResult.gross_profit,
+        ebitda: analysisResult.ebitda,
+        key_ratios: analysisResult.key_ratios,
+        risk_appetite: analysisResult.risk_appetite, // Update risk_appetite with AI generated value
       })
-      .select()
-      .single();
+      .eq("id", application.id);
 
-    if (applicationError) {
-      console.error("Error creating application:", applicationError);
-      return NextResponse.json(
-        { error: applicationError.message },
-        { status: 500 }
-      );
+    if (contact_email) {
+      console.log("Step 5: Sending analysis result email...");
+      try {
+        const transporter = nodemailer.createTransport({
+          host: process.env.NODEMAILER_HOST || "smtp.gmail.com",
+          port: parseInt(process.env.NODEMAILER_PORT || "587"),
+          auth: {
+            user: process.env.GMAIL_USERNAME,
+            pass: process.env.GMAIL_PASSWORD,
+          },
+        });
+
+        const analysisSnippet =
+          analysisResult.ai_analysis.substring(0, 1000) +
+          (analysisResult.ai_analysis.length > 1000 ? "..." : "");
+
+        console.log(contact_email);
+
+        await transporter.sendMail({
+          from: `\"Sanf AI Credit\" <${process.env.GMAIL_USERNAME}>`,
+          to: contact_email,
+          subject: `Hasil Analisis Kredit untuk ${company_name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <h2>Hasil Analisis Kredit Anda Telah Selesai</h2>
+                <p>Halo <b>${contact_person || "Bapak/Ibu"}</b>,</p>
+                <p>Analisis kredit untuk perusahaan <b>${company_name}</b> telah berhasil diselesaikan oleh sistem AI kami. Berikut adalah ringkasannya:</p>
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr style="background-color: #f2f2f2;">
+                        <td style="padding: 8px; border: 1px solid #ddd;"><b>Probabilitas Persetujuan</b></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${analysisResult.probability_approval}%</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><b>Indikator Risiko</b></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${analysisResult.overall_indicator}</td>
+                    </tr>
+                </table>
+                <h3>Ringkasan Laporan Analisis:</h3>
+                <div style="border: 1px solid #eee; padding: 15px; background-color: #fafafa; border-radius: 5px;">
+                  ${analysisSnippet}
+                </div>
+                <p>Anda dapat melihat laporan lengkap dan berinteraksi dengan data melalui dashboard aplikasi kami.</p>
+                <p>Salam hangat,<br/>Tim Sanf AI</p>
+            </div>
+          `,
+        });
+        console.log("Analysis email sent successfully.");
+      } catch (err) {
+        console.error("Gagal mengirim email hasil analisis:", err);
+      }
     }
 
-    const filesToInsert = uploadedFilesData.map((file) => ({
-      ...file,
-      application_id: application.id,
-    }));
-    await supabase.from("application_files").insert(filesToInsert);
-
-    const { data: session } = await supabase
-      .from("chat_sessions")
-      .insert({ application_id: application.id, user_id: user.id })
-      .select()
-      .single();
-
-    if (session) {
-      // Insert the full AI analysis as the first message in the chat session
-      await supabase.from("chat_messages").insert({
-        session_id: session.id,
-        sender_type: "ai",
-        message_content: analysisResult.ai_analysis,
-      });
+    if (updateError) {
+      console.error("Error updating application with AI results:", updateError);
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    revalidatePath(`/dashboard/${user.id}/application`);
-    revalidatePath(`/dashboard/${user.id}/new-application/${application.id}`);
+    revalidatePath(`/dashboard`);
     return NextResponse.json({ success: true, applicationId: application.id });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Server: Error processing application:", message);
+    console.error("Server: Unhandled error in POST function:", message, error);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

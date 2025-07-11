@@ -41,8 +41,7 @@ export function ChatSection({
 
   const { messages, input, handleInputChange, handleSubmit, isLoading, data } =
     useChat({
-      api: "/api/chat",
-      body: { applicationId },
+      api: `/api/applications/${applicationId}/chat`,
       initialMessages: formattedInitialMessages,
     });
 
@@ -90,6 +89,13 @@ export function ChatSection({
           className="flex-1 flex flex-col gap-3 mt-2 overflow-hidden"
         >
           <div className="flex-1 overflow-y-auto flex flex-col gap-3">
+            {/* ChartBarNegative hanya muncul sekali di awal sesi chat jika ada data */}
+            {applicationData &&
+              applicationData.revenue &&
+              applicationData.revenue.length > 0 && (
+                <ChartBarNegative data={applicationData.revenue} />
+              )}
+
             {isLoadingChat && (
               <ChatCard
                 color="bg-transparent"
@@ -98,7 +104,7 @@ export function ChatSection({
               />
             )}
 
-            {messages.map((message, index) => {
+            {messages.map((message) => {
               const { mainContent, sources } = parseMessage(message.content);
               return (
                 <Fragment key={message.id}>
@@ -112,15 +118,6 @@ export function ChatSection({
                     chat={mainContent}
                     sources={sources}
                   />
-                  {index === 0 &&
-                    message.role === "assistant" &&
-                    applicationData && (
-                      <div className="px-4 py-2">
-                        <ChartBarNegative
-                          data={applicationData.revenue || []}
-                        />
-                      </div>
-                    )}
                 </Fragment>
               );
             })}
