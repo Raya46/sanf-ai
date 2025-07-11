@@ -17,11 +17,11 @@ interface StepSegmentationTemplateProps {
   setRiskParameters: React.Dispatch<
     React.SetStateAction<{ [key: string]: number | string }>
   >;
-
   analysisTemplates: { [key: string]: { value: string; label: string }[] };
   applicationTypes: { value: string; label: string }[];
   requiredDocuments: { [key: string]: DocumentRequirement[] };
   riskParametersData: { [key: string]: { [key: string]: string | number } };
+  onDocumentsChange?: (docs: DocumentRequirement[]) => void;
 }
 
 interface StepAnalysisContextProps {

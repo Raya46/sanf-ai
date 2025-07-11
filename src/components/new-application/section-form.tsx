@@ -159,8 +159,8 @@ export function SectionForm() {
       formData.append("year_established", yearEstablished.toString());
       formData.append("npwp", npwp);
       formData.append("company_email", companyEmail);
-      formData.append("business_field", businessField);
-      formData.append("num_employees", numSubmssion.toString());
+      formData.append("company_type", businessField);
+      formData.append("amount", numSubmssion.toString());
 
       for (const stagedFile of stagedFiles) {
         formData.append("files", stagedFile.file, stagedFile.file.name);
@@ -258,10 +258,7 @@ export function SectionForm() {
             setSelectedTemplate={setSelectedTemplate}
             riskParameters={riskParameters}
             setRiskParameters={setRiskParameters}
-            analysisTemplates={analysisTemplates}
-            applicationTypes={applicationTypes}
-            requiredDocuments={requiredDocuments}
-            riskParametersData={riskParametersData}
+            onDocumentsChange={setUploadedDocuments}
           />
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={handlePreviousStep}>
@@ -344,7 +341,11 @@ export function SectionForm() {
                 ?.label || "Tidak Diketahui"
             }
             documentStatus={`${documentsUploadedCount}/${totalDocumentsRequired} Lengkap`}
-            financingValue="Rp 5.500.000.000"
+            financingValue={
+              numSubmssion && !isNaN(Number(numSubmssion))
+                ? `Rp ${Number(numSubmssion).toLocaleString("id-ID")}`
+                : "-"
+            }
             onBack={handlePreviousStep}
             onSubmit={handleSubmit}
           />

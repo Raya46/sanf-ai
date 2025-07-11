@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,9 +19,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  analysisTemplates,
+  applicationTypes,
+  requiredDocuments,
+  riskParametersData,
+} from "@/data/analyze-data-template";
 import { Edit, Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+
+interface DocumentRequirement {
+  id: string;
+  name: string;
+  format: string;
+  details: string;
+  status: "uploaded" | "missing" | "validated" | "pending_validation";
+}
+
+interface StepSegmentationTemplateProps {
+  applicationType: string;
+  setApplicationType: (type: string) => void;
+  selectedTemplate: string;
+  setSelectedTemplate: (template: string) => void;
+  riskParameters: { [key: string]: number | string };
+  setRiskParameters: React.Dispatch<
+    React.SetStateAction<{ [key: string]: number | string }>
+  >;
+  onDocumentsChange: (docs: DocumentRequirement[]) => void;
+}
 
 export function StepSegmentationTemplate({
   applicationType,
@@ -29,10 +56,7 @@ export function StepSegmentationTemplate({
   setSelectedTemplate,
   riskParameters,
   setRiskParameters,
-  analysisTemplates,
-  applicationTypes,
-  requiredDocuments,
-  riskParametersData,
+  onDocumentsChange,
 }: StepSegmentationTemplateProps) {
   const [isEditingDocs, setIsEditingDocs] = useState(false);
   const [isEditingParams, setIsEditingParams] = useState(false);
@@ -41,24 +65,28 @@ export function StepSegmentationTemplate({
     [string, string | number][]
   >([]);
 
-  // PERBAIKAN: Menghapus dependensi yang tidak perlu untuk menghindari warning ESLint
-  useEffect(() => {
-    const docs = requiredDocuments[selectedTemplate] || [];
-    setEditableDocs(JSON.parse(JSON.stringify(docs)));
+  // State untuk data custom yang dibuat pengguna
+  const [customApplicationTypes, setCustomApplicationTypes] =
+    useState(applicationTypes);
+  const [customAnalysisTemplates, setCustomAnalysisTemplates] =
+    useState(analysisTemplates);
 
-    const params = riskParametersData[selectedTemplate] || {};
-    setEditableParams(Object.entries(params));
-    setRiskParameters(params);
-  }, [
-    selectedTemplate,
-    setRiskParameters,
-    requiredDocuments,
-    riskParametersData,
-  ]);
+  useEffect(() => {
+    const docsTemplate = requiredDocuments[selectedTemplate] || [];
+    setEditableDocs(JSON.parse(JSON.stringify(docsTemplate)));
+
+    const paramsTemplate = riskParametersData[selectedTemplate] || {};
+    setEditableParams(Object.entries(paramsTemplate));
+    setRiskParameters(paramsTemplate);
+  }, [selectedTemplate, setRiskParameters]);
+
+  useEffect(() => {
+    onDocumentsChange(editableDocs);
+  }, [editableDocs, onDocumentsChange]);
 
   const handleDocChange = (
     index: number,
-    field: keyof DocumentRequirement,
+    field: keyof Omit<DocumentRequirement, "id" | "status">,
     value: string
   ) => {
     const newDocs = [...editableDocs];
@@ -68,7 +96,7 @@ export function StepSegmentationTemplate({
   const handleAddDoc = () => {
     setEditableDocs([
       ...editableDocs,
-      { id: uuidv4(), name: "", format: "PDF", details: "" },
+      { id: uuidv4(), name: "", format: "PDF", details: "", status: "missing" },
     ]);
   };
   const handleDeleteDoc = (id: string) => {
@@ -97,6 +125,8 @@ export function StepSegmentationTemplate({
     setIsEditingParams(false);
   };
 
+  // ... (Handler untuk menambah segment/template baru tetap sama)
+
   return (
     <div className="flex w-full flex-1 gap-6">
       {/* Kolom Kiri: Area Input dan Edit */}
@@ -105,31 +135,34 @@ export function StepSegmentationTemplate({
           <CardHeader>
             <CardTitle>1. Segmentasi & Template</CardTitle>
             <CardDescription>
-              Pilih segmen pembiayaan dan template analisis yang sesuai.
+              Pilih atau buat segmentasi dan template analisis.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <Label>Pilih Segment</Label>
-            <Select
-              onValueChange={(value) => {
-                setApplicationType(value);
-                setSelectedTemplate("");
-              }}
-              value={applicationType}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih Segment" />
-              </SelectTrigger>
-              <SelectContent>
-                {applicationTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Label>Pilih Segment</Label>
+              <Select
+                onValueChange={(value) => {
+                  setApplicationType(value);
+                  setSelectedTemplate("");
+                }}
+                value={applicationType}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Segment" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customApplicationTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {applicationType && (
-              <>
+              <div className="space-y-2">
                 <Label>Pilih Template Dokumen</Label>
                 <Select
                   onValueChange={setSelectedTemplate}
@@ -139,14 +172,16 @@ export function StepSegmentationTemplate({
                     <SelectValue placeholder="Pilih Template Dokumen" />
                   </SelectTrigger>
                   <SelectContent>
-                    {analysisTemplates[applicationType]?.map((template) => (
-                      <SelectItem key={template.value} value={template.value}>
-                        {template.label}
-                      </SelectItem>
-                    ))}
+                    {customAnalysisTemplates[applicationType]?.map(
+                      (template) => (
+                        <SelectItem key={template.value} value={template.value}>
+                          {template.label}
+                        </SelectItem>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
-              </>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -227,7 +262,6 @@ export function StepSegmentationTemplate({
               ) : (
                 editableDocs.map((doc) => (
                   <div key={doc.id} className="flex items-center space-x-3">
-                    {/* PERBAIKAN: Mengganti 'readOnly' dengan 'disabled' */}
                     <Checkbox id={doc.id} checked disabled />
                     <div>
                       <Label htmlFor={doc.id}>{doc.name}</Label>
@@ -340,7 +374,7 @@ export function StepSegmentationTemplate({
             <CardContent className="p-4">
               <h3 className="mb-2 text-lg font-bold">
                 {
-                  analysisTemplates[applicationType]?.find(
+                  customAnalysisTemplates[applicationType]?.find(
                     (t) => t.value === selectedTemplate
                   )?.label
                 }

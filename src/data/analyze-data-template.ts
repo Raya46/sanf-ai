@@ -57,31 +57,36 @@ export const initialDocuments: DocumentRequirement[] = [
   },
 ];
 
+// Data untuk seleksi dropdown
 export const applicationTypes = [
-  { value: "heavy_equipment", label: "Pembiayaan Alat Berat" },
-  { value: "trucking", label: "Trucking" },
-  { value: "other", label: "Lain-lain" },
+  { value: "investasi", label: "Pembiayaan Investasi" },
+  { value: "modal_kerja", label: "Pembiayaan Modal Kerja" },
+  { value: "multiguna", label: "Pembiayaan Multiguna" },
 ];
 
 export const analysisTemplates: {
   [key: string]: { value: string; label: string }[];
 } = {
-  heavy_equipment: [
+  investasi: [
+    { value: "alat_berat", label: "Pembiayaan Alat Berat" },
+    { value: "mesin_industri", label: "Pembiayaan Mesin Industri" },
     {
-      value: "heavy_equipment_template_1",
-      label: "Template Pembiayaan Alat Berat 1",
-    },
-    {
-      value: "heavy_equipment_template_2",
-      label: "Template Pembiayaan Alat Berat 2",
+      value: "kendaraan_operasional",
+      label: "Pembiayaan Kendaraan Operasional",
     },
   ],
-  trucking: [{ value: "trucking_template_1", label: "Template Trucking 1" }],
-  other: [{ value: "other_template_1", label: "Template Lain-lain 1" }],
+  modal_kerja: [
+    { value: "factoring", label: "Factoring (Anjak Piutang)" },
+    { value: "invoice_financing", label: "Invoice Financing" },
+  ],
+  multiguna: [
+    { value: "kendaraan_bermotor", label: "Pembiayaan Kendaraan Bermotor" },
+  ],
 };
 
+// PERBAIKAN: Mock data diperluas untuk mencakup semua template
 export const requiredDocuments: { [key: string]: DocumentRequirement[] } = {
-  heavy_equipment_template_1: [
+  alat_berat: [
     {
       id: "rekening_koran",
       name: "Rekening Koran 3 bulan",
@@ -91,35 +96,35 @@ export const requiredDocuments: { [key: string]: DocumentRequirement[] } = {
     },
     {
       id: "loi_kerjasama",
-      name: "LOI Kerjasama",
+      name: "2. LOI Kerjasama",
       format: "PDF",
       details: "Pihak: PT Bohir Jaya",
       status: "missing",
     },
     {
       id: "rekapan_sales",
-      name: "Rekapan Sales 3 bulan",
+      name: "3. Rekapan Sales 3 bulan",
       format: "PDF/Excel",
       details: "Periode: Apr-Jun 2025",
       status: "missing",
     },
     {
       id: "laporan_keuangan",
-      name: "Laporan Keuangan 2 tahun",
+      name: "4. Laporan Keuangan 2 tahun",
       format: "PDF",
       details: "Periode: 2023-2024",
       status: "missing",
     },
     {
       id: "invoice_proyek",
-      name: "Invoice Proyek 2 bulan",
+      name: "5. Invoice Proyek 2 bulan",
       format: "PDF",
       details: "Periode: Apr-Mei 2025",
       status: "missing",
     },
     {
       id: "dokumen_collateral",
-      name: "Dokumen Collateral",
+      name: "6. Dokumen Collateral",
       format: "PDF",
       details: "Detail: Sertifikat tanah sebagai jaminan",
       status: "missing",
@@ -139,43 +144,147 @@ export const requiredDocuments: { [key: string]: DocumentRequirement[] } = {
       status: "missing",
     },
   ],
+  mesin_industri: [
+    {
+      id: "rekening_koran_6bln",
+      name: "Rekening Koran 6 bulan",
+      format: "PDF",
+      details: "Periode: Jan-Jun 2025",
+      status: "missing",
+    },
+    {
+      id: "company_profile",
+      name: "Company Profile",
+      format: "PDF",
+      details: "Profil perusahaan lengkap",
+      status: "missing",
+    },
+    {
+      id: "penawaran_mesin",
+      name: "Penawaran Harga Mesin",
+      format: "PDF",
+      details: "Dari supplier resmi",
+      status: "missing",
+    },
+  ],
+  kendaraan_operasional: [
+    {
+      id: "stnk_bpkb",
+      name: "STNK & BPKB Kendaraan",
+      format: "PDF",
+      details: "Untuk semua unit yang dibiayai",
+      status: "missing",
+    },
+    {
+      id: "invoice_pembelian",
+      name: "Invoice Pembelian Kendaraan",
+      format: "PDF",
+      details: "Dari dealer resmi",
+      status: "missing",
+    },
+    {
+      id: "rekening_koran_3bln",
+      name: "Rekening Koran 3 bulan",
+      format: "PDF",
+      details: "Periode terakhir",
+      status: "missing",
+    },
+  ],
+  factoring: [
+    {
+      id: "daftar_piutang",
+      name: "Daftar Piutang Usaha",
+      format: "Excel/PDF",
+      details: "Daftar piutang yang akan dijaminkan",
+      status: "missing",
+    },
+    {
+      id: "legalitas_usaha",
+      name: "Legalitas Usaha",
+      format: "PDF",
+      details: "KTP, NPWP, Akta, NIB",
+      status: "missing",
+    },
+    {
+      id: "invoice_terkait",
+      name: "Contoh Invoice Terkait",
+      format: "PDF",
+      details: "Minimal 3 contoh invoice",
+      status: "missing",
+    },
+  ],
+  invoice_financing: [
+    {
+      id: "invoice_akan_dibiayai",
+      name: "Invoice yang Akan Dibiayai",
+      format: "PDF",
+      details: "Invoice yang valid dan belum jatuh tempo",
+      status: "missing",
+    },
+    {
+      id: "rekening_koran_3bln",
+      name: "Rekening Koran 3 bulan",
+      format: "PDF",
+      details: "Periode terakhir",
+      status: "missing",
+    },
+  ],
+  kendaraan_bermotor: [
+    {
+      id: "ktp_kk",
+      name: "KTP & Kartu Keluarga",
+      format: "PDF/JPEG",
+      details: "Pemohon dan penjamin (jika ada)",
+      status: "missing",
+    },
+    {
+      id: "slip_gaji",
+      name: "Slip Gaji / Bukti Penghasilan",
+      format: "PDF",
+      details: "3 bulan terakhir",
+      status: "missing",
+    },
+    {
+      id: "rekening_tabungan",
+      name: "Rekening Tabungan",
+      format: "PDF",
+      details: "3 bulan terakhir",
+      status: "missing",
+    },
+  ],
 };
 
 export const riskParametersData: {
   [key: string]: { [key: string]: string | number };
 } = {
-  heavy_equipment_template_1: {
+  alat_berat: {
     derMaksimal: 3.5,
     quickRatio: 1.2,
     cashRatio: 0.8,
-    totalPenjualan: "> Rp5 miliar/tahun",
-    usiaPerusahaan: "≥ 2 tahun",
     dscr: "≥ 1.3",
   },
-  heavy_equipment_template_2: {
-    derMaksimal: 4.0,
-    quickRatio: 1.0,
+  mesin_industri: {
+    derMaksimal: 3.0,
+    quickRatio: 1.1,
     cashRatio: 0.7,
-    totalPenjualan: "> Rp4 miliar/tahun",
-    usiaPerusahaan: "≥ 1 tahun",
     dscr: "≥ 1.2",
   },
-  trucking_template_1: {
-    derMaksimal: 3.0,
-    quickRatio: 1.5,
-    cashRatio: 1.0,
-    totalPenjualan: "> Rp3 miliar/tahun",
-    usiaPerusahaan: "≥ 3 tahun",
-    dscr: "≥ 1.5",
+  kendaraan_operasional: {
+    derMaksimal: 2.5,
+    dscr: "≥ 1.25",
+    usiaKendaraanMaks: "7 tahun",
   },
-  other_template_1: {
-    derMaksimal: 5.0,
-    quickRatio: 0.9,
-    cashRatio: 0.6,
-    totalPenjualan: "> Rp2 miliar/tahun",
-    usiaPerusahaan: "≥ 0.5 tahun",
-    dscr: "≥ 1.0",
+  factoring: {
+    collectionRatio: "90%",
+    agingPiutang: "< 60 hari",
+    konsentrasiDebitur: "< 30%",
   },
+  invoice_financing: {
+    tenorInvoice: "< 90 hari",
+    verifikasiInvoice: "Wajib",
+    dscr: "≥ 1.1",
+  },
+  kendaraan_bermotor: { dpMinimal: "20%", pti: "< 35%", skorKredit: "> 680" },
 };
 
 export const businessFields = [

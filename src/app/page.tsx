@@ -64,7 +64,6 @@ interface CreditApplicationData {
   contact_person: string;
   contact_email: string;
   company_name: string;
-  revenue: any; // Assuming this can be complex, or define a more specific type if known
   ai_analysis: string;
   company_type: string;
   amount: number;
@@ -306,8 +305,10 @@ export default function Component() {
                 </SelectTrigger>
                 <SelectContent className="bg-blue-50/95 backdrop-blur-md border border-blue-200/50">
                   <SelectItem value="most-recent">Terbaru</SelectItem>
-                  <SelectItem value="risk-score">Skor Risiko</SelectItem>
-                  <SelectItem value="amount">Jumlah</SelectItem>
+                  <SelectItem value="risk-score">
+                    Probabilitas Persetujuan
+                  </SelectItem>
+                  <SelectItem value="amount">Nominal Pengajuan</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -391,14 +392,16 @@ export default function Component() {
 
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-slate-500">Jumlah</span>
+                        <span className="text-xs text-slate-500">
+                          Nominal Pengajuan
+                        </span>
                         <span className="text-sm font-medium text-slate-900">
                           {analysis.amount}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">
-                          Skor Risiko
+                          Probabilitas Persetujuan
                         </span>
                         <div className="flex items-center gap-1">
                           <TrendingUp

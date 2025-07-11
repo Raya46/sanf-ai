@@ -7,7 +7,7 @@ import { generateObject } from "ai";
 import { AwsClient } from "aws4fetch";
 import { z } from "zod";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-
+import nodemailer from "nodemailer";
 // --- R2 Configuration ---
 const accessKeyId = process.env.R2_ACCESS_KEY_ID || "";
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || "";
@@ -40,9 +40,7 @@ const analysisSchema = z.object({
     .describe("The status of the AI analysis (e.g., 'Completed', 'Failed')."),
   ai_analysis: z
     .string()
-    .describe(
-      "The full AI analysis report in pure HTML format. Use tags like <h1>, <p>, <ul>, <b>."
-    ),
+    .describe("The full AI analysis report from uploaded Document"),
   probability_approval: z
     .number()
     .min(0)
@@ -296,6 +294,58 @@ export async function POST(request: NextRequest) {
         risk_appetite: analysisResult.risk_appetite, // Update risk_appetite with AI generated value
       })
       .eq("id", application.id);
+
+    if (contact_email) {
+      console.log("Step 5: Sending analysis result email...");
+      try {
+        const transporter = nodemailer.createTransport({
+          host: process.env.NODEMAILER_HOST || "smtp.gmail.com",
+          port: parseInt(process.env.NODEMAILER_PORT || "587"),
+          auth: {
+            user: process.env.GMAIL_USERNAME,
+            pass: process.env.GMAIL_PASSWORD,
+          },
+        });
+
+        const analysisSnippet =
+          analysisResult.ai_analysis.substring(0, 1000) +
+          (analysisResult.ai_analysis.length > 1000 ? "..." : "");
+
+        console.log(contact_email);
+
+        await transporter.sendMail({
+          from: `\"Sanf AI Credit\" <${process.env.GMAIL_USERNAME}>`,
+          to: contact_email,
+          subject: `Hasil Analisis Kredit untuk ${company_name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <h2>Hasil Analisis Kredit Anda Telah Selesai</h2>
+                <p>Halo <b>${contact_person || "Bapak/Ibu"}</b>,</p>
+                <p>Analisis kredit untuk perusahaan <b>${company_name}</b> telah berhasil diselesaikan oleh sistem AI kami. Berikut adalah ringkasannya:</p>
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr style="background-color: #f2f2f2;">
+                        <td style="padding: 8px; border: 1px solid #ddd;"><b>Probabilitas Persetujuan</b></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${analysisResult.probability_approval}%</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><b>Indikator Risiko</b></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${analysisResult.overall_indicator}</td>
+                    </tr>
+                </table>
+                <h3>Ringkasan Laporan Analisis:</h3>
+                <div style="border: 1px solid #eee; padding: 15px; background-color: #fafafa; border-radius: 5px;">
+                  ${analysisSnippet}
+                </div>
+                <p>Anda dapat melihat laporan lengkap dan berinteraksi dengan data melalui dashboard aplikasi kami.</p>
+                <p>Salam hangat,<br/>Tim Sanf AI</p>
+            </div>
+          `,
+        });
+        console.log("Analysis email sent successfully.");
+      } catch (err) {
+        console.error("Gagal mengirim email hasil analisis:", err);
+      }
+    }
 
     if (updateError) {
       console.error("Error updating application with AI results:", updateError);

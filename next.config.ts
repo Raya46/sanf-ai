@@ -13,7 +13,7 @@ if (process.env.NODE_ENV === "development") {
 
 const nextConfig: NextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ["@opennextjs/cloudflare"],
+    serverComponentsExternalPackages: ["@opennextjs/cloudflare", "react-pdf"],
   },
   // Ensure static exports work with Cloudflare Pages
   trailingSlash: true,
