@@ -14,6 +14,14 @@ import {
   Bar,
   Customized,
 } from "recharts";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface FinancialCandlestickData {
   period: string;
@@ -245,11 +253,11 @@ export function MainChart({
         </Button>
       </div>
 
-      <div className="h-[400px]">
+      <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
@@ -284,6 +292,56 @@ export function MainChart({
             />
           </ComposedChart>
         </ResponsiveContainer>
+      </div>
+
+      <div className="mt-2">
+        <h3 className="text-lg font-semibold mb-4">🧠 AI Insights</h3>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[150px]">Category</TableHead>
+              <TableHead>Insight</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell className="font-medium">Profitability</TableCell>
+              <TableCell>
+                Revenue grew 12% YoY but gross margin fell to 38%, suggesting input cost pressures.
+                Net profit margin stable at 9.8%, driven by SG&A control.
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-medium">Liquidity & Leverage</TableCell>
+              <TableCell>
+                Current ratio fell to 1.2; liquidity slightly stressed.
+                D/E ratio of 2.6 indicates over-leverage risk.
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-medium">Cash Flow</TableCell>
+              <TableCell>
+                Operating cash flow down 18% YoY, lagging revenue growth.
+                FCF remains negative due to high CapEx; cash burn unsustainable long-term.
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-medium">Anomalies</TableCell>
+              <TableCell>
+                Receivables aging increased from 38 to 63 days.
+                Inventory turnover dropped by 25%, indicating excess stock or poor demand.
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-medium">Forecast & Risk Tier</TableCell>
+              <TableCell>
+                Z-score: 1.7 (Distress Zone)
+                Runway: ~7.2 months
+                Recommended Action: Reduce credit exposure, suggest cashflow restructuring.
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

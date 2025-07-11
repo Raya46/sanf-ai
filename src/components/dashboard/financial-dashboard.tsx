@@ -8,9 +8,9 @@ import { MetricTrendCard } from "@/components/dashboard/metric-trend-card";
 import { CombinedMetricsCard } from "@/components/dashboard/combined-metrics-card";
 import { KeyRatiosSection } from "@/components/dashboard/key-ratios-section";
 import { MainChart } from "@/components/dashboard/main-chart";
-import { ChatSection } from "@/components/new-application/ui/chat-section";
-import { type ChatMessage, type CreditApplication } from "@/lib/types";
-import { type ActiveView } from "@/app/dashboard/[projectId]/chat/[applicationId]/page";
+import { CreditRadarChart } from "@/components/dashboard/credit-radar-chart";
+import { FraudDonutChart } from "@/components/dashboard/fraud-donut-chart";
+import { type CreditApplication } from "@/lib/types";
 
 const tabs = [
   { id: "income-statements", label: "INCOME STATEMENTS" },
@@ -73,20 +73,7 @@ export function FinancialDashboard({
     },
   ];
 
-  const initialMessages: ChatMessage[] = [
-    {
-      id: "1",
-      sender_type: "ai",
-      message_content:
-        applicationData.ai_analysis || "No AI analysis available.",
-    },
-  ];
-
   const [activeTab, setActiveTab] = useState("income-statements");
-  const [activeView, setActiveView] =
-    useState<ActiveView>("credit-application");
-  const [chatMessages, setChatMessages] =
-    useState<ChatMessage[]>(initialMessages);
 
   const currentTabLabel =
     tabs.find((tab) => tab.id === activeTab)?.label || "Dashboard";
@@ -142,18 +129,10 @@ export function FinancialDashboard({
             {/* Using activeTab for period */}
           </div>
 
-          {/* Right Sidebar - Replaced with ChatSection */}
-          <div>
-            <ChatSection
-              activeView={activeView}
-              setActiveView={setActiveView}
-              applicationData={applicationData}
-              isLoadingData={false}
-              errorData={null}
-              initialMessages={chatMessages}
-              isLoadingChat={false}
-              applicationId={applicationData.id}
-            />
+          {/* Right Sidebar - Replaced with CreditRadarChart */}
+          <div className="flex flex-col gap-6">
+            <CreditRadarChart />
+            <FraudDonutChart />
           </div>
         </div>
       </div>

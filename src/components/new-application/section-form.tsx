@@ -228,7 +228,7 @@ export function SectionForm() {
   ];
 
   return (
-    <div className="flex flex-col gap-8 mt-4 mx-4 flex-1">
+    <div className="flex flex-col gap-8 mt-4 mx-4 flex-1 p-8">
       <Stepper
         value={currentStep}
         onValueChange={setCurrentStep}
