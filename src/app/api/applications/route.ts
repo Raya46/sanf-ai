@@ -158,8 +158,10 @@ export async function POST(request: NextRequest) {
     // LANGKAH 1: Ambil semua data dari form
     const analysis_template = formData.get("analysis_template") as string;
     const company_type = formData.get("company_type") as string;
+    const company_address = formData.get("company_address") as string;
+    const year_established = formData.get("year_established") as string;
     const company_name = formData.get("company_name") as string;
-    const contact_person = formData.get("contact_person") as string;
+    const contact_person = formData.get("company_phone") as string;
     const contact_email = formData.get("contact_email") as string;
     const risk_parameters = formData.get("risk_parameters") as string;
     const ai_context = formData.get("ai_context") as string;
@@ -217,7 +219,7 @@ export async function POST(request: NextRequest) {
     **IMPORTANT RULE 2: NUMBER PARSING:** The financial documents use Indonesian currency format (IDR/Rp). When you encounter numbers formatted like 'Rp 45.280.500.000', you MUST interpret this as the number 45280500000. The period (.) is a thousands separator and must be removed for calculation. The 'Rp' prefix must be ignored. All financial values in your final JSON output must be in this full numerical format.
 
     Analyze the following text, which has been extracted from various financial documents, to generate a credit report.
-    - Company Name: ${company_name}
+    - Company Data: ( company name: ${company_name}, company type: ${company_type}, company address: ${company_address}, company year established: ${year_established})
     - Template: ${analysis_template}
     - Amount: ${amountSubmission}
     - Additional User Context: ${ai_context || "None"}
@@ -308,6 +310,15 @@ export async function POST(request: NextRequest) {
       prompt: analysisPrompt,
     });
 
+    // Tentukan overall_indicator berdasarkan probability_approval
+    let overall_indicator: "LOW_RISK" | "HIGH_RISK" = "HIGH_RISK";
+    if (
+      typeof analysisResult.probability_approval === "number" &&
+      analysisResult.probability_approval >= 50
+    ) {
+      overall_indicator = "LOW_RISK";
+    }
+
     console.log("Step 4: AI analysis completed. Updating database record...");
     const { error: updateError } = await supabase
       .from("credit_applications")
@@ -315,7 +326,7 @@ export async function POST(request: NextRequest) {
         status: "completed", // Ubah status menjadi 'completed'
         ai_analysis_status: analysisResult.ai_analysis_status,
         probability_approval: analysisResult.probability_approval,
-        overall_indicator: analysisResult.overall_indicator,
+        overall_indicator,
         document_validation_percentage:
           analysisResult.document_validation_percentage,
         estimated_analysis_time_minutes:
