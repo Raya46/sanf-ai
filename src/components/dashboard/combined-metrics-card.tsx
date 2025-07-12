@@ -74,7 +74,7 @@ export function CombinedMetricsCard({
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-4 w-4 text-purple-500"
+                        className="h-4 w-4 text-sanf-primary"
                       >
                         <Info className="h-3 w-3" />
                       </Button>

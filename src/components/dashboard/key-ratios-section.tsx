@@ -33,12 +33,51 @@ export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
 
             // Parse value: if contains '>', '<', '>=', '<=', '≥', '≤', strip and parseInt
             let parsedValue: number;
-            if (typeof value === "string" && /[><=≥≤%]/.test(value)) {
-              parsedValue = parseInt(value.replace(/[^\d.]/g, ""));
+            if (typeof value === "string" && /[><=≥≤]/.test(value)) {
+              parsedValue = parseFloat(value.replace(/[^\d.]/g, ""));
             } else {
-              parsedValue = typeof value === "number" ? value : parseInt(value);
+              parsedValue =
+                typeof value === "number" ? value : parseFloat(value);
             }
             const displayValue = !isNaN(parsedValue) ? parsedValue : value;
+
+            // Define thresholds and directions for each risk parameter
+            const thresholds: {
+              [key: string]: {
+                standard: number;
+                direction: "greater" | "less";
+                maxValue: number;
+              };
+            } = {
+              dscr: { standard: 1.3, direction: "greater", maxValue: 5 },
+              cashRatio: { standard: 0.3, direction: "greater", maxValue: 2 },
+              quickRatio: { standard: 0.8, direction: "greater", maxValue: 2 },
+              der: { standard: 3.5, direction: "less", maxValue: 5 },
+              currentRatio: { standard: 1, direction: "greater", maxValue: 5 },
+              debtToAsset: {
+                standard: 50,
+                direction: "less",
+                maxValue: 100,
+              },
+              interestCoverage: {
+                standard: 2,
+                direction: "greater",
+                maxValue: 12,
+              },
+              cashFlowOperation: {
+                standard: 25,
+                direction: "greater",
+                maxValue: 50,
+              },
+
+              // Add more as needed
+            };
+
+            const config = thresholds[key] || {
+              standard: 0,
+              direction: "greater",
+              maxValue: 100,
+            }; // Default config
 
             return (
               <div
@@ -67,53 +106,56 @@ export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
                     </TooltipProvider>
                   </div>
                   <span className="ml-2 font-mono text-gray-600">
-                    {String(value)}
+                    {config && (
+                      <span className="mr-2 text-gray-500 text-xs">
+                        Target: {config.direction === "greater" ? ">=" : "<="}{" "}
+                        {config.standard}
+                      </span>
+                    )}
+                    (Value: {String(value)})
                   </span>
                 </div>
                 {/* CategoryBar di bawah row label-value */}
                 <div className="mt-2">
                   {(() => {
-                    const targetValue = parsedValue;
-                    let ratioValue: number;
+                    const ratioValue = parsedValue;
+                    const standardValue = config.standard;
+                    const maxValue = config.maxValue;
+                    const direction = config.direction;
 
-                    // Untuk DER dan debtToAsset, berikan nilai yang lebih kecil (lebih baik)
-                    if (key === "der" || key === "debtToAsset") {
-                      // Ambil nilai random antara 60-90% dari target value (lebih kecil = lebih baik)
-                      ratioValue = targetValue * (0.6 + Math.random() * 0.3);
+                    let colors: ("red" | "green")[];
+                    let barValues: [number, number];
+
+                    if (direction === "greater") {
+                      // Red up to standard, green after standard
+                      colors = ["red", "green"];
+                      barValues = [
+                        standardValue,
+                        Math.max(0, maxValue - standardValue),
+                      ];
                     } else {
-                      // Untuk parameter lainnya, berikan nilai yang lebih tinggi (lebih baik)
-                      // Ambil nilai random antara 110-130% dari target value
-                      ratioValue = targetValue * (1.1 + Math.random() * 0.2);
+                      // Green up to standard, red after standard
+                      colors = ["green", "red"];
+                      barValues = [
+                        standardValue,
+                        Math.max(0, maxValue - standardValue),
+                      ];
                     }
 
-                    // Atur maxValue berdasarkan jenis parameter
-                    const maxValue =
-                      key === "der" || key === "debtToAsset"
-                        ? targetValue * 1.5 // Untuk DER dan debtToAsset, maxValue lebih tinggi = lebih buruk
-                        : targetValue * 1.3; // Untuk parameter lainnya, maxValue lebih tinggi = lebih baik
+                    // Clamp ratioValue between 0 and maxValue for correct marker display
+                    const clampedRatioValue = Math.min(
+                      Math.max(0, ratioValue),
+                      maxValue
+                    );
 
                     return (
                       <CategoryBar
-                        values={[
-                          key === "der" || key === "debtToAsset"
-                            ? Math.max(0, maxValue - targetValue) // Inversi untuk DER dan debtToAsset
-                            : targetValue,
-                          key === "der" || key === "debtToAsset"
-                            ? targetValue
-                            : Math.max(0, maxValue - targetValue),
-                        ]}
+                        values={barValues}
                         marker={{
-                          value: ratioValue,
-                          tooltip: `Ratio: ${ratioValue.toFixed(2)}`,
+                          value: clampedRatioValue,
+                          tooltip: `Ratio: ${ratioValue}`, // Show original ratioValue in tooltip
                         }}
-                        colors={[
-                          key === "der" || key === "debtToAsset"
-                            ? "green"
-                            : "red",
-                          key === "der" || key === "debtToAsset"
-                            ? "red"
-                            : "green",
-                        ]}
+                        colors={colors}
                         className="w-full"
                         showLabels={false}
                       />

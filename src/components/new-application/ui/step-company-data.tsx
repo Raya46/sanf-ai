@@ -29,6 +29,33 @@ export function StepCompanyData({
   setContactEmail,
   businessFields,
 }: StepCompanyDataProps) {
+  const formatRupiah = (angka: number | string) => {
+    // Pastikan input adalah string dan hapus karakter non-digit
+    const number_string = String(angka).replace(/[^,\d]/g, "");
+    const split = number_string.split(",");
+    const sisa = split[0].length % 3;
+    let rupiah = split[0].substr(0, sisa);
+    const ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+    // Tambahkan titik sebagai pemisah ribuan
+    if (ribuan) {
+      const separator = sisa ? "." : "";
+      rupiah += separator + ribuan.join(".");
+    }
+
+    rupiah = split[1] !== undefined ? rupiah + "," + split[1] : rupiah;
+    return rupiah;
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const numericValue = parseRupiah(e.target.value);
+    setamountSubmission(numericValue);
+  };
+  // Helper function to parse a Rupiah string back to a number
+  const parseRupiah = (rupiah: string): number => {
+    // Hapus semua karakter kecuali angka
+    return parseInt(rupiah.replace(/[^0-9]/g, ""), 10) || 0;
+  };
   return (
     <div className="flex flex-col gap-6 w-full flex-1">
       <h1 className="text-2xl font-bold text-[#182d7c]">
@@ -146,14 +173,19 @@ export function StepCompanyData({
             <Label htmlFor="amountSubmissions" className="text-[#182d7c]">
               Nominal Pengajuan
             </Label>
-            <Input
-              id="amountSubmissions"
-              type="number"
-              value={amountSubmissions}
-              onChange={(e) => setamountSubmission(parseInt(e.target.value))}
-              placeholder="Masukkan nominal pengajuan"
-              className="mt-1 bg-white"
-            />
+            <div className="relative mt-1">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                Rp
+              </span>
+              <Input
+                id="amountSubmissions"
+                type="text" // Ubah ke text untuk menampilkan format
+                value={formatRupiah(amountSubmissions)}
+                onChange={handleAmountChange}
+                placeholder="10.000.000"
+                className="pl-10 bg-white" // Tambahkan padding kiri
+              />
+            </div>
           </div>
         </div>
       </div>
