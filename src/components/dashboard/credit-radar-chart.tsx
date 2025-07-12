@@ -149,8 +149,8 @@ export function CreditRadarChart() {
               <PolarAngleAxis dataKey="criterion" />
               <Radar
                 dataKey="score"
-                stroke="#5ac4bd"
-                fill="#5ac4bd"
+                stroke="#182d7c"
+                fill="#182d7c"
                 fillOpacity={0.6}
                 dot={{
                   r: 4,

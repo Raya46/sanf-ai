@@ -12,6 +12,14 @@ import {
   Tooltip,
   Bar,
 } from "recharts";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // Tipe data untuk data candlestick yang diterima sebagai prop
 interface FinancialCandlestickData {
@@ -250,11 +258,11 @@ export function MainChart({ chartData = [] }: MainChartProps) {
         </Button>
       </div>
 
-      <div className="h-[400px]">
+      <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={processedData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 0 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
@@ -289,6 +297,37 @@ export function MainChart({ chartData = [] }: MainChartProps) {
             />
           </ComposedChart>
         </ResponsiveContainer>
+      </div>
+      <div className="mt-0">
+        <h3 className="text-lg font-semibold mb-4">🧠 AI Insights</h3>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[150px]">Category</TableHead>
+              <TableHead>Insight</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell className="font-medium">Kecukupan Jaminan</TableCell>
+              <TableCell>
+                Coverage ratio 265% jauh melebihi minimum yang disyaratkan (150%). Nilai agunan Rp 26.5 miliar memberikan margin keamanan yang sangat baik. Seluruh agunan merupakan aset produktif yang mendukung operasional tambang. Nilai pasar agunan diperkirakan terus meningkat selama masa pembiayaan.
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-medium">Komposisi Agunan</TableCell>
+              <TableCell>
+                Alat Berat: Rp 14.500.000.000 (54,72% dari total agunan). Properti: Rp 12.000.000.000 (45,28% dari total agunan).
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-medium">Penilaian Agunan</TableCell>
+              <TableCell>
+                Penilaian Internal (01 Juli 2025): Rp 24.800.000.000. KJPP Independen (05 Juli 2025): Rp 26.500.000.000.
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

@@ -34,11 +34,24 @@ export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
             // Parse value: if contains '>', '<', '>=', '<=', '≥', '≤', strip and parseInt
             let parsedValue: number;
             if (typeof value === "string" && /[><=≥≤]/.test(value)) {
-              parsedValue = parseInt(value.replace(/[^\d.]/g, ""));
+              parsedValue = parseFloat(value.replace(/[^\d.]/g, ""));
             } else {
-              parsedValue = typeof value === "number" ? value : parseInt(value);
+              parsedValue = typeof value === "number" ? value : parseFloat(value);
             }
             const displayValue = !isNaN(parsedValue) ? parsedValue : value;
+
+            // Define thresholds and directions for each risk parameter
+            const thresholds: {
+              [key: string]: { standard: number; direction: "greater" | "less"; maxValue: number };
+            } = {
+              dscr: { standard: 1.3, direction: "greater", maxValue: 5 },
+              cashRatio: { standard: 1.0, direction: "greater", maxValue: 2 },
+              quickRatio: { standard: 1.0, direction: "greater", maxValue: 2 },
+              derMaksimal: { standard: 2.0, direction: "less", maxValue: 5 },
+              // Add more as needed
+            };
+
+            const config = thresholds[key] || { standard: 0, direction: "greater", maxValue: 100 }; // Default config
 
             return (
               <div
@@ -67,31 +80,47 @@ export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
                     </TooltipProvider>
                   </div>
                   <span className="ml-2 font-mono text-gray-600">
-                    {String(value)}
+                    {config && (
+                      <span className="mr-2 text-gray-500 text-xs">
+                        Target: {config.direction === "greater" ? ">=" : "<="}{" "}
+                        {config.standard}
+                      </span>
+                    )}
+                    (Value: {String(value)})
                   </span>
                 </div>
                 {/* CategoryBar di bawah row label-value */}
                 <div className="mt-2">
                   {(() => {
-                    const targetValue = parsedValue;
                     const ratioValue = parsedValue;
-                    // maxValue random antara 1.2x sampai 2x targetValue
-                    const randomFactor = 1.2 + Math.random() * 0.8;
-                    const maxValue = Math.max(
-                      targetValue * randomFactor,
-                      targetValue + 1
-                    );
+                    const standardValue = config.standard;
+                    const maxValue = config.maxValue;
+                    const direction = config.direction;
+
+                    let colors: ("red" | "green")[];
+                    let barValues: [number, number];
+
+                    if (direction === "greater") {
+                      // Red up to standard, green after standard
+                      colors = ["red", "green"];
+                      barValues = [standardValue, Math.max(0, maxValue - standardValue)];
+                    } else {
+                      // Green up to standard, red after standard
+                      colors = ["green", "red"];
+                      barValues = [standardValue, Math.max(0, maxValue - standardValue)];
+                    }
+
+                    // Clamp ratioValue between 0 and maxValue for correct marker display
+                    const clampedRatioValue = Math.min(Math.max(0, ratioValue), maxValue);
+
                     return (
                       <CategoryBar
-                        values={[
-                          targetValue,
-                          Math.max(0, maxValue - targetValue),
-                        ]}
+                        values={barValues}
                         marker={{
-                          value: ratioValue,
-                          tooltip: `Ratio: ${ratioValue}`,
+                          value: clampedRatioValue,
+                          tooltip: `Ratio: ${ratioValue}`, // Show original ratioValue in tooltip
                         }}
-                        colors={["red", "green"]}
+                        colors={colors}
                         className="w-full"
                         showLabels={false}
                       />
