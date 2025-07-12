@@ -22,20 +22,14 @@ import { useParams, useRouter } from "next/navigation";
 import { logout } from "@/app/auth/actions";
 import { useState, useEffect } from "react";
 
-// Tipe data untuk file dan langkah-langkah CoT
-interface ApplicationFile {
-  file_name: string;
-}
+import { type CreditApplication } from "@/lib/types";
 
+// Tipe data untuk langkah-langkah CoT
 interface CoTStep {
   title: string;
   description: string;
   details?: string[];
   status: "pending" | "processing" | "completed";
-}
-
-interface DashboardHeaderProps {
-  applicationFiles?: ApplicationFile[];
 }
 
 // Komponen baru untuk merender setiap langkah CoT
@@ -107,11 +101,15 @@ function ChainOfThoughtStep({ step }: { step: CoTStep }) {
   );
 }
 
-export function DashboardHeader({
-  applicationFiles = [],
-}: DashboardHeaderProps) {
+export function DashboardHeader() {
   const params = useParams();
   const router = useRouter();
+  const projectId = params.projectId as string;
+
+  const [companyName, setCompanyName] = useState("Company");
+  const [applicationFiles, setApplicationFiles] = useState<
+    CreditApplication["application_files"]
+  >([]);
 
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [cotSteps, setCotSteps] = useState<CoTStep[]>([]);
@@ -124,6 +122,43 @@ export function DashboardHeader({
   const navigateToCreditAnalystAI = () => {
     router.push(`/dashboard/${params.projectId}/chat/${params.applicationId}`);
   };
+
+  // Function to capitalize the first letter of each word
+  const capitalizeEachWord = (str: string) => {
+    return str
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
+  // Fetch application data
+  useEffect(() => {
+    if (!projectId) return;
+
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`/api/applications/${projectId}`);
+        if (!response.ok) {
+          if (response.status === 401) {
+            return router.push("/login");
+          }
+          throw new Error(`Error: ${response.status}`);
+        }
+        const data: CreditApplication = await response.json();
+        if (data.company_name) {
+          setCompanyName(capitalizeEachWord(data.company_name));
+        } else if (data.company_type) {
+          setCompanyName(capitalizeEachWord(data.company_type));
+        }
+        if (data.application_files) {
+          setApplicationFiles(data.application_files);
+        }
+      } catch (err) {
+        console.error("Failed to fetch application data:", err);
+      }
+    };
+    fetchData();
+  }, [projectId, router]);
 
   // PERBAIKAN: Logika animasi untuk menampilkan langkah satu per satu
   useEffect(() => {
@@ -235,7 +270,7 @@ export function DashboardHeader({
   };
 
   return (
-    <header className="flex items-center justify-between border-gray-200 bg-[#182d7c] p-4 py-8">
+    <header className="flex items-center sticky top-0 z-50 justify-between border-gray-200 bg-[#182d7c] p-4 py-8">
       <div className="flex items-center gap-4">
         <Button
           className="bg-white hover:bg-gray-200"
@@ -244,7 +279,7 @@ export function DashboardHeader({
           <ChevronLeft className="text-black" />
         </Button>
         <h1 className="font-sans text-4xl font-bold text-white">
-          Financial Analysis Company
+          Analisis {companyName}
         </h1>
       </div>
       <div className="flex items-center gap-3">
