@@ -33,6 +33,7 @@ import { IndustryDataTab } from "@/components/dashboard/industry-data-tab";
 import { IncomeStatementTab } from "./income-statement-tab";
 import { type CreditApplication } from "@/lib/types";
 import { RiskScoreSummary } from "./risk-score-summary";
+import { PerformanceBarChart } from "./trend-chart";
 
 const tabs = [
   { id: "income-statements", label: "Ringkasan Analisa" },
@@ -289,7 +290,7 @@ export function FinancialDashboard({
 
               {/* Main Chart */}
               <div className="lg:col-span-2 pb-6">
-                <MainChart chartData={applicationData.analysis_value || []} />
+                <PerformanceBarChart/>
                 <div className="p-6 w-full bg-white rounded-lg border-1 mt-6">
                   <h3 className="text-lg font-semibold mb-4 text-gray-700">
                     PERFORMA KEUANGAN TERKINI
