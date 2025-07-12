@@ -30,7 +30,7 @@ export function DashboardHeader() {
       <div className="flex items-center gap-4">
         <Button
           className="bg-white hover:bg-gray-200"
-          onClick={() => router.back()}
+          onClick={() => router.replace("/")}
         >
           <ChevronLeft className="text-black" />
         </Button>

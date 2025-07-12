@@ -146,7 +146,7 @@ export function AnalyticsSidebar({
                 disabled={!applicationData}
               >
                 <Download className="w-4 h-4" />
-                <span>Ekspor PDF</span>
+                <span>Rangkum Percakapan</span>
               </Button>
               <Button
                 className="mx-4"

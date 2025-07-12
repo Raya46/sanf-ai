@@ -37,7 +37,6 @@ export function PdfExportModal({
     content: "", // Initial content will be set by useEffect
     immediatelyRender: false, // Fix for SSR hydration mismatch
     onUpdate: ({ editor }) => {
-      // No need to set editedContent state, as editor directly manages content
       console.log(editor); // Satisfy linter
     },
   });

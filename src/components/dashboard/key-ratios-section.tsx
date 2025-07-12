@@ -33,7 +33,7 @@ export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
 
             // Parse value: if contains '>', '<', '>=', '<=', '≥', '≤', strip and parseInt
             let parsedValue: number;
-            if (typeof value === "string" && /[><=≥≤]/.test(value)) {
+            if (typeof value === "string" && /[><=≥≤%]/.test(value)) {
               parsedValue = parseInt(value.replace(/[^\d.]/g, ""));
             } else {
               parsedValue = typeof value === "number" ? value : parseInt(value);
@@ -74,24 +74,46 @@ export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
                 <div className="mt-2">
                   {(() => {
                     const targetValue = parsedValue;
-                    const ratioValue = parsedValue;
-                    // maxValue random antara 1.2x sampai 2x targetValue
-                    const randomFactor = 1.2 + Math.random() * 0.8;
-                    const maxValue = Math.max(
-                      targetValue * randomFactor,
-                      targetValue + 1
-                    );
+                    let ratioValue: number;
+
+                    // Untuk DER dan debtToAsset, berikan nilai yang lebih kecil (lebih baik)
+                    if (key === "der" || key === "debtToAsset") {
+                      // Ambil nilai random antara 60-90% dari target value (lebih kecil = lebih baik)
+                      ratioValue = targetValue * (0.6 + Math.random() * 0.3);
+                    } else {
+                      // Untuk parameter lainnya, berikan nilai yang lebih tinggi (lebih baik)
+                      // Ambil nilai random antara 110-130% dari target value
+                      ratioValue = targetValue * (1.1 + Math.random() * 0.2);
+                    }
+
+                    // Atur maxValue berdasarkan jenis parameter
+                    const maxValue =
+                      key === "der" || key === "debtToAsset"
+                        ? targetValue * 1.5 // Untuk DER dan debtToAsset, maxValue lebih tinggi = lebih buruk
+                        : targetValue * 1.3; // Untuk parameter lainnya, maxValue lebih tinggi = lebih baik
+
                     return (
                       <CategoryBar
                         values={[
-                          targetValue,
-                          Math.max(0, maxValue - targetValue),
+                          key === "der" || key === "debtToAsset"
+                            ? Math.max(0, maxValue - targetValue) // Inversi untuk DER dan debtToAsset
+                            : targetValue,
+                          key === "der" || key === "debtToAsset"
+                            ? targetValue
+                            : Math.max(0, maxValue - targetValue),
                         ]}
                         marker={{
                           value: ratioValue,
-                          tooltip: `Ratio: ${ratioValue}`,
+                          tooltip: `Ratio: ${ratioValue.toFixed(2)}`,
                         }}
-                        colors={["red", "green"]}
+                        colors={[
+                          key === "der" || key === "debtToAsset"
+                            ? "green"
+                            : "red",
+                          key === "der" || key === "debtToAsset"
+                            ? "red"
+                            : "green",
+                        ]}
                         className="w-full"
                         showLabels={false}
                       />

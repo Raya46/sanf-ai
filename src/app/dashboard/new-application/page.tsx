@@ -11,7 +11,10 @@ export default function NewApplicationPage() {
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col">
         <div className="flex items-center px-8 pt-8">
-          <Button onClick={() => router.back()}>
+          <Button
+            className="bg-[#182d7c] hover:bg-[#182d7c]/90"
+            onClick={() => router.replace("/")}
+          >
             <ChevronLeft />
           </Button>
           <h1 className="m-4 font-bold text-lg">New Credit Application</h1>

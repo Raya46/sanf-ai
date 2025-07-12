@@ -161,7 +161,6 @@ export async function POST(request: NextRequest) {
     const company_address = formData.get("company_address") as string;
     const year_established = formData.get("year_established") as string;
     const company_name = formData.get("company_name") as string;
-    const contact_person = formData.get("company_phone") as string;
     const contact_email = formData.get("contact_email") as string;
     const risk_parameters = formData.get("risk_parameters") as string;
     const ai_context = formData.get("ai_context") as string;
@@ -186,7 +185,6 @@ export async function POST(request: NextRequest) {
         company_type,
         amount: parseInt(amountSubmission),
         company_name,
-        contact_person,
         contact_email,
         risk_parameter: JSON.parse(risk_parameters), // Use user-provided risk_parameters
       })
@@ -223,6 +221,9 @@ export async function POST(request: NextRequest) {
     - Template: ${analysis_template}
     - Amount: ${amountSubmission}
     - Additional User Context: ${ai_context || "None"}
+    - Risk Parameter: ${risk_parameters}
+
+    MAKE SURE The smaller the debt to asset ratio, the better the credit application.
 
     **Your Tasks:**
     1.  Generate a comprehensive analysis report in **pure HTML format** and in **Indonesian**.
@@ -234,7 +235,6 @@ export async function POST(request: NextRequest) {
     for (const file of files) {
       console.log(` - Processing ${file.name}...`);
 
-      // Upload file asli ke R2 (tetap dilakukan)
       const buffer = Buffer.from(await file.arrayBuffer());
       const r2Key = `docs/${user.id}/${application.id}/${uuidv4()}-${file.name}`;
       await s3.fetch(`${endpoint}/${bucketName}/${r2Key}`, {
@@ -289,7 +289,6 @@ export async function POST(request: NextRequest) {
             `Failed to extract text from ${file.name}:`,
             extractionError
           );
-          // Lanjutkan proses meskipun satu file gagal diekstrak
           allExtractedText += `\n\n--- FAILED TO EXTRACT TEXT FROM: ${file.name} ---\n\n`;
         }
       }
@@ -361,7 +360,7 @@ export async function POST(request: NextRequest) {
           html: `
             <div style="font-family: Arial, sans-serif; line-height: 1.6;">
                 <h2>Hasil Analisis Kredit Anda Telah Selesai</h2>
-                <p>Halo <b>${contact_person || "Bapak/Ibu"}</b>,</p>
+                <p>Halo <b>${contact_email || "Bapak/Ibu"}</b>,</p>
                 <p>Analisis kredit untuk perusahaan <b>${company_name}</b> telah berhasil diselesaikan oleh sistem AI kami. Berikut adalah ringkasannya:</p>
                 <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
                     <tr style="background-color: #f2f2f2;">

@@ -15,13 +15,37 @@ export function StepAnalysisContext({
   amountSubmission,
   applicationTypeLabel,
   documentStatus,
+  aiContext,
+  onContextChange,
+  onAmountSubmissionChange,
 }: StepAnalysisContextProps) {
-  const [aiContext, setAiContext] = useState("");
+  const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
+
+  const handleCheckboxChange = (suggestionId: string, checked: boolean) => {
+    const suggestion = promptSuggestions.find((s) => s.id === suggestionId);
+    if (!suggestion) return;
+
+    let newSelectedPrompts;
+    if (checked) {
+      newSelectedPrompts = [...selectedPrompts, suggestionId];
+    } else {
+      newSelectedPrompts = selectedPrompts.filter((id) => id !== suggestionId);
+    }
+    setSelectedPrompts(newSelectedPrompts);
+
+    // Build new context text
+    const selectedSuggestions = promptSuggestions
+      .filter((s) => newSelectedPrompts.includes(s.id))
+      .map((s) => s.label);
+
+    const newContext = selectedSuggestions.join("\n\n");
+    onContextChange(newContext);
+  };
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <Alert className="border-blue-200 bg-blue-50 text-blue-800">
-        <Info className="h-4 w-4" color="#3b82f6" />
+      <Alert className="border-[#182d7c] bg-indigo-100/50 text-[#182d7c]">
+        <Info className="h-4 w-4" color="#182d7c" />
         <AlertTitle className="font-semibold">Petunjuk Penggunaan</AlertTitle>
         <AlertDescription>
           Berikan instruksi ke AI untuk memfokuskan analisis kredit pada aspek
@@ -30,9 +54,11 @@ export function StepAnalysisContext({
         </AlertDescription>
       </Alert>
 
-      <Card className="w-full">
+      <Card className="w-full bg-blue-50/50 border-blue-200">
         <CardHeader>
-          <CardTitle>Input Konteks Analisis untuk AI</CardTitle>
+          <CardTitle className="text-[#182d7c]">
+            Input Konteks Analisis untuk AI
+          </CardTitle>
           <p className="text-sm text-gray-500">
             Berikan arahan khusus kepada AI untuk memfokuskan analisis pada
             aspek-aspek tertentu dari pengajuan {companyName}.
@@ -40,7 +66,7 @@ export function StepAnalysisContext({
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Bagian Informasi Pengajuan */}
-          <div className="rounded-lg border bg-slate-50/50 p-4">
+          <div className="rounded-lg border bg-white p-4">
             <h3 className="mb-4 font-semibold text-gray-800">
               Informasi Pengajuan
             </h3>
@@ -76,9 +102,9 @@ export function StepAnalysisContext({
             <Textarea
               id="ai-context"
               value={aiContext}
-              onChange={(e) => setAiContext(e.target.value)}
+              onChange={(e) => onContextChange(e.target.value)}
               placeholder="Contoh: Lakukan analisa yang mendalam terhadap aplikasi pengajuan ini, fokus pada kemampuan cashflow bulanan dan kevalidan kerjasama dengan bohir. Perhatikan juga apakah proyek yang tertera dalam invoice benar-benar mendukung arus kas selama tenor berjalan."
-              className="mt-2 min-h-[120px]"
+              className="mt-2 min-h-[120px] bg-white"
             />
           </div>
 
@@ -91,7 +117,13 @@ export function StepAnalysisContext({
                   key={suggestion.id}
                   className="flex items-center space-x-2"
                 >
-                  <Checkbox id={suggestion.id} />
+                  <Checkbox
+                    id={suggestion.id}
+                    checked={selectedPrompts.includes(suggestion.id)}
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange(suggestion.id, checked as boolean)
+                    }
+                  />
                   <Label
                     htmlFor={suggestion.id}
                     className="text-sm font-normal text-gray-600"
@@ -104,7 +136,7 @@ export function StepAnalysisContext({
           </div>
 
           {/* Bagian Catatan */}
-          <div className="flex items-center gap-3 rounded-lg border-l-4 border-blue-500 bg-slate-50 p-3 text-sm text-gray-600">
+          <div className="flex items-center gap-3 rounded-lg border-l-4 border-blue-500 bg-white p-3 text-sm text-gray-600">
             <Lock className="h-5 w-5 flex-shrink-0" />
             <p>
               Konteks yang dimasukkan akan disimpan dalam sistem sebagai bagian

@@ -18,6 +18,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { LoaderCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -98,6 +99,12 @@ export function SectionForm() {
     "Starting analysis..."
   );
   const [progress, setProgress] = useState(0);
+  const [dialogContent, setDialogContent] = useState({
+    title: "Processing Application",
+    description: "Please wait while we analyze your documents.",
+    showConfirmButton: false,
+    onConfirm: () => {},
+  });
 
   // --- useEffect Hooks ---
   useEffect(() => {
@@ -111,12 +118,12 @@ export function SectionForm() {
     fetchUser();
   }, []);
 
-  // PERBAIKAN: Logika untuk memuat dokumen berdasarkan template
+  // Logika untuk memuat dokumen berdasarkan template
   useEffect(() => {
     if (selectedTemplate && initialRequiredDocuments[selectedTemplate]) {
       setCustomizedDocuments(initialRequiredDocuments[selectedTemplate]);
     } else {
-      setCustomizedDocuments([]); // Kosongkan jika tidak ada template terpilih
+      setCustomizedDocuments([]);
     }
   }, [selectedTemplate]);
 
@@ -248,6 +255,12 @@ export function SectionForm() {
 
     setIsSubmitting(true);
     setIsModalOpen(true);
+    setDialogContent({
+      title: "Processing Application",
+      description: "Please wait while we analyze your documents.",
+      showConfirmButton: false,
+      onConfirm: () => {},
+    });
 
     try {
       const formData = new FormData();
@@ -282,7 +295,22 @@ export function SectionForm() {
         error?: string;
       };
       if (result.success && result.applicationId) {
-        router.push(`/dashboard/${result.applicationId}`);
+        setProcessingMessage("Analisa pengajuan kredit Anda telah selesai!");
+        setProgress(100);
+
+        setDialogContent({
+          title: "Analisis Selesai",
+          description:
+            "Analisa pengajuan kredit Anda telah selesai dan siap untuk ditinjau.",
+          showConfirmButton: true,
+          onConfirm: () => {
+            setIsModalOpen(false);
+            setIsSubmitting(false);
+            router.push(`/dashboard/${result.applicationId}`);
+          },
+        });
+
+        return;
       } else {
         throw new Error(
           result.error || "Submission failed with an unknown error."
@@ -290,12 +318,18 @@ export function SectionForm() {
       }
     } catch (error) {
       console.error("An error occurred during submission:", error);
-      alert(
-        error instanceof Error ? error.message : "An unknown error occurred"
-      );
-    } finally {
-      setIsSubmitting(false);
-      setIsModalOpen(false);
+      setDialogContent({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
+        showConfirmButton: true,
+        onConfirm: () => {
+          setIsModalOpen(false);
+          setIsSubmitting(false);
+        },
+      });
+      setProcessingMessage("Gagal memproses pengajuan");
+      setProgress(0);
     }
   };
 
@@ -323,13 +357,20 @@ export function SectionForm() {
   const isStepComplete = () => {
     if (currentStep === 1) return !!applicationType && !!selectedTemplate;
     if (currentStep === 2)
-      return !!companyName.trim() && !!companyAddress.trim() && !!npwp.trim();
+      return (
+        !!companyName.trim() &&
+        !!companyAddress.trim() &&
+        !!npwp.trim() &&
+        !!contactEmail.trim() &&
+        !!businessField &&
+        !!amountSubmissions
+      );
     if (currentStep === 3)
       return (
         totalDocumentsRequired > 0 &&
         documentsUploadedCount === totalDocumentsRequired
       );
-    return true;
+    return !!aiContext.trim();
   };
 
   return (
@@ -413,10 +454,10 @@ export function SectionForm() {
             applicationTypeLabel={
               customApplicationTypes.find(
                 (type) => type.value === applicationType
-              )?.label || "Tidak Diketahui"
+              )?.label || ""
             }
             documentStatus={`${documentsUploadedCount}/${totalDocumentsRequired} Lengkap`}
-            amountSubmission={amountSubmissions as number}
+            amountSubmission={amountSubmissions}
             onAmountSubmissionChange={setamountSubmissions}
             aiContext={aiContext}
             onContextChange={setAiContext}
@@ -424,47 +465,71 @@ export function SectionForm() {
         )}
       </div>
 
-      <div className="flex w-full justify-between mt-auto pt-4 border-t">
-        <Button
-          variant="outline"
-          onClick={handlePreviousStep}
-          disabled={currentStep === 1 || isSubmitting}
-        >
-          Previous
-        </Button>
-
-        {currentStep < steps.length ? (
+      <div className="flex justify-end gap-4 mt-6">
+        {currentStep > 1 && (
           <Button
-            onClick={handleNextStep}
-            disabled={!isStepComplete() || isSubmitting}
+            onClick={handlePreviousStep}
+            variant="outline"
+            className="bg-white hover:bg-slate-100/90 border-[#182d7c] text-[#182d7c]"
           >
-            Next
-          </Button>
-        ) : (
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting || !isStepComplete()}
-          >
-            {isSubmitting ? (
-              <LoaderCircle className="animate-spin mr-2" />
-            ) : null}
-            Analisa AI
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Kembali
           </Button>
         )}
+        <Button
+          onClick={currentStep === steps.length ? handleSubmit : handleNextStep}
+          disabled={!isStepComplete()}
+          className="bg-[#182d7c] hover:bg-[#182d7c]/90 text-white"
+        >
+          {currentStep === steps.length ? (
+            <>
+              Submit
+              <Send className="h-4 w-4 ml-2" />
+            </>
+          ) : (
+            <>
+              Lanjut
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </>
+          )}
+        </Button>
       </div>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <Dialog
+        open={isModalOpen}
+        onOpenChange={(open) => {
+          // Hanya izinkan menutup dialog jika tidak sedang submitting
+          if (!isSubmitting) {
+            setIsModalOpen(open);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Processing Application</DialogTitle>
-            <DialogDescription>
-              Please wait while we analyze your documents.
-            </DialogDescription>
+            <DialogTitle>{dialogContent.title}</DialogTitle>
+            <DialogDescription>{dialogContent.description}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
-            <LoaderCircle className="animate-spin h-12 w-12 text-blue-500" />
-            <p className="text-lg font-medium">{processingMessage}</p>
-            <Progress value={progress} className="w-full" />
+            {isSubmitting && (
+              <LoaderCircle className="animate-spin h-12 w-12 text-[#182d7c]" />
+            )}
+            <p className="text-lg font-medium text-center whitespace-pre-line">
+              {processingMessage}
+            </p>
+            <Progress value={progress} className="w-full bg-slate-100">
+              <div
+                className="h-full bg-[#182d7c] transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </Progress>
+            {dialogContent.showConfirmButton && (
+              <Button
+                onClick={dialogContent.onConfirm}
+                className="w-full bg-[#182d7c] text-white hover:bg-[#2a3f8f]"
+              >
+                {isSubmitting ? "Lihat Hasil Analisis" : "OK"}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
