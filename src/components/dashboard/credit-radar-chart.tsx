@@ -28,72 +28,77 @@ interface ChartDataItem {
   criterion: string;
   score: number;
   fullMark: number;
+  grade: string;
   subMetrics: SubMetric[];
 }
 
 interface CustomTooltipProps {
   active?: boolean;
-  payload?: any[]; // Recharts payload can be complex, using any for now, can refine if needed
+  payload?: any[];
   label?: string;
 }
 
 const chartData: ChartDataItem[] = [
   {
-    criterion: "Character",
-    score: 80,
+    criterion: "Karakter",
+    score: 95,
     fullMark: 100,
+    grade: "A",
     subMetrics: [
-      { name: "SLIK score (OJK)", value: "Good" },
-      { name: "Overdue % past 12mo", value: "0%" },
-      { name: "Number of lenders", value: "2" },
-      { name: "Fraud/blacklist flags", value: "None" },
+      { name: "Track record baik", value: "✓" },
+      { name: "Kolektibilitas lancar", value: "✓" },
+      { name: "Manajemen profesional", value: "✓" },
     ],
   },
   {
-    criterion: "Capacity",
+    criterion: "Kapasitas",
     score: 90,
     fullMark: 100,
+    grade: "A",
     subMetrics: [
-      { name: "Monthly income", value: "Rp 15,000,000" },
-      { name: "DSR", value: "30%" },
-      { name: "Employment type & stability", value: "Permanent, 5 years" },
+      { name: "DSCR", value: "2.1x" },
+      { name: "ICR", value: "5.79x" },
+      { name: "Cash flow positif", value: "✓" },
     ],
   },
   {
-    criterion: "Capital",
-    score: 75,
-    fullMark: 100,
-    subMetrics: [
-      { name: "Cash savings", value: "Rp 50,000,000" },
-      { name: "Bank balance trends", value: "Stable" },
-      { name: "Ownership of high-value assets", value: "Car, House" },
-    ],
-  },
-  {
-    criterion: "Conditions",
+    criterion: "Modal",
     score: 85,
     fullMark: 100,
+    grade: "B+",
     subMetrics: [
-      { name: "Purpose of loan", value: "Productive" },
-      { name: "Sector risk", value: "Low" },
-      { name: "Macro risk", value: "Low" },
+      { name: "DER", value: "0.90" },
+      { name: "Modal sendiri", value: "33.3%" },
+      { name: "Struktur modal kuat", value: "✓" },
     ],
   },
   {
-    criterion: "Collateral",
-    score: 70,
+    criterion: "Jaminan",
+    score: 95,
     fullMark: 100,
+    grade: "A",
     subMetrics: [
-      { name: "Asset type & value", value: "Land, Rp 200,000,000" },
-      { name: "Liquidation score", value: "High" },
-      { name: "Ownership verification", value: "SHM" },
+      { name: "Coverage", value: "265%" },
+      { name: "Jaminan mudah dicairkan", value: "✓" },
+      { name: "Dokumen lengkap", value: "✓" },
+    ],
+  },
+  {
+    criterion: "Kondisi",
+    score: 80,
+    fullMark: 100,
+    grade: "B",
+    subMetrics: [
+      { name: "Industri stabil", value: "✓" },
+      { name: "Prospek positif", value: "✓" },
+      { name: "Regulasi mendukung", value: "✓" },
     ],
   },
 ]
 
 const chartConfig = {
   score: {
-    label: "Score",
+    label: "Skor",
     color: "hsl(var(--sanf-secondary))",
   },
 } satisfies ChartConfig
@@ -104,13 +109,13 @@ function CustomChartTooltipContent({ active, payload, label }: CustomTooltipProp
     return (
       <div className="rounded-md border bg-white p-2 text-sm shadow-md">
         <p className="font-bold">{label}</p>
-        <p className="text-muted-foreground">Score: {data.score}</p>
+        <p className="text-muted-foreground">Skor: {data.score}/100 (Grade {data.grade})</p>
         {data.subMetrics && data.subMetrics.length > 0 && (
           <div className="mt-2">
-            <p className="font-semibold">Contributing Factors:</p>
+            <p className="font-semibold">Faktor Kontribusi:</p>
             {data.subMetrics.map((metric: SubMetric, index: number) => (
               <p key={index} className="text-xs">
-                - {metric.name}: {metric.value}
+                • {metric.name}: {metric.value}
               </p>
             ))}
           </div>
@@ -122,12 +127,14 @@ function CustomChartTooltipContent({ active, payload, label }: CustomTooltipProp
 }
 
 export function CreditRadarChart() {
+  const overallScore = Math.round(chartData.reduce((sum, item) => sum + item.score, 0) / chartData.length);
+  
   return (
     <Card>
       <CardHeader className="items-center">
-        <CardTitle>Five C's of Credit Evaluation</CardTitle>
+        <CardTitle>Evaluasi 5C Kredit</CardTitle>
         <CardDescription>
-          Assessment based on Character, Capacity, Capital, Conditions, and Collateral
+          Penilaian berdasarkan Karakter, Kapasitas, Modal, Kondisi, dan Jaminan
         </CardDescription>
       </CardHeader>
       <CardContent className="pb-0">
@@ -156,7 +163,7 @@ export function CreditRadarChart() {
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 leading-none font-medium">
-          Overall Credit Score: 80 <TrendingUp className="h-4 w-4" />
+          Skor Kredit Keseluruhan: {overallScore} <TrendingUp className="h-4 w-4" />
         </div>
       </CardFooter>
     </Card>

@@ -44,10 +44,9 @@ export default function DashboardPage() {
   }
 
   // Kirim empty object sebagai fallback saat loading
-  const safeApplicationData = applicationData || {
+  const safeApplicationData: CreditApplication = applicationData || {
     id: "",
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
     user_id: "",
     status: "pending",
     company_name: "",
@@ -59,7 +58,6 @@ export default function DashboardPage() {
     analysis_value: [],
     application_files: [],
     risk_parameter: {},
-    bank_account: "",
     probability_approval: 0,
     overall_indicator: "",
     analysis_template: "",
@@ -67,6 +65,7 @@ export default function DashboardPage() {
     ai_analysis_status: "pending",
     document_validation_percentage: 0,
     estimated_analysis_time_minutes: 0,
+    ai_analysis: "",
   };
 
   return (
