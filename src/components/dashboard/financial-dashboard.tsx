@@ -53,8 +53,10 @@ function calculateCAGR(
 
 export function FinancialDashboard({
   applicationData,
+  isLoading = false,
 }: {
   applicationData: CreditApplication;
+  isLoading?: boolean;
 }) {
   const revenueArr = applicationData.revenue || [];
   const totalRevenue =
@@ -64,22 +66,22 @@ export function FinancialDashboard({
   const mainMetrics = [
     {
       label: "Pertumbuhan Pendapatan",
-      value: "25.9%",
-      subtitle: "Rp 62.98 M → Rp 79.26 M",
+      value: isLoading ? "" : "25.9%",
+      subtitle: isLoading ? "" : "Rp 62.98 M → Rp 79.26 M",
       hasInfo: true,
       trend: "positive",
     } as const,
     {
       label: "Pertumbuhan Laba",
-      value: "39.7%",
-      subtitle: "Rp 12.94 M → Rp 18.08 M",
+      value: isLoading ? "" : "39.7%",
+      subtitle: isLoading ? "" : "Rp 12.94 M → Rp 18.08 M",
       hasInfo: true,
       trend: "positive",
     } as const,
     {
       label: "Pertumbuhan Aset",
-      value: "20.0%",
-      subtitle: "Rp 146.12 M → Rp 175.30 M",
+      value: isLoading ? "" : "20.0%",
+      subtitle: isLoading ? "" : "Rp 146.12 M → Rp 175.30 M",
       hasInfo: true,
       trend: "positive",
     } as const,
@@ -88,15 +90,23 @@ export function FinancialDashboard({
   const performanceCards = [
     {
       title: "Jumlah Ekuitas",
-      value: parseToUnit((applicationData as any).equity || 175300000000), // Use equity or fallback to 175.30M
-      delta: cagr !== null ? `+${cagr.toFixed(2)}% CAGR` : "+20.0%",
-      deltaType: cagr !== null && cagr > 0 ? "positive" : "positive",
-      trend: cagr !== null && cagr > 0 ? "up" : "up",
-    } as const,
+      value: isLoading
+        ? ""
+        : parseToUnit((applicationData as any).equity || 175300000000),
+      delta: isLoading
+        ? ""
+        : cagr !== null
+          ? `+${cagr.toFixed(2)}% CAGR`
+          : "+20.0%",
+      deltaType: "positive" as const,
+      trend: "up" as const,
+    },
     {
       title: "Jumlah Liabilitas",
-      value: parseToUnit((applicationData as any).liabilities || 146120000000), // Use liabilities or fallback to 146.12M
-      delta: "-6.9% CAGR", // Placeholder
+      value: isLoading
+        ? ""
+        : parseToUnit((applicationData as any).liabilities || 146120000000),
+      delta: isLoading ? "" : "-6.9% CAGR",
       deltaType: "negative" as const,
       trend: "down" as const,
     },
