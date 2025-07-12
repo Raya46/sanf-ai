@@ -11,6 +11,10 @@ import { MainChart } from "@/components/dashboard/main-chart";
 import { CreditRadarChart } from "@/components/dashboard/credit-radar-chart";
 import { FraudDonutChart } from "@/components/dashboard/fraud-donut-chart";
 import { BalanceSheetTab } from "@/components/dashboard/balance-sheet-tab";
+import { CashFlowTab } from "@/components/dashboard/cash-flow-tab";
+import { RatioTab } from "@/components/dashboard/ratio-tab";
+import { IndustryDataTab } from "@/components/dashboard/industry-data-tab";
+import { IncomeStatementTab } from "./income-statement-tab";
 import { type CreditApplication } from "@/lib/types";
 
 const tabs = [
@@ -18,7 +22,8 @@ const tabs = [
   { id: "balance-sheet", label: "NERACA" },
   { id: "cash-flow", label: "ARUS KAS" },
   { id: "ratios", label: "RASIO" },
-  { id: "industry-data", label: "DATA INDUSTRI" },
+  { id: "profitability", label: "LABA RUGI" },
+  { id: "industry-data", label: "DATA LAINNYA" },
 ];
 
 function parseToUnit(amount: number): string {
@@ -124,6 +129,30 @@ export function FinancialDashboard({
         return (
           <div className="flex flex-col gap-6 px-6">
             <BalanceSheetTab />
+          </div>
+        );
+      case "cash-flow":
+        return (
+          <div className="flex flex-col gap-6 px-6">
+            <CashFlowTab />
+          </div>
+        );
+      case "ratios":
+        return (
+          <div className="flex flex-col gap-6 px-6 pb-6">
+            <RatioTab />
+          </div>
+        );
+      case "profitability":
+        return (
+          <div className="flex flex-col gap-6 px-6 pb-6">
+            <IncomeStatementTab />
+          </div>
+        );
+      case "industry-data":
+        return (
+          <div className="flex flex-col gap-6 px-6">
+            <IndustryDataTab />
           </div>
         );
       case "income-statements":
