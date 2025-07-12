@@ -39,17 +39,40 @@ export default function DashboardPage() {
     fetchData();
   }, [projectId]);
 
-  if (isLoadingData) {
-    return <div>Loading application data...</div>;
-  }
-
   if (errorData) {
     return <div>Error loading application data.</div>;
   }
 
-  if (!applicationData) {
-    return <div>No application data found.</div>;
-  }
+  // Kirim empty object sebagai fallback saat loading
+  const safeApplicationData = applicationData || {
+    id: "",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    user_id: "",
+    status: "pending",
+    company_name: "",
+    company_type: "",
+    revenue: [],
+    gross_profit: 0,
+    operating_expenses: 0,
+    ebitda: 0,
+    analysis_value: [],
+    application_files: [],
+    risk_parameter: {},
+    bank_account: "",
+    probability_approval: 0,
+    overall_indicator: "",
+    analysis_template: "",
+    amount: 0,
+    ai_analysis_status: "pending",
+    document_validation_percentage: 0,
+    estimated_analysis_time_minutes: 0,
+  };
 
-  return <FinancialDashboard applicationData={applicationData} />;
+  return (
+    <FinancialDashboard
+      applicationData={safeApplicationData}
+      isLoading={isLoadingData}
+    />
+  );
 }

@@ -28,30 +28,40 @@ const formatToRupiah = (amount: number) => {
   return `Rp ${new Intl.NumberFormat("id-ID").format(amount)}`;
 };
 
+interface FinancialDashboardProps {
+  applicationData: CreditApplication;
+  isLoading?: boolean;
+}
+
 export function FinancialDashboard({
   applicationData,
-}: {
-  applicationData: CreditApplication;
-}) {
+  isLoading = false,
+}: FinancialDashboardProps) {
   const mainMetrics = [
     {
       label: "Total Revenue",
-      value: formatToRupiah(
-        applicationData.revenue?.reduce((sum, item) => sum + item.revenue, 0) ||
-          0
-      ),
+      value: isLoading
+        ? ""
+        : formatToRupiah(
+            applicationData.revenue?.reduce(
+              (sum, item) => sum + item.revenue,
+              0
+            ) || 0
+          ),
       hasInfo: true,
       trend: "negative" as const,
     },
     {
       label: "Gross Profit",
-      value: formatToRupiah(applicationData.gross_profit),
+      value: isLoading ? "" : formatToRupiah(applicationData.gross_profit),
       hasInfo: true,
       trend: "positive" as const,
     },
     {
       label: "Operating Expenses",
-      value: formatToRupiah(applicationData.operating_expenses),
+      value: isLoading
+        ? ""
+        : formatToRupiah(applicationData.operating_expenses),
       hasInfo: true,
       trend: "positive" as const,
     },
@@ -60,18 +70,22 @@ export function FinancialDashboard({
   const performanceCards = [
     {
       title: "Total Revenue",
-      value: formatToRupiah(
-        applicationData.revenue?.reduce((sum, item) => sum + item.revenue, 0) ||
-          0
-      ),
-      delta: "+21.6%", // Placeholder
+      value: isLoading
+        ? ""
+        : formatToRupiah(
+            applicationData.revenue?.reduce(
+              (sum, item) => sum + item.revenue,
+              0
+            ) || 0
+          ),
+      delta: isLoading ? "" : "+21.6%", // Placeholder
       deltaType: "positive" as const,
       trend: "up" as const,
     },
     {
       title: "EBITDA",
-      value: formatToRupiah(applicationData.ebitda),
-      delta: "-6.9%", // Placeholder
+      value: isLoading ? "" : formatToRupiah(applicationData.ebitda),
+      delta: isLoading ? "" : "-6.9%", // Placeholder
       deltaType: "negative" as const,
       trend: "down" as const,
     },

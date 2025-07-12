@@ -1,4 +1,5 @@
 import { ArrowUp, ArrowDown } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MetricTrendCardProps {
   title: string;
@@ -25,13 +26,15 @@ export function MetricTrendCard({
           <ArrowDown className="h-5 w-5 text-red-500" />
         )}
       </div>
-      <div className="text-3xl font-bold text-gray-900 mb-2">{value}</div>
+      <div className="text-3xl font-bold text-gray-900 mb-2">
+        {value ? value : <Skeleton className="h-8 w-32" />}
+      </div>
       <div
         className={`text-base font-medium ${
           deltaType === "positive" ? "text-green-500" : "text-red-500"
         }`}
       >
-        {delta}
+        {delta ? delta : <Skeleton className="h-4 w-16" />}
       </div>
     </div>
   );

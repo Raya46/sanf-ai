@@ -197,7 +197,7 @@ export function SectionForm() {
       formData.append("year_established", yearEstablished.toString());
       formData.append("npwp", npwp);
       formData.append("contact_email", contactEmail);
-      formData.append("business_field", businessField);
+      formData.append("company_type", businessField);
       formData.append("amount", amountSubmissions.toString());
       formData.append("ai_context", aiContext);
 
