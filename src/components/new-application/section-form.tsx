@@ -1,4 +1,5 @@
 "use client";
+
 import {
   Dialog,
   DialogContent,
@@ -7,6 +8,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import {
+  analysisTemplates as initialAnalysisTemplates,
+  applicationTypes as initialApplicationTypes,
+  businessFields,
+  requiredDocuments as initialRequiredDocuments,
+  riskParametersData as initialRiskParametersData,
+} from "@/data/analyze-data-template";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { LoaderCircle } from "lucide-react";
@@ -14,26 +22,35 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "../ui/button";
-import { DocumentUploadStep } from "./ui/document-step-card";
-import { StepSegmentationTemplate } from "./ui/step-segmentation-template";
-import { StepCompanyData } from "./ui/step-company-data";
-import { StepAnalysisContext } from "./ui/step-analysis-context";
 import {
   Stepper,
   StepperDescription,
   StepperIndicator,
   StepperItem,
   StepperSeparator,
+  StepperTitle,
   StepperTrigger,
 } from "../ui/stepper";
-import {
-  analysisTemplates,
-  applicationTypes,
-  businessFields,
-  initialDocuments,
-  requiredDocuments,
-  riskParametersData,
-} from "@/data/analyze-data-template";
+import { StepAnalysisContext } from "./ui/step-analysis-context";
+import { StepCompanyData } from "./ui/step-company-data";
+import { DocumentUploadStep } from "./ui/document-step-card";
+import { StepSegmentationTemplate } from "./ui/step-segmentation-template";
+import { DocumentRequirement } from "@/type/step-type"; // Import DocumentRequirement
+
+// --- Interfaces ---
+interface StagedFile {
+  file: File;
+  key: string;
+  docType: string;
+}
+
+// --- Data untuk Stepper ---
+const steps = [
+  { id: 1, label: "Setup", description: "Pilih segmentasi & template" },
+  { id: 2, label: "Data Perusahaan", description: "Isi profil perusahaan" },
+  { id: 3, label: "Upload Dokumen", description: "Unggah dokumen wajib" },
+  { id: 4, label: "Konteks Analisis", description: "Review dan submit" },
+];
 
 export function SectionForm() {
   const [user, setUser] = useState<User | null>(null);
@@ -41,32 +58,48 @@ export function SectionForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
+  // --- State untuk Form Multi-langkah ---
   const [currentStep, setCurrentStep] = useState(1);
+
+  // State untuk Step 1 (Segmentasi & Template)
   const [applicationType, setApplicationType] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [riskParameters, setRiskParameters] = useState<{
     [key: string]: number | string;
   }>({});
-
-  const [uploadedDocuments, setUploadedDocuments] = useState<
+  const [customizedDocuments, setCustomizedDocuments] = useState<
     DocumentRequirement[]
   >([]);
 
+  // State untuk data yang bisa dikustomisasi oleh user
+  const [customApplicationTypes, setCustomApplicationTypes] = useState(
+    initialApplicationTypes
+  );
+  const [customAnalysisTemplates, setCustomAnalysisTemplates] = useState(
+    initialAnalysisTemplates
+  );
+
+  // State untuk Step 2 (Data Perusahaan)
   const [companyName, setCompanyName] = useState("");
   const [companyAddress, setCompanyAddress] = useState("");
   const [companyPhone, setCompanyPhone] = useState("");
   const [yearEstablished, setYearEstablished] = useState<number | "">("");
   const [npwp, setNpwp] = useState("");
-  const [companyEmail, setCompanyEmail] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [businessField, setBusinessField] = useState("");
-  const [numSubmssion, setNumSubmssion] = useState<number | "">("");
+  const [amountSubmissions, setamountSubmissions] = useState<number>(0);
 
+  // State untuk Step 4 (Konteks AI)
+  const [aiContext, setAiContext] = useState("");
+
+  // State untuk Modal Loading
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [processingMessage, setProcessingMessage] = useState(
     "Starting analysis..."
   );
   const [progress, setProgress] = useState(0);
 
+  // --- useEffect Hooks ---
   useEffect(() => {
     const fetchUser = async () => {
       const supabase = createClient();
@@ -78,11 +111,12 @@ export function SectionForm() {
     fetchUser();
   }, []);
 
+  // PERBAIKAN: Logika untuk memuat dokumen berdasarkan template
   useEffect(() => {
-    if (selectedTemplate && requiredDocuments[selectedTemplate]) {
-      setUploadedDocuments(requiredDocuments[selectedTemplate]);
+    if (selectedTemplate && initialRequiredDocuments[selectedTemplate]) {
+      setCustomizedDocuments(initialRequiredDocuments[selectedTemplate]);
     } else {
-      setUploadedDocuments(initialDocuments);
+      setCustomizedDocuments([]); // Kosongkan jika tidak ada template terpilih
     }
   }, [selectedTemplate]);
 
@@ -107,19 +141,19 @@ export function SectionForm() {
     }
   }, [isSubmitting]);
 
+  // --- Handlers ---
   const handleDocumentUpload = useCallback(
     (docId: string, acceptedFiles: File[]) => {
       if (acceptedFiles.length === 0) return;
       const file = acceptedFiles[0];
 
-      setUploadedDocuments((prevDocs) =>
+      setCustomizedDocuments((prevDocs) =>
         prevDocs.map((doc) =>
           doc.id === docId
             ? { ...doc, fileName: file.name, status: "uploaded" }
             : doc
         )
       );
-
       setStagedFiles((prevFiles) => [
         ...prevFiles.filter((f) => f.docType !== docId),
         { file, docType: docId, key: `${docId}-${uuidv4()}` },
@@ -129,7 +163,7 @@ export function SectionForm() {
   );
 
   const removeFile = useCallback((docId: string) => {
-    setUploadedDocuments((prevDocs) =>
+    setCustomizedDocuments((prevDocs) =>
       prevDocs.map((doc) =>
         doc.id === docId
           ? { ...doc, fileName: undefined, status: "missing" }
@@ -140,11 +174,15 @@ export function SectionForm() {
   }, []);
 
   const handleSubmit = async () => {
-    if (!user || stagedFiles.length === 0) {
-      console.error("User not found or no files staged.");
-      alert("Harap unggah semua dokumen wajib terlebih dahulu.");
+    if (!user) {
+      alert("Sesi Anda telah berakhir. Silakan login kembali.");
       return;
     }
+    if (stagedFiles.length !== customizedDocuments.length) {
+      alert("Harap unggah semua dokumen yang disyaratkan.");
+      return;
+    }
+
     setIsSubmitting(true);
     setIsModalOpen(true);
 
@@ -158,9 +196,10 @@ export function SectionForm() {
       formData.append("company_phone", companyPhone);
       formData.append("year_established", yearEstablished.toString());
       formData.append("npwp", npwp);
-      formData.append("company_email", companyEmail);
-      formData.append("company_type", businessField);
-      formData.append("amount", numSubmssion.toString());
+      formData.append("contact_email", contactEmail);
+      formData.append("business_field", businessField);
+      formData.append("amount", amountSubmissions.toString());
+      formData.append("ai_context", aiContext);
 
       for (const stagedFile of stagedFiles) {
         formData.append("files", stagedFile.file, stagedFile.file.name);
@@ -170,7 +209,6 @@ export function SectionForm() {
         method: "POST",
         body: formData,
       });
-
       if (!response.ok) {
         const errorResult = (await response.json()) as { error?: string };
         throw new Error(errorResult.error || "Submission failed");
@@ -199,36 +237,40 @@ export function SectionForm() {
   };
 
   const handleNextStep = () => {
-    setCurrentStep((prev) => prev + 1);
+    if (currentStep < steps.length) {
+      setCurrentStep((prev) => prev + 1);
+    }
   };
-
   const handlePreviousStep = () => {
-    setCurrentStep((prev) => prev - 1);
+    if (currentStep > 1) {
+      setCurrentStep((prev) => prev - 1);
+    }
   };
 
-  const currentTemplateData = selectedTemplate
-    ? analysisTemplates[applicationType]?.find(
-        (template) => template.value === selectedTemplate
-      )
-    : null;
-
-  const documentsUploadedCount = uploadedDocuments.filter(
+  // --- Variabel Kalkulasi untuk UI ---
+  const documentsUploadedCount = customizedDocuments.filter(
     (doc) => doc.status === "uploaded" || doc.status === "validated"
   ).length;
-  const totalDocumentsRequired = uploadedDocuments.length;
+  const totalDocumentsRequired = customizedDocuments.length;
   const completenessPercentage =
     totalDocumentsRequired > 0
       ? (documentsUploadedCount / totalDocumentsRequired) * 100
       : 0;
-  const steps = [
-    { id: 1, label: "Setup", description: "Pilih segmentasi" },
-    { id: 2, label: "Aplikasi Kredit", description: "Isi data perusahaan" },
-    { id: 3, label: "Upload Dokumen", description: "Unggah dokumen wajib" },
-    { id: 4, label: "Input Konteks AI", description: "Review dan submit" },
-  ];
+
+  const isStepComplete = () => {
+    if (currentStep === 1) return !!applicationType && !!selectedTemplate;
+    if (currentStep === 2)
+      return !!companyName.trim() && !!companyAddress.trim() && !!npwp.trim();
+    if (currentStep === 3)
+      return (
+        totalDocumentsRequired > 0 &&
+        documentsUploadedCount === totalDocumentsRequired
+      );
+    return true;
+  };
 
   return (
-    <div className="flex flex-col gap-8 mt-4 mx-4 flex-1 p-8">
+    <div className="flex flex-col gap-8 mt-4 mx-4 flex-1 h-full">
       <Stepper
         value={currentStep}
         onValueChange={setCurrentStep}
@@ -240,7 +282,7 @@ export function SectionForm() {
               <div className="flex items-center gap-2">
                 <StepperIndicator />
                 <div>
-                  <h1>{label}</h1>
+                  <StepperTitle>{label}</StepperTitle>
                   <StepperDescription>{description}</StepperDescription>
                 </div>
               </div>
@@ -249,8 +291,9 @@ export function SectionForm() {
           </StepperItem>
         ))}
       </Stepper>
-      {currentStep === 1 && (
-        <>
+
+      <div className="flex-grow">
+        {currentStep === 1 && (
           <StepSegmentationTemplate
             applicationType={applicationType}
             setApplicationType={setApplicationType}
@@ -258,21 +301,20 @@ export function SectionForm() {
             setSelectedTemplate={setSelectedTemplate}
             riskParameters={riskParameters}
             setRiskParameters={setRiskParameters}
-            onDocumentsChange={setUploadedDocuments}
+            onDocumentsChange={setCustomizedDocuments}
+            customApplicationTypes={customApplicationTypes}
+            setCustomApplicationTypes={setCustomApplicationTypes}
+            customAnalysisTemplates={customAnalysisTemplates}
+            setCustomAnalysisTemplates={setCustomAnalysisTemplates}
+            requiredDocuments={initialRequiredDocuments}
+            riskParametersData={initialRiskParametersData}
           />
-          <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={handlePreviousStep}>
-              Previous
-            </Button>
-            <Button onClick={handleNextStep}>Next</Button>
-          </div>
-        </>
-      )}
+        )}
 
-      {/* Step 2: Company Data */}
-      {currentStep === 2 && (
-        <>
+        {currentStep === 2 && (
           <StepCompanyData
+            contactEmail={contactEmail}
+            setContactEmail={setContactEmail}
             companyName={companyName}
             setCompanyName={setCompanyName}
             companyAddress={companyAddress}
@@ -283,82 +325,71 @@ export function SectionForm() {
             setYearEstablished={setYearEstablished}
             npwp={npwp}
             setNpwp={setNpwp}
-            companyEmail={companyEmail}
-            setCompanyEmail={setCompanyEmail}
             businessField={businessField}
             setBusinessField={setBusinessField}
-            numSubmission={numSubmssion}
-            setNumSubmission={setNumSubmssion}
-            handlePreviousStep={handlePreviousStep}
-            handleNextStep={handleNextStep}
+            amountSubmissions={amountSubmissions}
+            setamountSubmission={setamountSubmissions}
             businessFields={businessFields}
           />
-          <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={handlePreviousStep}>
-              Previous
-            </Button>
-            <Button onClick={handleNextStep}>Next</Button>
-          </div>
-        </>
-      )}
+        )}
 
-      {/* Step 3: Upload Documents */}
-      {currentStep === 3 && (
-        <div className="flex flex-col gap-4 w-full flex-1">
-          <h1 className="text-2xl font-bold">
-            Dokumen Wajib - {currentTemplateData?.label}
-          </h1>
-          <p className="text-sm text-gray-500">
-            Semua dokumen harus diunggah dan tervalidasi sebelum melanjutkan ke
-            tahap berikutnya.
-          </p>
+        {currentStep === 3 && (
+          <DocumentUploadStep
+            documents={customizedDocuments}
+            handleDocumentUpload={handleDocumentUpload}
+            handleFileRemove={removeFile}
+            completenessPercentage={completenessPercentage}
+            documentsUploadedCount={documentsUploadedCount}
+            totalDocumentsRequired={totalDocumentsRequired}
+          />
+        )}
 
-          <div className="flex flex-col gap-4 mt-4">
-            <DocumentUploadStep
-              documents={uploadedDocuments}
-              handleDocumentUpload={handleDocumentUpload}
-              handleFileRemove={removeFile}
-              completenessPercentage={completenessPercentage}
-              documentsUploadedCount={documentsUploadedCount}
-              totalDocumentsRequired={totalDocumentsRequired}
-            />
-          </div>
-
-          <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={handlePreviousStep}>
-              Previous
-            </Button>
-            <Button onClick={handleNextStep}>Next</Button>
-          </div>
-        </div>
-      )}
-      {currentStep === 4 && (
-        <div className="flex flex-col gap-4 w-full flex-1">
+        {currentStep === 4 && (
           <StepAnalysisContext
             companyName={companyName}
             applicationTypeLabel={
-              applicationTypes.find((type) => type.value === applicationType)
-                ?.label || "Tidak Diketahui"
+              customApplicationTypes.find(
+                (type) => type.value === applicationType
+              )?.label || "Tidak Diketahui"
             }
             documentStatus={`${documentsUploadedCount}/${totalDocumentsRequired} Lengkap`}
-            financingValue={
-              numSubmssion && !isNaN(Number(numSubmssion))
-                ? `Rp ${Number(numSubmssion).toLocaleString("id-ID")}`
-                : "-"
-            }
-            onBack={handlePreviousStep}
-            onSubmit={handleSubmit}
+            amountSubmission={amountSubmissions as number}
+            onAmountSubmissionChange={setamountSubmissions}
+            aiContext={aiContext}
+            onContextChange={setAiContext}
           />
-          <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={handlePreviousStep}>
-              Previous
-            </Button>
-            <Button onClick={handleSubmit}>Analisa AI</Button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Loading Modal */}
+      <div className="flex w-full justify-between mt-auto pt-4 border-t">
+        <Button
+          variant="outline"
+          onClick={handlePreviousStep}
+          disabled={currentStep === 1 || isSubmitting}
+        >
+          Previous
+        </Button>
+
+        {currentStep < steps.length ? (
+          <Button
+            onClick={handleNextStep}
+            disabled={!isStepComplete() || isSubmitting}
+          >
+            Next
+          </Button>
+        ) : (
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !isStepComplete()}
+          >
+            {isSubmitting ? (
+              <LoaderCircle className="animate-spin mr-2" />
+            ) : null}
+            Analisa AI
+          </Button>
+        )}
+      </div>
+
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

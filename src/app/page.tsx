@@ -68,7 +68,6 @@ interface CreditApplicationData {
   company_type: string;
   amount: number;
   analysis_template: string;
-  risk_appetite: number;
 }
 
 const companyTypeIcons: { [key: string]: LucideIcon } = {

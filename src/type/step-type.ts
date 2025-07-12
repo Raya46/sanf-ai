@@ -1,14 +1,12 @@
-interface DocumentRequirement {
+export interface DocumentRequirement {
   id: string;
   name: string;
   format: string;
   details: string;
-  fileName?: string;
-  description?: string;
-  status?: "uploaded" | "missing" | "validated" | "pending_validation";
+  status: "uploaded" | "missing" | "validated" | "pending_validation";
 }
 
-interface StepSegmentationTemplateProps {
+export interface StepSegmentationTemplateProps {
   applicationType: string;
   setApplicationType: (type: string) => void;
   selectedTemplate: string;
@@ -17,23 +15,34 @@ interface StepSegmentationTemplateProps {
   setRiskParameters: React.Dispatch<
     React.SetStateAction<{ [key: string]: number | string }>
   >;
-  analysisTemplates: { [key: string]: { value: string; label: string }[] };
-  applicationTypes: { value: string; label: string }[];
+  onDocumentsChange: (docs: DocumentRequirement[]) => void;
+  // Props baru untuk data yang bisa dikustomisasi
+  customApplicationTypes: { value: string; label: string }[];
+  setCustomApplicationTypes: React.Dispatch<
+    React.SetStateAction<{ value: string; label: string }[]>
+  >;
+  customAnalysisTemplates: {
+    [key: string]: { value: string; label: string }[];
+  };
+  setCustomAnalysisTemplates: React.Dispatch<
+    React.SetStateAction<{ [key: string]: { value: string; label: string }[] }>
+  >;
+  // Props untuk data awal
   requiredDocuments: { [key: string]: DocumentRequirement[] };
   riskParametersData: { [key: string]: { [key: string]: string | number } };
-  onDocumentsChange?: (docs: DocumentRequirement[]) => void;
 }
 
-interface StepAnalysisContextProps {
+export interface StepAnalysisContextProps {
   companyName: string;
-  financingValue: string;
+  amountSubmission: number;
   applicationTypeLabel: string;
   documentStatus: string;
-  onBack: () => void;
-  onSubmit: (aiContext: string) => void;
+  onContextChange: (context: string) => void;
+  onAmountSubmissionChange: (value: number) => void;
+  aiContext: string;
 }
 
-interface StepCompanyDataProps {
+export interface StepCompanyDataProps {
   companyName: string;
   setCompanyName: (name: string) => void;
   companyAddress: string;
@@ -44,28 +53,11 @@ interface StepCompanyDataProps {
   setYearEstablished: (year: number | "") => void;
   npwp: string;
   setNpwp: (npwp: string) => void;
-  companyEmail: string;
-  setCompanyEmail: (email: string) => void;
+  contactEmail: string;
+  setContactEmail: (email: string) => void;
   businessField: string;
   setBusinessField: (field: string) => void;
-  numSubmission: number | "";
-  setNumSubmission: (num: number | "") => void;
-  handlePreviousStep: () => void;
-  handleNextStep: () => void;
+  amountSubmissions: number;
+  setamountSubmission: (num: number) => void;
   businessFields: { value: string; label: string }[];
-}
-
-interface StagedFile {
-  file: File;
-  key: string;
-  docType: string;
-}
-
-interface DocumentUploadStepProps {
-  documents: DocumentRequirement[];
-  handleDocumentUpload: (docId: string, files: File[]) => void;
-  handleFileRemove: (docId: string) => void;
-  completenessPercentage: number;
-  documentsUploadedCount: number;
-  totalDocumentsRequired: number;
 }

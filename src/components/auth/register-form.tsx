@@ -8,6 +8,13 @@ import { Card, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
 import Link from "next/link";
 import Image from "next/image";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 
 const formData = {
   title: "Create an Account",
@@ -66,6 +73,45 @@ export function RegisterForm() {
                       className="h-10 rounded-md"
                       required
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="tenant"
+                      className="font-medium text-base leading-6 block"
+                    >
+                      Perusahaan Pembiayaan
+                    </label>
+                    <Select name="tenant" required>
+                      <SelectTrigger className="h-10 rounded-md w-full">
+                        <SelectValue placeholder="Pilih Perusahaan Pembiayaan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PT Surya Artha Nusantara Finance">
+                          PT Surya Artha Nusantara Finance
+                        </SelectItem>
+                        <SelectItem value="Astra Credit Companies (ACC)">
+                          Astra Credit Companies (ACC)
+                        </SelectItem>
+                        <SelectItem value="Adira Finance">
+                          Adira Finance
+                        </SelectItem>
+                        <SelectItem value="Mandiri Tunas Finance (MTF)">
+                          Mandiri Tunas Finance (MTF)
+                        </SelectItem>
+                        <SelectItem value="BCA Finance">BCA Finance</SelectItem>
+                        <SelectItem value="OTO Multiartha">
+                          OTO Multiartha
+                        </SelectItem>
+                        <SelectItem value="FIF Group">FIF Group</SelectItem>
+                        <SelectItem value="WOM Finance">WOM Finance</SelectItem>
+                        <SelectItem value="CSUL Finance">
+                          CSUL Finance
+                        </SelectItem>
+                        <SelectItem value="AEON Credit Service Indonesia">
+                          AEON Credit Service Indonesia
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <SignUpButton />
