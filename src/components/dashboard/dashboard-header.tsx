@@ -12,7 +12,7 @@ import {
 import {
   LoaderCircle,
   Sparkles,
-  Download,
+  Bot,
   LogOut,
   ChevronLeft,
   CheckCircle2,
@@ -114,7 +114,8 @@ export function DashboardHeader() {
 
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [cotSteps, setCotSteps] = useState<CoTStep[]>([]);
-  const [showCreditEvaluationDialog, setShowCreditEvaluationDialog] = useState(false);
+  const [showCreditEvaluationDialog, setShowCreditEvaluationDialog] =
+    useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -275,6 +276,7 @@ export function DashboardHeader() {
     <header className="flex items-center sticky top-0 z-50 justify-between border-gray-200 bg-[#182d7c] p-4 py-8">
       <div className="flex items-center gap-4">
         <Button
+          variant="ring"
           className="bg-white hover:bg-gray-200"
           onClick={() => router.back()}
         >
@@ -290,8 +292,8 @@ export function DashboardHeader() {
           variant="ring"
           className="bg-white text-black"
         >
-          <Sparkles className="mr-2 h-4 w-4" />
-          View AI Analysis
+          <Sparkles className="mr-1 h-4 w-4" />
+          Download AI Analysis
         </Button>
         {/* Replaced Download button with Credit Analyst AI Agent button that opens dialog */}
         <Button
@@ -299,7 +301,7 @@ export function DashboardHeader() {
           className="bg-white text-black"
           onClick={() => setShowCreditEvaluationDialog(true)}
         >
-          <ScanLine className="mr-2 h-4 w-4" />
+          <ScanLine className="mr-1 h-4 w-4" />
           Credit Evaluation
         </Button>
         <Dialog open={isLoadingPdf} onOpenChange={setIsLoadingPdf}>
@@ -321,7 +323,10 @@ export function DashboardHeader() {
           </DialogContent>
         </Dialog>
         {/* New Dialog for Credit Evaluation */}
-        <Dialog open={showCreditEvaluationDialog} onOpenChange={setShowCreditEvaluationDialog}>
+        <Dialog
+          open={showCreditEvaluationDialog}
+          onOpenChange={setShowCreditEvaluationDialog}
+        >
           <DialogContent className="sm:max-w-[900px]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -334,18 +339,44 @@ export function DashboardHeader() {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 p-4 border rounded-md bg-gray-50 text-sm text-gray-700 whitespace-pre-wrap">
                 <h3 className="font-semibold text-lg mb-2">Aspek Positif:</h3>
-                <p>Perusahaan memiliki kinerja keuangan yang kuat dengan pertumbuhan pendapatan 25.9% dan laba</p>
+                <p>
+                  Perusahaan memiliki kinerja keuangan yang kuat dengan
+                  pertumbuhan pendapatan 25.9% dan laba
+                </p>
                 <p>39.7%</p>
-                <p>Kapasitas pembayaran sangat memadai dengan DSCR 2.1x dan ICR 5.79x</p>
-                <p>Coverage ratio jaminan yang tinggi (265%) dengan aset bernilai tinggi</p>
+                <p>
+                  Kapasitas pembayaran sangat memadai dengan DSCR 2.1x dan ICR
+                  5.79x
+                </p>
+                <p>
+                  Coverage ratio jaminan yang tinggi (265%) dengan aset bernilai
+                  tinggi
+                </p>
                 <p>Track record dan manajemen perusahaan yang profesional</p>
-                <p>Prospek industri batu bara yang stabil dengan tren harga positif</p>
-                <p className="mb-4">Kontrak jangka panjang dengan pelanggan utama menjamin pendapatan</p>
+                <p>
+                  Prospek industri batu bara yang stabil dengan tren harga
+                  positif
+                </p>
+                <p className="mb-4">
+                  Kontrak jangka panjang dengan pelanggan utama menjamin
+                  pendapatan
+                </p>
 
-                <h3 className="font-semibold text-lg mb-2">Risiko & Mitigasi:</h3>
-                <p>Risiko fluktuasi harga komoditas – Mitigasi: Kontrak jangka panjang dengan harga minimum</p>
-                <p>Risiko regulasi pertambangan – Mitigasi: Perusahaan telah memiliki izin lengkap dan memenuhi DMO</p>
-                <p>Risiko operasional – Mitigasi: Asuransi comprehensive untuk alat berat dan operasional</p>
+                <h3 className="font-semibold text-lg mb-2">
+                  Risiko & Mitigasi:
+                </h3>
+                <p>
+                  Risiko fluktuasi harga komoditas – Mitigasi: Kontrak jangka
+                  panjang dengan harga minimum
+                </p>
+                <p>
+                  Risiko regulasi pertambangan – Mitigasi: Perusahaan telah
+                  memiliki izin lengkap dan memenuhi DMO
+                </p>
+                <p>
+                  Risiko operasional – Mitigasi: Asuransi comprehensive untuk
+                  alat berat dan operasional
+                </p>
               </div>
               <div className="w-full md:w-1/3 flex items-center justify-center p-4 border rounded-md bg-green-50 text-green-800 font-bold text-2xl">
                 <div className="text-center">
@@ -355,7 +386,9 @@ export function DashboardHeader() {
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={() => setShowCreditEvaluationDialog(false)}>Close</Button>
+              <Button onClick={() => setShowCreditEvaluationDialog(false)}>
+                Close
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -365,12 +398,12 @@ export function DashboardHeader() {
           className="bg-white text-black"
           onClick={navigateToCreditAnalystAI}
         >
-          <Sparkles className="mr-2 h-4 w-4" />
+          <Bot className="mr-1 h-4 w-4" />
           Credit Analyst AI Agent
         </Button>
         <Button
           size="icon"
-          variant="ghost"
+          variant="ring"
           className="bg-white text-black hover:bg-gray-200"
           onClick={handleLogout}
         >
