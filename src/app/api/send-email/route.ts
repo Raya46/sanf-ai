@@ -27,8 +27,8 @@ export async function POST(request: Request) {
       host: process.env.NODEMAILER_HOST || "smtp.gmail.com",
       port: parseInt(process.env.NODEMAILER_PORT || "587"),
       auth: {
-        user: process.env.GMAIL_USERNAME,
-        pass: process.env.GMAIL_PASSWORD,
+        user: "muhammadrayaarrizki@gmail.com",
+        pass: "keso vvds vmos mndy",
       },
     });
 

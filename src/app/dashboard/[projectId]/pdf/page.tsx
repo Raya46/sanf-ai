@@ -12,6 +12,7 @@ import {
   ZoomIn,
   ZoomOut,
   Loader2,
+  Download,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -109,6 +110,15 @@ Tim Sanf AI`,
     }
   };
 
+  const handleDownload = () => {
+    const link = document.createElement("a");
+    link.href = pdfFile;
+    link.download = "credit-analysis-report.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Fungsi untuk navigasi halaman
   const goToPage = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -200,6 +210,15 @@ Tim Sanf AI`,
                 title="Zoom In"
               >
                 <ZoomIn className="h-5 w-5" />
+              </Button>
+              <Button
+                onClick={handleDownload}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download
               </Button>
               <Button
                 onClick={() => setIsEmailDialogOpen(true)}

@@ -9,7 +9,6 @@ import { CombinedMetricsCard } from "@/components/dashboard/combined-metrics-car
 import { KeyRatiosSection } from "@/components/dashboard/key-ratios-section";
 import { MainChart } from "@/components/dashboard/main-chart";
 import { CreditRadarChart } from "@/components/dashboard/credit-radar-chart";
-import { FraudDonutChart } from "@/components/dashboard/fraud-donut-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -33,6 +32,7 @@ import { RatioTab } from "@/components/dashboard/ratio-tab";
 import { IndustryDataTab } from "@/components/dashboard/industry-data-tab";
 import { IncomeStatementTab } from "./income-statement-tab";
 import { type CreditApplication } from "@/lib/types";
+import { RiskScoreSummary } from "./risk-score-summary";
 
 const tabs = [
   { id: "income-statements", label: "Ringkasan Analisa" },
@@ -320,7 +320,7 @@ export function FinancialDashboard({
               {/* Right Sidebar - Replaced with CreditRadarChart */}
               <div className="flex flex-col gap-6 pb-6">
                 <CreditRadarChart />
-                <FraudDonutChart />
+                <RiskScoreSummary />
               </div>
             </div>
           </>

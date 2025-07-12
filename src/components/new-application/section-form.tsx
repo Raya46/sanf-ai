@@ -143,7 +143,7 @@ export function SectionForm() {
 
     const steps = [
       {
-        title: "Chain of Thought: Proses Analisis Kredit oleh AI Agent\n\n",
+        title: "Proses Analisis Kredit oleh AI Agent\n\n",
         delay: 0,
       },
       {
@@ -206,7 +206,7 @@ export function SectionForm() {
       },
       {
         title:
-          "Saya sudah memahami semua dokumen, Saya akan lanjutkan proses analisa secara mendalam dan melampirkan hasil dalam bentuk visualisasi dan Credit Approval Document yang siap di download User.",
+          "Saya sudah memahami semua dokumen, Saya akan melampirkan hasil dalam bentuk visualisasi dan Credit Approval Document yang siap di download User.",
         delay: 100000,
         final: true,
       },
