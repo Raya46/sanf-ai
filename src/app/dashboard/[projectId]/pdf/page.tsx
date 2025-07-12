@@ -15,12 +15,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 
 // Mengatur worker untuk react-pdf. Baris ini penting agar library bisa bekerja.
 // Menggunakan unpkg untuk versi yang lebih stabil dan modern.
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export default function PdfViewerPage() {
+  const router = useRouter();
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.5); // Level zoom awal
@@ -71,6 +73,9 @@ export default function PdfViewerPage() {
         <Card className="sticky top-4 z-10 mb-4 bg-white/80 shadow-lg backdrop-blur-sm dark:bg-gray-800/80">
           <CardContent className="flex flex-wrap items-center justify-center gap-2 p-2 sm:p-3 sm:justify-between">
             {/* Kontrol Navigasi Halaman */}
+            <Button onClick={() => router.back()}>
+              <ChevronLeft />
+            </Button>
             <div className="flex items-center gap-2">
               <Button
                 onClick={handlePrevPage}

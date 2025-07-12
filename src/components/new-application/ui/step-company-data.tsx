@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StepCompanyDataProps } from "@/type/step-type";
 
 export function StepCompanyData({
   companyName,
@@ -20,12 +21,12 @@ export function StepCompanyData({
   setYearEstablished,
   npwp,
   setNpwp,
-  companyEmail,
-  setCompanyEmail,
   businessField,
   setBusinessField,
-  numSubmission,
-  setNumSubmission,
+  amountSubmissions,
+  setamountSubmission,
+  contactEmail,
+  setContactEmail,
   businessFields,
 }: StepCompanyDataProps) {
   return (
@@ -88,16 +89,6 @@ export function StepCompanyData({
             />
           </div>
           <div>
-            <Label htmlFor="companyEmail">Email</Label>
-            <Input
-              id="companyEmail"
-              type="email"
-              value={companyEmail}
-              onChange={(e) => setCompanyEmail(e.target.value)}
-              placeholder="Masukkan email perusahaan"
-            />
-          </div>
-          <div>
             <Label htmlFor="businessField">Bidang Usaha</Label>
             <Select onValueChange={setBusinessField} value={businessField}>
               <SelectTrigger
@@ -120,12 +111,22 @@ export function StepCompanyData({
             </Select>
           </div>
           <div>
-            <Label htmlFor="numSubmission">Nominal Pengajuan</Label>
+            <Label htmlFor="contactEmail">Email Kontak</Label>
             <Input
-              id="numSubmission"
+              id="contactEmail"
+              type="email"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              placeholder="Masukkan email kontak"
+            />
+          </div>
+          <div>
+            <Label htmlFor="amountSubmissions">nominal pengajuan</Label>
+            <Input
+              id="amountSubmissions"
               type="number"
-              value={numSubmission}
-              onChange={(e) => setNumSubmission(parseInt(e.target.value) || "")}
+              value={amountSubmissions}
+              onChange={(e) => setamountSubmission(parseInt(e.target.value))}
               placeholder="Masukkan nominal pengajuan"
             />
           </div>

@@ -1,3 +1,5 @@
+import { DocumentRequirement } from "@/type/step-type";
+
 export const initialDocuments: DocumentRequirement[] = [
   {
     id: "rekening_koran",
@@ -8,35 +10,35 @@ export const initialDocuments: DocumentRequirement[] = [
   },
   {
     id: "loi_kerjasama",
-    name: "2. LOI Kerjasama",
+    name: "LOI Kerjasama",
     format: "PDF",
     details: "Pihak: PT Bohir Jaya",
     status: "missing",
   },
   {
     id: "rekapan_sales",
-    name: "3. Rekapan Sales 3 bulan",
+    name: "Rekapan Sales 3 bulan",
     format: "PDF/Excel",
     details: "Periode: Apr-Jun 2025",
     status: "missing",
   },
   {
     id: "laporan_keuangan",
-    name: "4. Laporan Keuangan 2 tahun",
+    name: "Laporan Keuangan 2 tahun",
     format: "PDF",
     details: "Periode: 2023-2024",
     status: "missing",
   },
   {
     id: "invoice_proyek",
-    name: "5. Invoice Proyek 2 bulan",
+    name: "Invoice Proyek 2 bulan",
     format: "PDF",
     details: "Periode: Apr-Mei 2025",
     status: "missing",
   },
   {
     id: "dokumen_collateral",
-    name: "6. Dokumen Collateral",
+    name: "Dokumen Collateral",
     format: "PDF",
     details: "Detail: Sertifikat tanah sebagai jaminan",
     status: "missing",
@@ -96,35 +98,35 @@ export const requiredDocuments: { [key: string]: DocumentRequirement[] } = {
     },
     {
       id: "loi_kerjasama",
-      name: "2. LOI Kerjasama",
+      name: "LOI Kerjasama",
       format: "PDF",
       details: "Pihak: PT Bohir Jaya",
       status: "missing",
     },
     {
       id: "rekapan_sales",
-      name: "3. Rekapan Sales 3 bulan",
+      name: "Rekapan Sales 3 bulan",
       format: "PDF/Excel",
       details: "Periode: Apr-Jun 2025",
       status: "missing",
     },
     {
       id: "laporan_keuangan",
-      name: "4. Laporan Keuangan 2 tahun",
+      name: "Laporan Keuangan 2 tahun",
       format: "PDF",
       details: "Periode: 2023-2024",
       status: "missing",
     },
     {
       id: "invoice_proyek",
-      name: "5. Invoice Proyek 2 bulan",
+      name: "Invoice Proyek 2 bulan",
       format: "PDF",
       details: "Periode: Apr-Mei 2025",
       status: "missing",
     },
     {
       id: "dokumen_collateral",
-      name: "6. Dokumen Collateral",
+      name: "Dokumen Collateral",
       format: "PDF",
       details: "Detail: Sertifikat tanah sebagai jaminan",
       status: "missing",

@@ -9,7 +9,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,34 +27,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  analysisTemplates,
-  applicationTypes,
-  requiredDocuments,
-  riskParametersData,
-} from "@/data/analyze-data-template";
+  DocumentRequirement,
+  StepSegmentationTemplateProps,
+} from "@/type/step-type";
 import { Edit, Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-
-interface DocumentRequirement {
-  id: string;
-  name: string;
-  format: string;
-  details: string;
-  status: "uploaded" | "missing" | "validated" | "pending_validation";
-}
-
-interface StepSegmentationTemplateProps {
-  applicationType: string;
-  setApplicationType: (type: string) => void;
-  selectedTemplate: string;
-  setSelectedTemplate: (template: string) => void;
-  riskParameters: { [key: string]: number | string };
-  setRiskParameters: React.Dispatch<
-    React.SetStateAction<{ [key: string]: number | string }>
-  >;
-  onDocumentsChange: (docs: DocumentRequirement[]) => void;
-}
 
 export function StepSegmentationTemplate({
   applicationType,
@@ -57,6 +42,12 @@ export function StepSegmentationTemplate({
   riskParameters,
   setRiskParameters,
   onDocumentsChange,
+  customApplicationTypes,
+  setCustomApplicationTypes,
+  customAnalysisTemplates,
+  setCustomAnalysisTemplates,
+  requiredDocuments,
+  riskParametersData,
 }: StepSegmentationTemplateProps) {
   const [isEditingDocs, setIsEditingDocs] = useState(false);
   const [isEditingParams, setIsEditingParams] = useState(false);
@@ -65,11 +56,10 @@ export function StepSegmentationTemplate({
     [string, string | number][]
   >([]);
 
-  // State untuk data custom yang dibuat pengguna
-  const [customApplicationTypes, setCustomApplicationTypes] =
-    useState(applicationTypes);
-  const [customAnalysisTemplates, setCustomAnalysisTemplates] =
-    useState(analysisTemplates);
+  const [newSegmentName, setNewSegmentName] = useState("");
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [isSegmentModalOpen, setIsSegmentModalOpen] = useState(false);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
   useEffect(() => {
     const docsTemplate = requiredDocuments[selectedTemplate] || [];
@@ -78,7 +68,12 @@ export function StepSegmentationTemplate({
     const paramsTemplate = riskParametersData[selectedTemplate] || {};
     setEditableParams(Object.entries(paramsTemplate));
     setRiskParameters(paramsTemplate);
-  }, [selectedTemplate, setRiskParameters]);
+  }, [
+    selectedTemplate,
+    requiredDocuments,
+    riskParametersData,
+    setRiskParameters,
+  ]);
 
   useEffect(() => {
     onDocumentsChange(editableDocs);
@@ -125,7 +120,33 @@ export function StepSegmentationTemplate({
     setIsEditingParams(false);
   };
 
-  // ... (Handler untuk menambah segment/template baru tetap sama)
+  const handleAddNewSegment = () => {
+    if (newSegmentName.trim()) {
+      const newValue = newSegmentName.trim().toLowerCase().replace(/\s+/g, "-");
+      const newSeg = { value: newValue, label: newSegmentName.trim() };
+      setCustomApplicationTypes((prev) => [...prev, newSeg]);
+      setApplicationType(newValue);
+      setNewSegmentName("");
+      setIsSegmentModalOpen(false);
+    }
+  };
+
+  const handleAddNewTemplate = () => {
+    if (newTemplateName.trim() && applicationType) {
+      const newValue = newTemplateName
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+      const newTmpl = { value: newValue, label: newTemplateName.trim() };
+      setCustomAnalysisTemplates((prev) => ({
+        ...prev,
+        [applicationType]: [...(prev[applicationType] || []), newTmpl],
+      }));
+      setSelectedTemplate(newValue);
+      setNewTemplateName("");
+      setIsTemplateModalOpen(false);
+    }
+  };
 
   return (
     <div className="flex w-full flex-1 gap-6">
@@ -140,7 +161,35 @@ export function StepSegmentationTemplate({
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="space-y-2">
-              <Label>Pilih Segment</Label>
+              <div className="flex justify-between items-center">
+                <Label>Pilih Segment</Label>
+                <Dialog
+                  open={isSegmentModalOpen}
+                  onOpenChange={setIsSegmentModalOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Buat Segment
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Buat Segment Baru</DialogTitle>
+                    </DialogHeader>
+                    <Input
+                      value={newSegmentName}
+                      onChange={(e) => setNewSegmentName(e.target.value)}
+                      placeholder="Contoh: Pembiayaan Produktif"
+                    />
+                    <DialogFooter>
+                      <Button onClick={handleAddNewSegment}>
+                        Simpan Segment
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
               <Select
                 onValueChange={(value) => {
                   setApplicationType(value);
@@ -163,7 +212,35 @@ export function StepSegmentationTemplate({
 
             {applicationType && (
               <div className="space-y-2">
-                <Label>Pilih Template Dokumen</Label>
+                <div className="flex justify-between items-center">
+                  <Label>Pilih Template Dokumen</Label>
+                  <Dialog
+                    open={isTemplateModalOpen}
+                    onOpenChange={setIsTemplateModalOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Buat Template
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Buat Template Baru</DialogTitle>
+                      </DialogHeader>
+                      <Input
+                        value={newTemplateName}
+                        onChange={(e) => setNewTemplateName(e.target.value)}
+                        placeholder="Contoh: Template UKM Mikro"
+                      />
+                      <DialogFooter>
+                        <Button onClick={handleAddNewTemplate}>
+                          Simpan Template
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <Select
                   onValueChange={setSelectedTemplate}
                   value={selectedTemplate}

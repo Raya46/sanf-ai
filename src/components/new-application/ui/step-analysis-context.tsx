@@ -6,12 +6,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { promptSuggestions } from "@/data/analyze-data-template";
+import { StepAnalysisContextProps } from "@/type/step-type";
 import { Info, Lock } from "lucide-react";
 import { useState } from "react";
 
 export function StepAnalysisContext({
   companyName,
-  financingValue,
+  amountSubmission,
   applicationTypeLabel,
   documentStatus,
 }: StepAnalysisContextProps) {
@@ -56,9 +57,9 @@ export function StepAnalysisContext({
               </div>
               <div>
                 <Label className="text-xs text-gray-500">
-                  Nilai Pembiayaan
+                  Nominal Pengajuan
                 </Label>
-                <p className="font-medium">{financingValue}</p>
+                <p className="font-medium">{amountSubmission}</p>
               </div>
               <div>
                 <Label className="text-xs text-gray-500">Dokumen</Label>

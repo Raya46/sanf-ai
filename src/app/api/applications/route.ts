@@ -26,21 +26,23 @@ const s3 = new AwsClient({
   region: "auto",
 });
 
-const RatioSchema = z.object({
-  target: z.number().describe("The target or benchmark value for this ratio."),
-  ratio: z
-    .number()
-    .describe("The applicant's calculated value for this ratio."),
+const CandlestickDataSchema = z.object({
+  period: z
+    .string()
+    .describe("The time period for the data point, e.g., 'Jan 2025'."),
+  startValue: z.number().describe("The starting value for the period."),
+  maxValue: z.number().describe("The highest value reached during the period."),
+  minValue: z.number().describe("The lowest value reached during the period."),
+  endValue: z.number().describe("The ending value for the period."),
 });
 
-// Skema utama yang menggunakan RatioSchema baru
 const analysisSchema = z.object({
   ai_analysis_status: z
     .string()
     .describe("The status of the AI analysis (e.g., 'Completed', 'Failed')."),
   ai_analysis: z
     .string()
-    .describe("The full AI analysis report from uploaded Document"),
+    .describe("Laporan analisis AI lengkap dari Dokumen yang diunggah"),
   probability_approval: z
     .number()
     .min(0)
@@ -74,7 +76,6 @@ const analysisSchema = z.object({
     .max(36)
     .describe("An array of monthly revenue data for up to the last 36 months."),
 
-  risk_appetite: z.number().describe("The risk appetite value."),
   operating_expenses: z
     .number()
     .describe("The total operating expenses from the financial statements."),
@@ -82,20 +83,10 @@ const analysisSchema = z.object({
     .number()
     .describe("The gross profit from the financial statements."),
   ebitda: z.number().describe("The EBITDA from the financial statements."),
-
-  // Bagian ini sekarang menggunakan RatioSchema yang baru
-  key_ratios: z
-    .object({
-      quick_ratio: RatioSchema,
-      current_ratio: RatioSchema,
-      debt_to_equity_ratio: RatioSchema,
-      debt_to_ebitda: RatioSchema,
-      total_liabilities_ratio: RatioSchema,
-      ebitda_interest_coverage_ratio: RatioSchema,
-      debt_service_coverage_ratio: RatioSchema,
-    })
+  analysis_value: z
+    .array(CandlestickDataSchema)
     .describe(
-      "An object containing detailed breakdowns of key financial ratios."
+      "An array of data points formatted for a candlestick chart, based on monthly revenue fluctuations."
     ),
 });
 
@@ -170,9 +161,9 @@ export async function POST(request: NextRequest) {
     const company_name = formData.get("company_name") as string;
     const contact_person = formData.get("contact_person") as string;
     const contact_email = formData.get("contact_email") as string;
-    const amount = parseFloat(formData.get("amount") as string);
     const risk_parameters = formData.get("risk_parameters") as string;
     const ai_context = formData.get("ai_context") as string;
+    const amountSubmission = formData.get("amount") as string;
     const files = formData.getAll("files") as File[];
 
     if (!files || files.length === 0) {
@@ -191,11 +182,11 @@ export async function POST(request: NextRequest) {
         status: "pending_analysis",
         analysis_template,
         company_type,
-        amount,
+        amount: parseInt(amountSubmission),
         company_name,
         contact_person,
         contact_email,
-        risk_parameters: JSON.parse(risk_parameters),
+        risk_parameter: JSON.parse(risk_parameters), // Use user-provided risk_parameters
       })
       .select("id")
       .single();
@@ -217,28 +208,33 @@ export async function POST(request: NextRequest) {
     // LANGKAH 3: Upload file ke R2 dan siapkan prompt AI
     console.log("Step 2: Uploading files and preparing AI context...");
     const uploadedFilesData = [];
-    const aiContent: (
-      | { type: "text"; text: string }
-      | { type: "image"; image: Buffer }
-    )[] = [
-      {
-        type: "text",
-        text: `You are a world-class credit analyst AI. Analyze the provided documents for a loan application.
-        - Initial User Inputs: Company Name: ${company_name}, Template: ${analysis_template}, Amount: ${amount}, Custom Risk Parameters: ${risk_parameters}.
-        - Additional User Context: ${ai_context || "None"}
-        
-        Your tasks are:
-        1.  Generate a comprehensive analysis report in **pure HTML format**.
-        2.  Calculate and provide all financial metrics and ratios as defined in the schema, including operating expenses, gross profit, EBITDA, and all key ratios.
-        3.  Provide all other requested data points like approval probability and risk indicators, and generate a risk_appetite value based on the provided risk_parameters.
-        Analyze the following document(s) to fulfill these tasks:`,
-      },
-    ];
+    let allExtractedText = "";
+
+    const analysisPrompt = `You are a world-class credit analyst AI.
+    
+    **IMPORTANT RULE 1: LANGUAGE:** Your entire response, including the HTML report and all text, MUST be in Indonesian (Bahasa Indonesia).
+    
+    **IMPORTANT RULE 2: NUMBER PARSING:** The financial documents use Indonesian currency format (IDR/Rp). When you encounter numbers formatted like 'Rp 45.280.500.000', you MUST interpret this as the number 45280500000. The period (.) is a thousands separator and must be removed for calculation. The 'Rp' prefix must be ignored. All financial values in your final JSON output must be in this full numerical format.
+
+    Analyze the following text, which has been extracted from various financial documents, to generate a credit report.
+    - Company Name: ${company_name}
+    - Template: ${analysis_template}
+    - Amount: ${amountSubmission}
+    - Additional User Context: ${ai_context || "None"}
+
+    **Your Tasks:**
+    1.  Generate a comprehensive analysis report in **pure HTML format** and in **Indonesian**.
+    2.  Based on the monthly revenue data, generate a series of candlestick data points for the 'analysis_value' field.
+    
+    **Full Text Content from All Documents:**
+    ${allExtractedText}`;
 
     for (const file of files) {
-      const r2Key = `docs/${user.id}/${application.id}/${uuidv4()}-${file.name}`;
-      const buffer = Buffer.from(await file.arrayBuffer());
+      console.log(` - Processing ${file.name}...`);
 
+      // Upload file asli ke R2 (tetap dilakukan)
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const r2Key = `docs/${user.id}/${application.id}/${uuidv4()}-${file.name}`;
       await s3.fetch(`${endpoint}/${bucketName}/${r2Key}`, {
         method: "PUT",
         headers: {
@@ -254,11 +250,51 @@ export async function POST(request: NextRequest) {
         file_size_bytes: file.size,
         file_type: "document",
       });
-      aiContent.push({ type: "image", image: buffer });
+
+      // PERUBAHAN UTAMA: Panggil server Express untuk ekstraksi teks
+      if (file.type === "application/pdf") {
+        try {
+          const extractionFormData = new FormData();
+          extractionFormData.append("pdfFile", file);
+
+          const extractionResponse = await fetch(
+            "https://pdf-processing-dusky.vercel.app/",
+            {
+              method: "POST",
+              body: extractionFormData,
+            }
+          );
+
+          if (!extractionResponse.ok) {
+            throw new Error(
+              `Extraction server failed with status ${extractionResponse.status}`
+            );
+          }
+
+          const extractionResult = await extractionResponse.json();
+          if (
+            extractionResult &&
+            typeof extractionResult === "object" &&
+            "text" in extractionResult &&
+            typeof extractionResult.text === "string"
+          ) {
+            allExtractedText += `\n\n--- Start of Document: ${file.name} ---\n\n${extractionResult.text}\n\n--- End of Document: ${file.name} ---\n\n`;
+          } else {
+            allExtractedText += `\n\n--- FAILED TO EXTRACT TEXT FROM: ${file.name} ---\n\n`;
+          }
+        } catch (extractionError) {
+          console.error(
+            `Failed to extract text from ${file.name}:`,
+            extractionError
+          );
+          // Lanjutkan proses meskipun satu file gagal diekstrak
+          allExtractedText += `\n\n--- FAILED TO EXTRACT TEXT FROM: ${file.name} ---\n\n`;
+        }
+      }
     }
+
     await supabase.from("application_files").insert(uploadedFilesData);
 
-    // LANGKAH 4: Jalankan Analisis AI
     console.log("Step 3: Starting AI analysis...");
     const env = getCloudflareEnv();
     const openai = createOpenAI({
@@ -267,12 +303,11 @@ export async function POST(request: NextRequest) {
     });
 
     const { object: analysisResult } = await generateObject({
-      model: openai("gpt-4o-mini"),
+      model: openai("gpt-4o"),
       schema: analysisSchema,
-      prompt: `${aiContent}`,
+      prompt: analysisPrompt,
     });
 
-    // LANGKAH 5: Update catatan di database dengan hasil AI
     console.log("Step 4: AI analysis completed. Updating database record...");
     const { error: updateError } = await supabase
       .from("credit_applications")
@@ -290,8 +325,7 @@ export async function POST(request: NextRequest) {
         operating_expenses: analysisResult.operating_expenses,
         gross_profit: analysisResult.gross_profit,
         ebitda: analysisResult.ebitda,
-        key_ratios: analysisResult.key_ratios,
-        risk_appetite: analysisResult.risk_appetite, // Update risk_appetite with AI generated value
+        analysis_value: analysisResult.analysis_value,
       })
       .eq("id", application.id);
 
@@ -306,10 +340,6 @@ export async function POST(request: NextRequest) {
             pass: process.env.GMAIL_PASSWORD,
           },
         });
-
-        const analysisSnippet =
-          analysisResult.ai_analysis.substring(0, 1000) +
-          (analysisResult.ai_analysis.length > 1000 ? "..." : "");
 
         console.log(contact_email);
 
@@ -334,7 +364,7 @@ export async function POST(request: NextRequest) {
                 </table>
                 <h3>Ringkasan Laporan Analisis:</h3>
                 <div style="border: 1px solid #eee; padding: 15px; background-color: #fafafa; border-radius: 5px;">
-                  ${analysisSnippet}
+                  ${analysisResult.ai_analysis}
                 </div>
                 <p>Anda dapat melihat laporan lengkap dan berinteraksi dengan data melalui dashboard aplikasi kami.</p>
                 <p>Salam hangat,<br/>Tim Sanf AI</p>

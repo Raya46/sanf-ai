@@ -1,4 +1,19 @@
 "use client";
+export interface DocumentItem {
+  id: string;
+  name: string;
+  details?: string;
+  fileName?: string;
+}
+
+export interface DocumentUploadStepProps {
+  documents: DocumentItem[];
+  handleDocumentUpload: (docId: string, files: File[]) => void;
+  handleFileRemove: (docId: string) => void;
+  completenessPercentage: number;
+  documentsUploadedCount: number;
+  totalDocumentsRequired: number;
+}
 
 import { Button } from "@/components/ui/button";
 import { CardDescription } from "@/components/ui/card";

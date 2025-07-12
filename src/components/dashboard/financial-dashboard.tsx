@@ -21,6 +21,10 @@ const tabs = [
 ];
 
 const formatToRupiah = (amount: number) => {
+  // Menambahkan pengecekan untuk memastikan amount adalah angka
+  if (typeof amount !== "number" || isNaN(amount)) {
+    return "Rp 0";
+  }
   return `Rp ${new Intl.NumberFormat("id-ID").format(amount)}`;
 };
 
@@ -33,7 +37,7 @@ export function FinancialDashboard({
     {
       label: "Total Revenue",
       value: formatToRupiah(
-        applicationData.revenue.reduce((sum, item) => sum + item.revenue, 0) ||
+        applicationData.revenue?.reduce((sum, item) => sum + item.revenue, 0) ||
           0
       ),
       hasInfo: true,
@@ -41,13 +45,13 @@ export function FinancialDashboard({
     },
     {
       label: "Gross Profit",
-      value: formatToRupiah(applicationData.gross_profit), // Example calculation
+      value: formatToRupiah(applicationData.gross_profit),
       hasInfo: true,
       trend: "positive" as const,
     },
     {
       label: "Operating Expenses",
-      value: formatToRupiah(applicationData.operating_expenses), // Example calculation
+      value: formatToRupiah(applicationData.operating_expenses),
       hasInfo: true,
       trend: "positive" as const,
     },
@@ -57,7 +61,7 @@ export function FinancialDashboard({
     {
       title: "Total Revenue",
       value: formatToRupiah(
-        applicationData.revenue.reduce((sum, item) => sum + item.revenue, 0) ||
+        applicationData.revenue?.reduce((sum, item) => sum + item.revenue, 0) ||
           0
       ),
       delta: "+21.6%", // Placeholder
@@ -66,7 +70,7 @@ export function FinancialDashboard({
     },
     {
       title: "EBITDA",
-      value: formatToRupiah(applicationData.ebitda), // Example calculation
+      value: formatToRupiah(applicationData.ebitda),
       delta: "-6.9%", // Placeholder
       deltaType: "negative" as const,
       trend: "down" as const,
@@ -80,9 +84,12 @@ export function FinancialDashboard({
 
   return (
     <DashboardLayout>
-      <DashboardHeader />
+      {/* PERBAIKAN: Mengoper applicationData.application_files sebagai prop */}
+      <DashboardHeader
+        applicationFiles={applicationData.application_files || []}
+      />
 
-      <div className="flex-1 bg-indigo-100/50 space-y-8">
+      <div className="flex-1 space-y-8 bg-indigo-100/50">
         {/* Main Metrics Section - Combined Card and Performance Cards */}
         <div className="px-6 pt-12">
           <TabNavigation
@@ -90,7 +97,7 @@ export function FinancialDashboard({
             onTabChange={setActiveTab}
             tabs={tabs}
           />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <CombinedMetricsCard
                 metrics={mainMetrics}
@@ -113,7 +120,7 @@ export function FinancialDashboard({
         </div>
 
         {/* Main Content Grid */}
-        <div className="px-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 px-6 lg:grid-cols-4">
           {/* Left Sidebar */}
           <div>
             <KeyRatiosSection applicationData={applicationData} />
@@ -121,12 +128,7 @@ export function FinancialDashboard({
 
           {/* Main Chart */}
           <div className="lg:col-span-2">
-            <MainChart
-              period={activeTab}
-              onPeriodChange={setActiveTab}
-              revenueData={applicationData.revenue}
-            />
-            {/* Using activeTab for period */}
+            <MainChart chartData={applicationData.analysis_value || []} />
           </div>
 
           {/* Right Sidebar - Replaced with CreditRadarChart */}
