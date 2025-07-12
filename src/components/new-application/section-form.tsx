@@ -122,18 +122,81 @@ export function SectionForm() {
 
   useEffect(() => {
     if (isSubmitting) {
-      const messages = [
-        "Uploading documents...",
-        "Analyzing document content...",
-        "Generating credit analysis...",
-        "Finalizing report...",
+      const steps = [
+        {
+          title: "Memulai Analisis",
+          description: "Menilai kelayakan kredit...",
+          progress: 5,
+        },
+        {
+          title: "Memahami Dokumen",
+          description: "Membaca semua dokumen input.",
+          progress: 15,
+        },
+        {
+          title: "Analisis Profil Perusahaan",
+          description: "Mengevaluasi informasi dasar, kepemilikan, dan pasar.",
+          progress: 25,
+        },
+        {
+          title: "Verifikasi Legalitas",
+          description:
+            "Memeriksa Akta Pendirian, NIB, dan struktur perusahaan.",
+          progress: 35,
+        },
+        {
+          title: "Analisis Performa Keuangan",
+          description:
+            "Menganalisis Laporan Keuangan (Aset, Liabilitas, Laba Rugi).",
+          progress: 45,
+        },
+        {
+          title: "Analisis Arus Kas",
+          description: "Memeriksa mutasi pada Rekening Koran 3 bulan terakhir.",
+          progress: 55,
+        },
+        {
+          title: "Evaluasi Penjualan & Invoice",
+          description:
+            "Memeriksa rekapan sales dan histori pembayaran invoice.",
+          progress: 65,
+        },
+        {
+          title: "Penilaian Collateral",
+          description: "Menilai nilai jaminan dan validitas dokumen.",
+          progress: 75,
+        },
+        {
+          title: "Analisis Komitmen & Kerjasama",
+          description: "Mengevaluasi LOI dan potensi proyek masa depan.",
+          progress: 85,
+        },
+        {
+          title: "Menyusun Kesimpulan",
+          description: "Merumuskan pro, kontra, dan rekomendasi kredit.",
+          progress: 95,
+        },
+        {
+          title: "Finalisasi Analisis",
+          description: "Menyiapkan dokumen hasil analisis.",
+          progress: 100,
+        },
       ];
-      let currentMessageIndex = 0;
+
+      let stepIndex = 0;
       const interval = setInterval(() => {
-        setProcessingMessage(messages[currentMessageIndex % messages.length]);
-        setProgress((prev) => Math.min(prev + 25, 100));
-        currentMessageIndex++;
-      }, 1500);
+        if (stepIndex < steps.length) {
+          const currentStep = steps[stepIndex];
+          setProcessingMessage(
+            `${currentStep.title}\n${currentStep.description}`
+          );
+          setProgress(currentStep.progress);
+          stepIndex++;
+        } else {
+          clearInterval(interval);
+        }
+      }, 2000); // Setiap langkah ditampilkan selama 2 detik
+
       return () => clearInterval(interval);
     } else {
       setProcessingMessage("Starting analysis...");

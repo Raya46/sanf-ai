@@ -12,6 +12,7 @@ import {
   Tooltip,
   Bar,
 } from "recharts";
+import { useParams, useRouter } from "next/navigation";
 
 // Tipe data untuk data candlestick yang diterima sebagai prop
 interface FinancialCandlestickData {
@@ -121,6 +122,8 @@ const CustomCandlestick = (props: any) => {
 };
 
 export function MainChart({ chartData = [] }: MainChartProps) {
+  const params = useParams();
+  const router = useRouter();
   const [activePeriod, setActivePeriod] = useState("annually");
 
   const processedData = useMemo(() => {
@@ -244,7 +247,11 @@ export function MainChart({ chartData = [] }: MainChartProps) {
             </Button>
           ))}
         </div>
-        <Button size="sm" variant="outline">
+        <Button
+          onClick={() => router.push(`/dashboard/${params.projectId}/pdf`)}
+          size="sm"
+          variant="outline"
+        >
           <Download className="mr-2 h-4 w-4" />
           Download
         </Button>
