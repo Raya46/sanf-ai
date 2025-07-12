@@ -10,6 +10,23 @@ import { KeyRatiosSection } from "@/components/dashboard/key-ratios-section";
 import { MainChart } from "@/components/dashboard/main-chart";
 import { CreditRadarChart } from "@/components/dashboard/credit-radar-chart";
 import { FraudDonutChart } from "@/components/dashboard/fraud-donut-chart";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  Banknote,
+  Scale,
+  CheckCircle,
+  ArrowUp,
+  ArrowDown,
+  TrendingUp,
+} from "lucide-react";
 import { BalanceSheetTab } from "@/components/dashboard/balance-sheet-tab";
 import { CashFlowTab } from "@/components/dashboard/cash-flow-tab";
 import { RatioTab } from "@/components/dashboard/ratio-tab";
@@ -101,8 +118,8 @@ export function FinancialDashboard({
       delta: isLoading
         ? ""
         : cagr !== null
-          ? `+${cagr.toFixed(2)}% CAGR`
-          : "+20.0%",
+        ? `+${cagr.toFixed(2)}% CAGR`
+        : "+20.0%",
       deltaType: "positive" as const,
       trend: "up" as const,
     },
@@ -114,6 +131,54 @@ export function FinancialDashboard({
       delta: isLoading ? "" : "-6.9% CAGR",
       deltaType: "negative" as const,
       trend: "down" as const,
+    },
+  ];
+
+  const creditFacilities = [
+    {
+      bank: "Mandiri",
+      type: "KMK",
+      plafond: 12000000000,
+      outstanding: 9500000000,
+      status: "Lancar",
+    },
+    {
+      bank: "BCA",
+      type: "KI (Alat Berat)",
+      plafond: 6200000000,
+      outstanding: 4100000000,
+      status: "Lancar",
+    },
+    {
+      bank: "Leasing X",
+      type: "Sewa Guna Usaha",
+      plafond: 8750000000,
+      outstanding: 5300000000,
+      status: "Lancar",
+    },
+  ];
+
+  const financialPerformance = [
+    {
+      title: "Cash Flow",
+      status: "POSITIF",
+      detail: "3 Bulan Terakhir",
+      icon: TrendingUp,
+      trend: "positive",
+    },
+    {
+      title: "Rekening Koran",
+      status: "AKTIF",
+      detail: "Mutasi Normal",
+      icon: CheckCircle,
+      trend: "positive",
+    },
+    {
+      title: "Tren Penjualan",
+      status: "NAIK",
+      detail: "+25.9% YoY",
+      icon: ArrowUp,
+      trend: "positive",
     },
   ];
 
@@ -186,15 +251,76 @@ export function FinancialDashboard({
               {/* Left Sidebar */}
               <div>
                 <KeyRatiosSection applicationData={applicationData} />
+                {/* Fasilitas Kredit Existing Card */}
+                <div className="lg:col-span-2 pt-6">
+                  <Card className="h-full">
+                    <CardHeader>
+                      <CardTitle>FASILITAS KREDIT EXISTING</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table className="w-full">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[100px]">Bank</TableHead>
+                            <TableHead>Jenis Fasilitas</TableHead>
+                            <TableHead>Plafon</TableHead>
+                            <TableHead>Outstanding</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {creditFacilities.map((facility, index) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">
+                                {facility.bank}
+                              </TableCell>
+                              <TableCell>{facility.type}</TableCell>
+                              <TableCell>
+                                {parseToUnit(facility.plafond)}
+                              </TableCell>
+                              <TableCell>
+                                {parseToUnit(facility.outstanding)}
+                              </TableCell>
+                              <TableCell>{facility.status}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
 
               {/* Main Chart */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 pb-6">
                 <MainChart chartData={applicationData.analysis_value || []} />
+                <div className="p-6 w-full bg-white rounded-lg border-1 mt-6">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700">
+                    PERFORMA KEUANGAN TERKINI
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                    {financialPerformance.map((item, index) => (
+                      <Card key={index}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">
+                            {item.title}
+                          </CardTitle>
+                          <item.icon className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{item.status}</div>
+                          <p className="text-xs text-muted-foreground">
+                            {item.detail}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Right Sidebar - Replaced with CreditRadarChart */}
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-6 pb-6">
                 <CreditRadarChart />
                 <FraudDonutChart />
               </div>
