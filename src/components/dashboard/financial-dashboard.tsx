@@ -10,68 +10,93 @@ import { KeyRatiosSection } from "@/components/dashboard/key-ratios-section";
 import { MainChart } from "@/components/dashboard/main-chart";
 import { CreditRadarChart } from "@/components/dashboard/credit-radar-chart";
 import { FraudDonutChart } from "@/components/dashboard/fraud-donut-chart";
+import { BalanceSheetTab } from "@/components/dashboard/balance-sheet-tab";
 import { type CreditApplication } from "@/lib/types";
 
 const tabs = [
-  { id: "income-statements", label: "INCOME STATEMENTS" },
-  { id: "balance-sheet", label: "BALANCE SHEET" },
-  { id: "cash-flow", label: "CASH FLOW" },
-  { id: "ratios", label: "RATIOS" },
-  { id: "industry-data", label: "INDUSTRY DATA" },
+  { id: "income-statements", label: "RINGKASAN PERTUMBUHAN" },
+  { id: "balance-sheet", label: "NERACA" },
+  { id: "cash-flow", label: "ARUS KAS" },
+  { id: "ratios", label: "RASIO" },
+  { id: "industry-data", label: "DATA INDUSTRI" },
 ];
 
-const formatToRupiah = (amount: number) => {
-  // Menambahkan pengecekan untuk memastikan amount adalah angka
+function parseToUnit(amount: number): string {
   if (typeof amount !== "number" || isNaN(amount)) {
     return "Rp 0";
   }
+  if (amount >= 1_000_000_000) {
+    return `Rp ${(amount / 1_000_000_000).toFixed(2)} Miliar`;
+  }
+  if (amount >= 1_000_000) {
+    return `Rp ${(amount / 1_000_000).toFixed(2)} Juta`;
+  }
   return `Rp ${new Intl.NumberFormat("id-ID").format(amount)}`;
-};
+}
+
+// Calculate CAGR (Compound Annual Growth Rate)
+function calculateCAGR(
+  revenueArr: { year?: number; revenue: number }[]
+): number | null {
+  if (!revenueArr || revenueArr.length < 2) return null;
+  const sorted = [...revenueArr].sort((a, b) => {
+    if (a.year !== undefined && b.year !== undefined) return a.year - b.year;
+    return 0;
+  });
+  const start = sorted[0].revenue;
+  const end = sorted[sorted.length - 1].revenue;
+  const periods = sorted.length - 1;
+  if (start <= 0 || end <= 0 || periods <= 0) return null;
+  const cagr = Math.pow(end / start, 1 / periods) - 1;
+  return cagr * 100;
+}
 
 export function FinancialDashboard({
   applicationData,
 }: {
   applicationData: CreditApplication;
 }) {
+  const revenueArr = applicationData.revenue || [];
+  const totalRevenue =
+    revenueArr.reduce((sum, item) => sum + item.revenue, 0) || 0;
+  const cagr = calculateCAGR(revenueArr);
+
   const mainMetrics = [
     {
-      label: "Total Revenue",
-      value: formatToRupiah(
-        applicationData.revenue?.reduce((sum, item) => sum + item.revenue, 0) ||
-          0
-      ),
+      label: "Pertumbuhan Pendapatan",
+      value: "25.9%",
+      subtitle: "Rp 62.98 M → Rp 79.26 M",
       hasInfo: true,
-      trend: "negative" as const,
-    },
+      trend: "positive",
+    } as const,
     {
-      label: "Gross Profit",
-      value: formatToRupiah(applicationData.gross_profit),
+      label: "Pertumbuhan Laba",
+      value: "39.7%",
+      subtitle: "Rp 12.94 M → Rp 18.08 M",
       hasInfo: true,
-      trend: "positive" as const,
-    },
+      trend: "positive",
+    } as const,
     {
-      label: "Operating Expenses",
-      value: formatToRupiah(applicationData.operating_expenses),
+      label: "Pertumbuhan Aset",
+      value: "20.0%",
+      subtitle: "Rp 146.12 M → Rp 175.30 M",
       hasInfo: true,
-      trend: "positive" as const,
-    },
+      trend: "positive",
+    } as const,
   ];
 
   const performanceCards = [
     {
-      title: "Total Revenue",
-      value: formatToRupiah(
-        applicationData.revenue?.reduce((sum, item) => sum + item.revenue, 0) ||
-          0
-      ),
-      delta: "+21.6%", // Placeholder
-      deltaType: "positive" as const,
-      trend: "up" as const,
-    },
+      title: "Jumlah Ekuitas",
+      value: parseToUnit((applicationData as any).equity || 175300000000), // Use equity or fallback to 175.30M
+      delta: cagr !== null ? `+${cagr.toFixed(2)}% CAGR` : "+20.0%",
+      deltaType: cagr !== null && cagr > 0 ? "positive" : "positive",
+      trend: cagr !== null && cagr > 0 ? "up" : "up",
+    } as const,
     {
-      title: "EBITDA",
-      value: formatToRupiah(applicationData.ebitda),
-      delta: "-6.9%", // Placeholder
+      title: "Jumlah Liabilitas",
+      value: parseToUnit((applicationData as any).liabilities || 146120000000), // Use liabilities or fallback to 146.12M
+      delta: "-6.9% CAGR", // Placeholder
       deltaType: "negative" as const,
       trend: "down" as const,
     },
@@ -82,61 +107,78 @@ export function FinancialDashboard({
   const currentTabLabel =
     tabs.find((tab) => tab.id === activeTab)?.label || "Dashboard";
 
+  // Conditional rendering for tab content
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "balance-sheet":
+        return (
+          <div className="flex flex-col gap-6 px-6">
+            <BalanceSheetTab />
+          </div>
+        );
+      case "income-statements":
+      default:
+        return (
+          <>
+            {/* Main Metrics Section - Combined Card and Performance Cards */}
+            <div className="grid grid-cols-1 px-6 gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <CombinedMetricsCard
+                  metrics={mainMetrics as any}
+                  title={currentTabLabel}
+                />
+              </div>
+              <div className="flex flex-col gap-4">
+                {performanceCards.map((card) => (
+                  <MetricTrendCard
+                    key={card.title}
+                    title={card.title}
+                    value={card.value}
+                    delta={card.delta}
+                    deltaType={card.deltaType as "positive" | "negative"}
+                    trend={card.trend as "up" | "down"}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 gap-6 px-6 lg:grid-cols-4">
+              {/* Left Sidebar */}
+              <div>
+                <KeyRatiosSection applicationData={applicationData} />
+              </div>
+
+              {/* Main Chart */}
+              <div className="lg:col-span-2">
+                <MainChart chartData={applicationData.analysis_value || []} />
+              </div>
+
+              {/* Right Sidebar - Replaced with CreditRadarChart */}
+              <div className="flex flex-col gap-6">
+                <CreditRadarChart />
+                <FraudDonutChart />
+              </div>
+            </div>
+          </>
+        );
+    }
+  };
+
   return (
     <DashboardLayout>
       {/* PERBAIKAN: Mengoper applicationData.application_files sebagai prop */}
-      <DashboardHeader
-        applicationFiles={applicationData.application_files || []}
-      />
+      <DashboardHeader />
 
       <div className="flex-1 space-y-8 bg-indigo-100/50">
-        {/* Main Metrics Section - Combined Card and Performance Cards */}
         <div className="px-6 pt-12">
           <TabNavigation
             activeTab={activeTab}
             onTabChange={setActiveTab}
             tabs={tabs}
           />
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <CombinedMetricsCard
-                metrics={mainMetrics}
-                title={currentTabLabel}
-              />
-            </div>
-            <div className="flex flex-col gap-4">
-              {performanceCards.map((card) => (
-                <MetricTrendCard
-                  key={card.title}
-                  title={card.title}
-                  value={card.value}
-                  delta={card.delta}
-                  deltaType={card.deltaType}
-                  trend={card.trend}
-                />
-              ))}
-            </div>
-          </div>
         </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 gap-6 px-6 lg:grid-cols-4">
-          {/* Left Sidebar */}
-          <div>
-            <KeyRatiosSection applicationData={applicationData} />
-          </div>
-
-          {/* Main Chart */}
-          <div className="lg:col-span-2">
-            <MainChart chartData={applicationData.analysis_value || []} />
-          </div>
-
-          {/* Right Sidebar - Replaced with CreditRadarChart */}
-          <div className="flex flex-col gap-6">
-            <CreditRadarChart />
-            <FraudDonutChart />
-          </div>
-        </div>
+        {renderTabContent()}
       </div>
     </DashboardLayout>
   );

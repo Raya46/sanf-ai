@@ -24,6 +24,7 @@ export interface CreditApplication {
   status: string;
   analysis_template: string;
   company_type: string; // New field
+  company_name?: string; // Added field
   amount: number; // New field
   ai_analysis_status: string;
   probability_approval: number;
