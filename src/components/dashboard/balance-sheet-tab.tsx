@@ -67,13 +67,6 @@ const liabilitasEkuitasData: BalanceSheetItem[] = [
 
 const BalanceSheetTable: React.FC<{ data: BalanceSheetItem[] }> = ({ data }) => (
   <Table className="w-full">
-    <TableHeader>
-      <TableRow>
-        <TableHead className="w-[60%]">Keterangan</TableHead>
-        <TableHead className="text-right">2024</TableHead>
-        <TableHead className="text-right">2023</TableHead>
-      </TableRow>
-    </TableHeader>
     <TableBody>
       {data.map((item, index) => (
         <TableRow

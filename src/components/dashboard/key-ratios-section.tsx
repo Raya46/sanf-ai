@@ -36,22 +36,48 @@ export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
             if (typeof value === "string" && /[><=≥≤]/.test(value)) {
               parsedValue = parseFloat(value.replace(/[^\d.]/g, ""));
             } else {
-              parsedValue = typeof value === "number" ? value : parseFloat(value);
+              parsedValue =
+                typeof value === "number" ? value : parseFloat(value);
             }
             const displayValue = !isNaN(parsedValue) ? parsedValue : value;
 
             // Define thresholds and directions for each risk parameter
             const thresholds: {
-              [key: string]: { standard: number; direction: "greater" | "less"; maxValue: number };
+              [key: string]: {
+                standard: number;
+                direction: "greater" | "less";
+                maxValue: number;
+              };
             } = {
               dscr: { standard: 1.3, direction: "greater", maxValue: 5 },
-              cashRatio: { standard: 1.0, direction: "greater", maxValue: 2 },
-              quickRatio: { standard: 1.0, direction: "greater", maxValue: 2 },
-              derMaksimal: { standard: 2.0, direction: "less", maxValue: 5 },
+              cashRatio: { standard: 0.3, direction: "greater", maxValue: 2 },
+              quickRatio: { standard: 0.8, direction: "greater", maxValue: 2 },
+              der: { standard: 3.5, direction: "less", maxValue: 5 },
+              currentRatio: { standard: 1, direction: "greater", maxValue: 5 },
+              debtToAsset: {
+                standard: 50,
+                direction: "less",
+                maxValue: 100,
+              },
+              interestCoverage: {
+                standard: 2,
+                direction: "greater",
+                maxValue: 12,
+              },
+              cashFlowOperation: {
+                standard: 25,
+                direction: "greater",
+                maxValue: 50,
+              },
+
               // Add more as needed
             };
 
-            const config = thresholds[key] || { standard: 0, direction: "greater", maxValue: 100 }; // Default config
+            const config = thresholds[key] || {
+              standard: 0,
+              direction: "greater",
+              maxValue: 100,
+            }; // Default config
 
             return (
               <div
@@ -103,15 +129,24 @@ export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
                     if (direction === "greater") {
                       // Red up to standard, green after standard
                       colors = ["red", "green"];
-                      barValues = [standardValue, Math.max(0, maxValue - standardValue)];
+                      barValues = [
+                        standardValue,
+                        Math.max(0, maxValue - standardValue),
+                      ];
                     } else {
                       // Green up to standard, red after standard
                       colors = ["green", "red"];
-                      barValues = [standardValue, Math.max(0, maxValue - standardValue)];
+                      barValues = [
+                        standardValue,
+                        Math.max(0, maxValue - standardValue),
+                      ];
                     }
 
                     // Clamp ratioValue between 0 and maxValue for correct marker display
-                    const clampedRatioValue = Math.min(Math.max(0, ratioValue), maxValue);
+                    const clampedRatioValue = Math.min(
+                      Math.max(0, ratioValue),
+                      maxValue
+                    );
 
                     return (
                       <CategoryBar

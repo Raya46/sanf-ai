@@ -9,7 +9,6 @@ import { CombinedMetricsCard } from "@/components/dashboard/combined-metrics-car
 import { KeyRatiosSection } from "@/components/dashboard/key-ratios-section";
 import { MainChart } from "@/components/dashboard/main-chart";
 import { CreditRadarChart } from "@/components/dashboard/credit-radar-chart";
-import { FraudDonutChart } from "@/components/dashboard/fraud-donut-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -33,9 +32,11 @@ import { RatioTab } from "@/components/dashboard/ratio-tab";
 import { IndustryDataTab } from "@/components/dashboard/industry-data-tab";
 import { IncomeStatementTab } from "./income-statement-tab";
 import { type CreditApplication } from "@/lib/types";
+import { RiskScoreSummary } from "./risk-score-summary";
+import { PerformanceBarChart } from "./trend-chart";
 
 const tabs = [
-  { id: "income-statements", label: "RINGKASAN PERTUMBUHAN" },
+  { id: "income-statements", label: "Ringkasan Analisa" },
   { id: "balance-sheet", label: "NERACA" },
   { id: "cash-flow", label: "ARUS KAS" },
   { id: "ratios", label: "RASIO" },
@@ -103,7 +104,7 @@ export function FinancialDashboard({
     {
       label: "Pertumbuhan Aset",
       value: isLoading ? "" : "20.0%",
-      subtitle: isLoading ? "" : "Rp 146.12 M → Rp 175.30 M",
+      subtitle: isLoading ? "" : "Rp 82 M → Rp 92.45 M",
       hasInfo: true,
       trend: "positive",
     } as const,
@@ -114,12 +115,8 @@ export function FinancialDashboard({
       title: "Jumlah Ekuitas",
       value: isLoading
         ? ""
-        : parseToUnit((applicationData as any).equity || 175300000000),
-      delta: isLoading
-        ? ""
-        : cagr !== null
-        ? `+${cagr.toFixed(2)}% CAGR`
-        : "+20.0%",
+        : parseToUnit((applicationData as any).equity || 92450000000),
+      delta: isLoading ? "" : cagr !== null ? `+18.19% CAGR` : "+20.0%",
       deltaType: "positive" as const,
       trend: "up" as const,
     },
@@ -127,10 +124,10 @@ export function FinancialDashboard({
       title: "Jumlah Liabilitas",
       value: isLoading
         ? ""
-        : parseToUnit((applicationData as any).liabilities || 146120000000),
-      delta: isLoading ? "" : "-6.9% CAGR",
-      deltaType: "negative" as const,
-      trend: "down" as const,
+        : parseToUnit((applicationData as any).liabilities || 82850000000),
+      delta: isLoading ? "" : "+22.02% CAGR",
+      deltaType: "positive" as const,
+      trend: "up" as const,
     },
   ];
 
@@ -293,7 +290,7 @@ export function FinancialDashboard({
 
               {/* Main Chart */}
               <div className="lg:col-span-2 pb-6">
-                <MainChart chartData={applicationData.analysis_value || []} />
+                <PerformanceBarChart/>
                 <div className="p-6 w-full bg-white rounded-lg border-1 mt-6">
                   <h3 className="text-lg font-semibold mb-4 text-gray-700">
                     PERFORMA KEUANGAN TERKINI
@@ -308,7 +305,9 @@ export function FinancialDashboard({
                           <item.icon className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold">{item.status}</div>
+                          <div className="text-2xl font-bold">
+                            {item.status}
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             {item.detail}
                           </p>
@@ -322,7 +321,7 @@ export function FinancialDashboard({
               {/* Right Sidebar - Replaced with CreditRadarChart */}
               <div className="flex flex-col gap-6 pb-6">
                 <CreditRadarChart />
-                <FraudDonutChart />
+                <RiskScoreSummary />
               </div>
             </div>
           </>

@@ -61,7 +61,7 @@ export const initialDocuments: DocumentRequirement[] = [
 
 // Data untuk seleksi dropdown
 export const applicationTypes = [
-  { value: "investasi", label: "Pembiayaan Investasi" },
+  { value: "leasing", label: "Pembiayaan Leasing" },
   { value: "modal_kerja", label: "Pembiayaan Modal Kerja" },
   { value: "multiguna", label: "Pembiayaan Multiguna" },
 ];
@@ -69,7 +69,7 @@ export const applicationTypes = [
 export const analysisTemplates: {
   [key: string]: { value: string; label: string }[];
 } = {
-  investasi: [
+  leasing: [
     { value: "alat_berat", label: "Pembiayaan Alat Berat" },
     { value: "mesin_industri", label: "Pembiayaan Mesin Industri" },
     {
@@ -260,33 +260,65 @@ export const riskParametersData: {
   [key: string]: { [key: string]: string | number };
 } = {
   alat_berat: {
-    derMaksimal: 3.5,
-    quickRatio: 1.2,
-    cashRatio: 0.8,
-    dscr: "≥ 1.3",
+    der: 0.9,
+    dscr: "≥ 2.1",
+    cashRatio: 0.44,
+    quickRatio: 1.12,
+    debtToAsset: 47.3,
+    currentRatio: 1.43,
+    interestCoverage: 5.79,
+    cashFlowOperation: 30,
   },
   mesin_industri: {
-    derMaksimal: 3.0,
-    quickRatio: 1.1,
-    cashRatio: 0.7,
-    dscr: "≥ 1.2",
+    der: 0.9,
+    dscr: "≥ 2.1",
+    cashRatio: 0.44,
+    quickRatio: 1.12,
+    debtToAsset: 47.3,
+    currentRatio: 1.43,
+    interestCoverage: 5.79,
+    cashFlowOperation: 30,
   },
   kendaraan_operasional: {
-    derMaksimal: 2.5,
-    dscr: "≥ 1.25",
-    usiaKendaraanMaks: "7 tahun",
+    der: 0.9,
+    dscr: "≥ 2.1",
+    cashRatio: 0.44,
+    quickRatio: 1.12,
+    debtToAsset: 47.3,
+    currentRatio: 1.43,
+    interestCoverage: 5.79,
+    cashFlowOperation: 30,
   },
   factoring: {
-    collectionRatio: "90%",
-    agingPiutang: "< 60 hari",
-    konsentrasiDebitur: "< 30%",
+    der: 0.9,
+    dscr: "≥ 2.1",
+    cashRatio: 0.44,
+    quickRatio: 1.12,
+    debtToAsset: 47.3,
+    currentRatio: 1.43,
+    interestCoverage: 5.79,
+    cashFlowOperation: 30,
   },
   invoice_financing: {
-    tenorInvoice: "< 90 hari",
-    verifikasiInvoice: "Wajib",
-    dscr: "≥ 1.1",
+    der: 0.9,
+    dscr: "≥ 2.1",
+    cashRatio: 0.44,
+    quickRatio: 1.12,
+    debtToAsset: 47.3,
+    currentRatio: 1.43,
+    interestCoverage: 5.79,
+    cashFlowOperation: 30,
   },
-  kendaraan_bermotor: { dpMinimal: "20%", pti: "< 35%", skorKredit: "> 680" },
+  kendaraan_bermotor: {
+    der: 0.9,
+    dscr: "≥ 2.1",
+    cashRatio: 0.44,
+    quickRatio: 1.12,
+    debtToAsset: 47.3,
+    currentRatio: 1.43,
+    interestCoverage: 5.79,
+    cashFlowOperation: 30,
+  },
 };
 
 export const businessFields = [

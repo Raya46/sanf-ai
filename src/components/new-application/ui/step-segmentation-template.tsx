@@ -30,7 +30,14 @@ import {
   DocumentRequirement,
   StepSegmentationTemplateProps,
 } from "@/type/step-type";
-import { Edit, Plus, Save, Trash2 } from "lucide-react";
+import {
+  Edit,
+  Plus,
+  Save,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
@@ -152,9 +159,11 @@ export function StepSegmentationTemplate({
     <div className="flex w-full flex-1 gap-6">
       {/* Kolom Kiri: Area Input dan Edit */}
       <div className="flex w-1/2 flex-col gap-6">
-        <Card className="bg-slate-50/50">
-          <CardHeader>
-            <CardTitle>1. Segmentasi & Template</CardTitle>
+        <Card className="bg-indigo-100/50 border-indigo-200">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-[#182d7c]">
+              1. Segmentasi & Template
+            </CardTitle>
             <CardDescription>
               Pilih atau buat segmentasi dan template analisis.
             </CardDescription>
@@ -197,7 +206,7 @@ export function StepSegmentationTemplate({
                 }}
                 value={applicationType}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="Pilih Segment" />
                 </SelectTrigger>
                 <SelectContent>
@@ -245,7 +254,7 @@ export function StepSegmentationTemplate({
                   onValueChange={setSelectedTemplate}
                   value={selectedTemplate}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full bg-white">
                     <SelectValue placeholder="Pilih Template Dokumen" />
                   </SelectTrigger>
                   <SelectContent>
@@ -264,7 +273,7 @@ export function StepSegmentationTemplate({
         </Card>
 
         {selectedTemplate && (
-          <Card className="bg-slate-50/50">
+          <Card className="bg-blue-50/50 border-blue-200">
             <CardHeader>
               <div className="flex justify-between items-center">
                 <div>
@@ -354,7 +363,7 @@ export function StepSegmentationTemplate({
         )}
 
         {selectedTemplate && (
-          <Card className="bg-slate-50/50">
+          <Card className="bg-cyan-50/50 border-cyan-200">
             <CardHeader>
               <div className="flex justify-between items-center">
                 <div>
@@ -440,7 +449,7 @@ export function StepSegmentationTemplate({
       {/* Kolom Kanan: Area Preview (Hanya Baca) */}
       {selectedTemplate && (
         <div className="w-1/2">
-          <Card className="bg-white sticky top-6">
+          <Card className="bg-slate-50/50 border-slate-200 sticky top-6">
             <CardHeader>
               <CardTitle>Preview Template</CardTitle>
               <CardDescription>

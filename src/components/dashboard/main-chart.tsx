@@ -1,17 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
-import {
-  ComposedChart,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  CartesianGrid,
-  Tooltip,
-  Bar,
-} from "recharts";
 import {
   Table,
   TableBody,
@@ -20,6 +9,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Download } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 // Tipe data untuk data candlestick yang diterima sebagai prop
 interface FinancialCandlestickData {
@@ -129,6 +130,8 @@ const CustomCandlestick = (props: any) => {
 };
 
 export function MainChart({ chartData = [] }: MainChartProps) {
+  const params = useParams();
+  const router = useRouter();
   const [activePeriod, setActivePeriod] = useState("annually");
 
   const processedData = useMemo(() => {
@@ -252,7 +255,11 @@ export function MainChart({ chartData = [] }: MainChartProps) {
             </Button>
           ))}
         </div>
-        <Button size="sm" variant="outline">
+        <Button
+          onClick={() => router.push(`/dashboard/${params.projectId}/pdf`)}
+          size="sm"
+          variant="outline"
+        >
           <Download className="mr-2 h-4 w-4" />
           Download
         </Button>
@@ -311,19 +318,25 @@ export function MainChart({ chartData = [] }: MainChartProps) {
             <TableRow>
               <TableCell className="font-medium">Kecukupan Jaminan</TableCell>
               <TableCell>
-                Coverage ratio 265% jauh melebihi minimum yang disyaratkan (150%). Nilai agunan Rp 26.5 miliar memberikan margin keamanan yang sangat baik. Seluruh agunan merupakan aset produktif yang mendukung operasional tambang. Nilai pasar agunan diperkirakan terus meningkat selama masa pembiayaan.
+                Coverage ratio 265% jauh melebihi minimum yang disyaratkan
+                (150%). Nilai agunan Rp 26.5 miliar memberikan margin keamanan
+                yang sangat baik. Seluruh agunan merupakan aset produktif yang
+                mendukung operasional tambang. Nilai pasar agunan diperkirakan
+                terus meningkat selama masa pembiayaan.
               </TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="font-medium">Komposisi Agunan</TableCell>
               <TableCell>
-                Alat Berat: Rp 14.500.000.000 (54,72% dari total agunan). Properti: Rp 12.000.000.000 (45,28% dari total agunan).
+                Alat Berat: Rp 14.500.000.000 (54,72% dari total agunan).
+                Properti: Rp 12.000.000.000 (45,28% dari total agunan).
               </TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="font-medium">Penilaian Agunan</TableCell>
               <TableCell>
-                Penilaian Internal (01 Juli 2025): Rp 24.800.000.000. KJPP Independen (05 Juli 2025): Rp 26.500.000.000.
+                Penilaian Internal (01 Juli 2025): Rp 24.800.000.000. KJPP
+                Independen (05 Juli 2025): Rp 26.500.000.000.
               </TableCell>
             </TableRow>
           </TableBody>

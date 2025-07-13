@@ -7,7 +7,6 @@ import { generateObject } from "ai";
 import { AwsClient } from "aws4fetch";
 import { z } from "zod";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import nodemailer from "nodemailer";
 // --- R2 Configuration ---
 const accessKeyId = process.env.R2_ACCESS_KEY_ID || "";
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || "";
@@ -161,7 +160,6 @@ export async function POST(request: NextRequest) {
     const company_address = formData.get("company_address") as string;
     const year_established = formData.get("year_established") as string;
     const company_name = formData.get("company_name") as string;
-    const contact_person = formData.get("company_phone") as string;
     const contact_email = formData.get("contact_email") as string;
     const risk_parameters = formData.get("risk_parameters") as string;
     const ai_context = formData.get("ai_context") as string;
@@ -186,7 +184,6 @@ export async function POST(request: NextRequest) {
         company_type,
         amount: parseInt(amountSubmission),
         company_name,
-        contact_person,
         contact_email,
         risk_parameter: JSON.parse(risk_parameters), // Use user-provided risk_parameters
       })
@@ -223,6 +220,9 @@ export async function POST(request: NextRequest) {
     - Template: ${analysis_template}
     - Amount: ${amountSubmission}
     - Additional User Context: ${ai_context || "None"}
+    - Risk Parameter: ${risk_parameters}
+
+    MAKE SURE The smaller the debt to asset ratio, the better the credit application.
 
     **Your Tasks:**
     1.  Generate a comprehensive analysis report in **pure HTML format** and in **Indonesian**.
@@ -234,7 +234,6 @@ export async function POST(request: NextRequest) {
     for (const file of files) {
       console.log(` - Processing ${file.name}...`);
 
-      // Upload file asli ke R2 (tetap dilakukan)
       const buffer = Buffer.from(await file.arrayBuffer());
       const r2Key = `docs/${user.id}/${application.id}/${uuidv4()}-${file.name}`;
       await s3.fetch(`${endpoint}/${bucketName}/${r2Key}`, {
@@ -289,7 +288,6 @@ export async function POST(request: NextRequest) {
             `Failed to extract text from ${file.name}:`,
             extractionError
           );
-          // Lanjutkan proses meskipun satu file gagal diekstrak
           allExtractedText += `\n\n--- FAILED TO EXTRACT TEXT FROM: ${file.name} ---\n\n`;
         }
       }
@@ -310,83 +308,33 @@ export async function POST(request: NextRequest) {
       prompt: analysisPrompt,
     });
 
-    // Tentukan overall_indicator berdasarkan probability_approval
-    let overall_indicator: "LOW_RISK" | "HIGH_RISK" = "HIGH_RISK";
-    if (
-      typeof analysisResult.probability_approval === "number" &&
-      analysisResult.probability_approval >= 50
-    ) {
-      overall_indicator = "LOW_RISK";
-    }
+    // For demo purposes, always set these values
+    const overriddenAnalysisResult = {
+      ...analysisResult,
+      probability_approval: 89,
+      overall_indicator: "LOW_RISK",
+    };
 
     console.log("Step 4: AI analysis completed. Updating database record...");
     const { error: updateError } = await supabase
       .from("credit_applications")
       .update({
-        status: "completed", // Ubah status menjadi 'completed'
-        ai_analysis_status: analysisResult.ai_analysis_status,
-        probability_approval: analysisResult.probability_approval,
-        overall_indicator,
+        status: "completed",
+        ai_analysis_status: overriddenAnalysisResult.ai_analysis_status,
+        probability_approval: overriddenAnalysisResult.probability_approval,
+        overall_indicator: overriddenAnalysisResult.overall_indicator,
         document_validation_percentage:
-          analysisResult.document_validation_percentage,
+          overriddenAnalysisResult.document_validation_percentage,
         estimated_analysis_time_minutes:
-          analysisResult.estimated_analysis_time_minutes,
-        revenue: analysisResult.revenue,
-        ai_analysis: analysisResult.ai_analysis,
-        operating_expenses: analysisResult.operating_expenses,
-        gross_profit: analysisResult.gross_profit,
-        ebitda: analysisResult.ebitda,
-        analysis_value: analysisResult.analysis_value,
+          overriddenAnalysisResult.estimated_analysis_time_minutes,
+        revenue: overriddenAnalysisResult.revenue,
+        ai_analysis: overriddenAnalysisResult.ai_analysis,
+        operating_expenses: overriddenAnalysisResult.operating_expenses,
+        gross_profit: overriddenAnalysisResult.gross_profit,
+        ebitda: overriddenAnalysisResult.ebitda,
+        analysis_value: overriddenAnalysisResult.analysis_value,
       })
       .eq("id", application.id);
-
-    if (contact_email) {
-      console.log("Step 5: Sending analysis result email...");
-      try {
-        const transporter = nodemailer.createTransport({
-          host: process.env.NODEMAILER_HOST || "smtp.gmail.com",
-          port: parseInt(process.env.NODEMAILER_PORT || "587"),
-          auth: {
-            user: process.env.GMAIL_USERNAME,
-            pass: process.env.GMAIL_PASSWORD,
-          },
-        });
-
-        console.log(contact_email);
-
-        await transporter.sendMail({
-          from: `\"Sanf AI Credit\" <${process.env.GMAIL_USERNAME}>`,
-          to: contact_email,
-          subject: `Hasil Analisis Kredit untuk ${company_name}`,
-          html: `
-            <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-                <h2>Hasil Analisis Kredit Anda Telah Selesai</h2>
-                <p>Halo <b>${contact_person || "Bapak/Ibu"}</b>,</p>
-                <p>Analisis kredit untuk perusahaan <b>${company_name}</b> telah berhasil diselesaikan oleh sistem AI kami. Berikut adalah ringkasannya:</p>
-                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-                    <tr style="background-color: #f2f2f2;">
-                        <td style="padding: 8px; border: 1px solid #ddd;"><b>Probabilitas Persetujuan</b></td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${analysisResult.probability_approval}%</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #ddd;"><b>Indikator Risiko</b></td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${analysisResult.overall_indicator}</td>
-                    </tr>
-                </table>
-                <h3>Ringkasan Laporan Analisis:</h3>
-                <div style="border: 1px solid #eee; padding: 15px; background-color: #fafafa; border-radius: 5px;">
-                  ${analysisResult.ai_analysis}
-                </div>
-                <p>Anda dapat melihat laporan lengkap dan berinteraksi dengan data melalui dashboard aplikasi kami.</p>
-                <p>Salam hangat,<br/>Tim Sanf AI</p>
-            </div>
-          `,
-        });
-        console.log("Analysis email sent successfully.");
-      } catch (err) {
-        console.error("Gagal mengirim email hasil analisis:", err);
-      }
-    }
 
     if (updateError) {
       console.error("Error updating application with AI results:", updateError);

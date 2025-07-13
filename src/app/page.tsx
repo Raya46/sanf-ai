@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -39,8 +39,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { logout } from "@/app/auth/actions";
 
+// Interface untuk data yang akan ditampilkan di UI
 interface Application {
-  id: number;
+  id: string; // ID seharusnya string untuk konsistensi
   title: string;
   segment: string;
   icon: LucideIcon;
@@ -51,67 +52,41 @@ interface Application {
   applicant: string;
 }
 
+// Interface untuk data mentah dari API
 interface CreditApplicationData {
-  id: number;
-  user_id: string;
+  id: string;
   submitted_at: string;
-  status: string;
-  ai_analysis_status: string;
+  status: string; // e.g., 'pending_analysis', 'completed'
   probability_approval: number;
-  overall_indicator: string;
-  document_validation_percentage: number;
-  estimated_analysis_time_minutes: number;
-  contact_person: string;
-  contact_email: string;
   company_name: string;
-  ai_analysis: string;
   company_type: string;
   amount: number;
   analysis_template: string;
 }
 
-const companyTypeIcons: { [key: string]: LucideIcon } = {
-  "heavy-equipment": Building2,
-  trucking: Truck,
-  productive: DollarSign,
-  "new-business": Briefcase,
-  unknown: Briefcase, // Default icon for unknown company types
-};
-
-const segmentLabels = {
-  all: "Semua Segmen",
-  "heavy-equipment": "Alat Berat",
-  trucking: "Truk",
-  productive: "Pembiayaan Produktif",
-  "new-business": "Bisnis Baru",
-  unknown: "Segmen Tidak Diketahui",
-};
-
-const statusColors = {
-  approved: "bg-green-100 text-green-700 border-green-200",
-  "under-review": "bg-amber-100 text-amber-700 border-amber-200",
-  pending: "bg-blue-100 text-blue-700 border-blue-200",
-  declined: "bg-red-100 text-red-700 border-red-200",
+// PERBAIKAN: Menyesuaikan status dengan data dari backend
+const statusColors: { [key: string]: string } = {
+  completed: "bg-green-100 text-green-700 border-green-200",
+  pending_analysis: "bg-amber-100 text-amber-700 border-amber-200",
+  failed: "bg-red-100 text-red-700 border-red-200",
   unknown: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
-const statusIcons = {
-  approved: CheckCircle,
-  "under-review": Clock,
-  pending: AlertTriangle,
-  declined: AlertTriangle,
+const statusIcons: { [key: string]: LucideIcon } = {
+  completed: CheckCircle,
+  pending_analysis: Clock,
+  failed: AlertTriangle,
   unknown: AlertTriangle,
 };
 
 const statusTranslations: { [key: string]: string } = {
-  approved: "Disetujui",
-  "under-review": "Dalam Peninjauan",
-  pending: "Tertunda",
-  declined: "Ditolak",
+  completed: "Selesai",
+  pending_analysis: "Dalam Analisis",
+  failed: "Gagal",
   unknown: "Tidak Diketahui",
 };
 
-export default function Component() {
+export default function ApplicationDashboard() {
   const [selectedSegment, setSelectedSegment] = useState("all");
   const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("most-recent");
@@ -132,32 +107,27 @@ export default function Component() {
         const data: CreditApplicationData[] = await response.json();
 
         const formattedData: Application[] = data.map((app) => {
-          const companyTypeRaw = app.company_type || "unknown";
-          const companyTypeKey = companyTypeRaw
-            .toLowerCase()
-            .replace(/\s/g, "-"); // Normalize to "heavy-equipment", "trucking", etc.
-          const IconComponent =
-            companyTypeIcons[companyTypeKey] || companyTypeIcons["unknown"];
+          const segment = app.company_type || "Segmen Tidak Ada";
           const formattedAmount = app.amount
             ? `Rp ${new Intl.NumberFormat("id-ID").format(app.amount)}`
             : "Rp 0";
           const riskScore = app.probability_approval ?? 0;
-          const status = app.ai_analysis_status || "unknown";
-          const title = app.analysis_template || "Unknown Analysis";
-          const applicant = app.company_name || "Unknown Applicant"; // Map to company_name
+          const status = app.status || "unknown";
+          const title = app.analysis_template || "Analisis Tidak Diketahui";
+          const applicant = app.company_name || "Nama Pemohon Tidak Ada";
           const date = app.submitted_at
-            ? new Date(app.submitted_at).toLocaleDateString("en-US", {
+            ? new Date(app.submitted_at).toLocaleDateString("id-ID", {
                 year: "numeric",
-                month: "short",
+                month: "long",
                 day: "numeric",
               })
-            : "Unknown Date";
+            : "Tanggal Tidak Ada";
 
           return {
             id: app.id,
             title: title,
-            segment: companyTypeKey, // Use the normalized key for segment
-            icon: IconComponent,
+            segment: segment,
+            icon: Briefcase, // Menggunakan ikon default yang aman
             date: date,
             riskScore: riskScore,
             status: status,
@@ -176,7 +146,8 @@ export default function Component() {
 
   const filteredAnalyses = creditAnalyses.filter(
     (analysis) =>
-      selectedSegment === "all" || analysis.segment === selectedSegment
+      selectedSegment === "all" ||
+      analysis.segment.toLowerCase().replace(/\s/g, "-") === selectedSegment
   );
 
   const sortedAnalyses = [...filteredAnalyses].sort((a, b) => {
@@ -195,9 +166,18 @@ export default function Component() {
     }
   });
 
+  // PERBAIKAN: Membuat daftar segmen dinamis dari data yang ada
+  const dynamicSegments = useMemo(() => {
+    const segments = new Set(creditAnalyses.map((a) => a.segment));
+    return Array.from(segments).map((s) => ({
+      value: s.toLowerCase().replace(/\s/g, "-"),
+      label: s,
+    }));
+  }, [creditAnalyses]);
+
   const getRiskScoreColor = (score: number) => {
-    if (score >= 700) return "text-green-600";
-    if (score >= 650) return "text-amber-600";
+    if (score >= 70) return "text-green-600";
+    if (score >= 50) return "text-amber-600";
     return "text-red-600";
   };
 
@@ -232,12 +212,10 @@ export default function Component() {
         <div className="flex flex-col lg:flex-row gap-6 mb-8">
           <Button
             onClick={() => router.push("/dashboard/new-application")}
-            className="bg-slate-900 hover:bg-slate-800 text-white border-slate-300 w-fit"
+            className="bg-slate-900 hover:bg-slate-800 text-white w-fit"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Analisis Baru
+            <Plus className="w-4 h-4 mr-2" /> Analisis Baru
           </Button>
-
           <div className="flex flex-col sm:flex-row gap-4 lg:ml-auto">
             <Tabs
               value={selectedSegment}
@@ -251,33 +229,18 @@ export default function Component() {
                 >
                   Semua
                 </TabsTrigger>
-                <TabsTrigger
-                  value="heavy-equipment"
-                  className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
-                >
-                  Alat Berat
-                </TabsTrigger>
-                <TabsTrigger
-                  value="trucking"
-                  className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
-                >
-                  Truk
-                </TabsTrigger>
-                <TabsTrigger
-                  value="productive"
-                  className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
-                >
-                  Produktif
-                </TabsTrigger>
-                <TabsTrigger
-                  value="new-business"
-                  className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
-                >
-                  Bisnis Baru
-                </TabsTrigger>
+                {/* PERBAIKAN: Render tab segmen secara dinamis */}
+                {dynamicSegments.map((seg) => (
+                  <TabsTrigger
+                    key={seg.value}
+                    value={seg.value}
+                    className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
+                  >
+                    {seg.label}
+                  </TabsTrigger>
+                ))}
               </TabsList>
             </Tabs>
-
             <div className="flex gap-2">
               <div className="flex bg-blue-50/80 border border-blue-200/50 rounded-md p-1">
                 <Button
@@ -297,12 +260,11 @@ export default function Component() {
                   <List className="w-4 h-4" />
                 </Button>
               </div>
-
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-40 bg-blue-50/60 border border-blue-200/50">
+                <SelectTrigger className="w-48 bg-blue-50/60 border border-blue-200/50">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-blue-50/95 backdrop-blur-md border border-blue-200/50">
+                <SelectContent>
                   <SelectItem value="most-recent">Terbaru</SelectItem>
                   <SelectItem value="risk-score">
                     Probabilitas Persetujuan
@@ -323,40 +285,28 @@ export default function Component() {
         >
           {sortedAnalyses.map((analysis) => {
             const IconComponent = analysis.icon;
-            const StatusIcon =
-              statusIcons[analysis.status as keyof typeof statusIcons] ||
-              AlertTriangle; // Memberi fallback
+            const StatusIcon = statusIcons[analysis.status] || AlertTriangle;
 
             return (
               <Link
                 key={analysis.id}
                 href={`/dashboard/${analysis.id}`}
-                className="block"
-                tabIndex={-1}
+                className="block group"
               >
-                <Card
-                  className="bg-blue-50/60 backdrop-blur-md border hover:shadow-md hover:shadow-blue-300/30 hover:border-blue-300 border-blue-200/40 hover:bg-blue-50/80 transition-all duration-200 cursor-pointer group"
-                  tabIndex={0}
-                >
+                <Card className="bg-blue-50/60 border hover:shadow-lg hover:border-blue-300 border-blue-200/40 transition-all duration-300 cursor-pointer h-full">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100/60 backdrop-blur-sm rounded-lg border border-blue-200/30">
+                        <div className="p-2 bg-blue-100/60 rounded-lg border border-blue-200/30">
                           <IconComponent className="w-5 h-5 text-slate-700" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <Badge
-                            variant="outline"
-                            className="text-xs mb-2 border-blue-300/50 text-slate-700 bg-blue-50/40"
-                          >
-                            <IconComponent className="w-3 h-3 mr-1" />
-                            {
-                              segmentLabels[
-                                analysis.segment as keyof typeof segmentLabels
-                              ]
-                            }
-                          </Badge>
-                        </div>
+                        {/* PERBAIKAN: Menampilkan label segmen secara langsung */}
+                        <Badge
+                          variant="outline"
+                          className="text-xs border-blue-300/50 text-slate-700 bg-blue-50/40"
+                        >
+                          {analysis.segment}
+                        </Badge>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -364,16 +314,13 @@ export default function Component() {
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-slate-900"
-                            tabIndex={-1}
                             onClick={(e) => e.preventDefault()}
                           >
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-blue-50/95 backdrop-blur-md border border-blue-200/50">
+                        <DropdownMenuContent>
                           <DropdownMenuItem>Lihat Detail</DropdownMenuItem>
-                          <DropdownMenuItem>Edit Analisis</DropdownMenuItem>
-                          <DropdownMenuItem>Ekspor Laporan</DropdownMenuItem>
                           <DropdownMenuItem className="text-red-600">
                             Hapus
                           </DropdownMenuItem>
@@ -383,12 +330,11 @@ export default function Component() {
                   </CardHeader>
                   <CardContent className="pt-0">
                     <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2">
-                      {analysis.title}
+                      {analysis.applicant}
                     </h3>
                     <p className="text-sm text-slate-600 mb-3">
-                      {analysis.applicant}
+                      {analysis.title}
                     </p>
-
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-slate-500">
@@ -409,25 +355,21 @@ export default function Component() {
                           <span
                             className={`text-sm font-medium ${getRiskScoreColor(analysis.riskScore)}`}
                           >
-                            {analysis.riskScore}
+                            {analysis.riskScore}%
                           </span>
                         </div>
                       </div>
                     </div>
-
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-slate-500">
                         {analysis.date}
                       </span>
-                      <div className="flex items-center gap-1">
-                        <Badge
-                          className={`text-xs capitalize ${statusColors[analysis.status as keyof typeof statusColors]}`}
-                        >
-                          <StatusIcon className="w-3 h-3 mr-1" />
-                          {statusTranslations[analysis.status] ||
-                            analysis.status}
-                        </Badge>
-                      </div>
+                      <Badge
+                        className={`text-xs capitalize ${statusColors[analysis.status] || statusColors.unknown}`}
+                      >
+                        <StatusIcon className="w-3 h-3 mr-1" />
+                        {statusTranslations[analysis.status] || analysis.status}
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
@@ -444,9 +386,11 @@ export default function Component() {
                 Tidak ada analisis kredit ditemukan untuk segmen yang dipilih.
               </p>
             </div>
-            <Button className="bg-slate-900 hover:bg-slate-800 text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              Buat Analisis Baru
+            <Button
+              onClick={() => router.push("/dashboard/new-application")}
+              className="bg-slate-900 hover:bg-slate-800 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" /> Buat Analisis Baru
             </Button>
           </div>
         )}

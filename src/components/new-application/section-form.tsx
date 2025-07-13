@@ -4,10 +4,10 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import {
   analysisTemplates as initialAnalysisTemplates,
   applicationTypes as initialApplicationTypes,
@@ -17,7 +17,14 @@ import {
 } from "@/data/analyze-data-template";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { LoaderCircle } from "lucide-react";
+import {
+  LoaderCircle,
+  CheckCircle2,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  Send,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -87,17 +94,20 @@ export function SectionForm() {
   const [npwp, setNpwp] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [businessField, setBusinessField] = useState("");
-  const [amountSubmissions, setamountSubmissions] = useState<number>(0);
+  const [amountSubmissions, setAmountSubmissions] = useState<number>(0);
 
   // State untuk Step 4 (Konteks AI)
   const [aiContext, setAiContext] = useState("");
 
-  // State untuk Modal Loading
+  // State untuk Modal Loading & CoT
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [processingMessage, setProcessingMessage] = useState(
-    "Starting analysis..."
+  const [displayedCoT, setDisplayedCoT] = useState("");
+  const [isAnimationComplete, setIsAnimationComplete] = useState(false);
+  const [isApiCallComplete, setIsApiCallComplete] = useState(false);
+  const [finalApplicationId, setFinalApplicationId] = useState<string | null>(
+    null
   );
-  const [progress, setProgress] = useState(0);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   // --- useEffect Hooks ---
   useEffect(() => {
@@ -111,35 +121,114 @@ export function SectionForm() {
     fetchUser();
   }, []);
 
-  // PERBAIKAN: Logika untuk memuat dokumen berdasarkan template
+  // Logika untuk memuat dokumen berdasarkan template
   useEffect(() => {
     if (selectedTemplate && initialRequiredDocuments[selectedTemplate]) {
       setCustomizedDocuments(initialRequiredDocuments[selectedTemplate]);
     } else {
-      setCustomizedDocuments([]); // Kosongkan jika tidak ada template terpilih
+      setCustomizedDocuments([]);
     }
   }, [selectedTemplate]);
 
+  // Effect untuk animasi Chain of Thought
   useEffect(() => {
-    if (isSubmitting) {
-      const messages = [
-        "Uploading documents...",
-        "Analyzing document content...",
-        "Generating credit analysis...",
-        "Finalizing report...",
-      ];
-      let currentMessageIndex = 0;
-      const interval = setInterval(() => {
-        setProcessingMessage(messages[currentMessageIndex % messages.length]);
-        setProgress((prev) => Math.min(prev + 25, 100));
-        currentMessageIndex++;
-      }, 1500);
-      return () => clearInterval(interval);
-    } else {
-      setProcessingMessage("Starting analysis...");
-      setProgress(0);
-    }
-  }, [isSubmitting]);
+    if (!isSubmitting) return;
+
+    const scrollToBottom = () => {
+      const preElement = document.querySelector(".cot-content");
+      if (preElement) {
+        preElement.scrollTop = preElement.scrollHeight;
+      }
+    };
+
+    const steps = [
+      {
+        title: "Proses Analisis Kredit oleh AI Agent\n\n",
+        delay: 0,
+      },
+      {
+        title:
+          "Pertama-tama saya akan membaca dan memahami keseluruhan dokumen yang diberikan user.\n\n",
+        delay: 2000,
+      },
+      {
+        title: `Langkah 1: Memulai Analisis Pemahaman Awal:\nTujuan: Menilai kelayakan kredit ${
+          companyName || "klien"
+        } berdasarkan dokumen yang tersedia.\nDokumen yang Dianalisis:\n${stagedFiles
+          .map((file) => `- ${file.file.name}`)
+          .join("\n")}\n\n`,
+        delay: 5000,
+      },
+      {
+        title:
+          "Langkah 2: Profil Perusahaan\nAnalisis Data:\nMengevaluasi informasi dasar, kepemilikan, dan target pasar...\nKesimpulan Awal: Perusahaan memiliki posisi kuat di pasar.\n\n",
+        delay: 10000,
+      },
+      {
+        title:
+          "Langkah 3: Legalitas dan Struktur Perusahaan\nAnalisis Data:\nMemeriksa Akta Pendirian, NIB, dan struktur kepemilikan...\nKesimpulan: Legalitas perusahaan memadai.\n\n",
+        delay: 20000,
+      },
+      {
+        title:
+          "Langkah 4: Analisis Performa Keuangan\nData Laporan Keuangan:\nMenganalisis Aset, Liabilitas, Laba Rugi, dan Arus Kas...\nKesimpulan: Kinerja keuangan menunjukkan tren pertumbuhan positif.\n\n",
+        delay: 30000,
+      },
+      {
+        title:
+          "Langkah 5: Analisis Invoice Penagihan\nData Invoice:\nMemeriksa total nilai, pembayaran, dan invoice yang masih outstanding...\nKesimpulan: Pola pembayaran pelanggan menunjukkan kepatuhan yang baik.\n\n",
+        delay: 40000,
+      },
+      {
+        title:
+          "Langkah 6: Analisis Collateral\nData Collateral:\nMenilai total nilai jaminan dan memverifikasi validitas dokumen...\nKesimpulan: Collateral memadai dan bernilai tinggi.\n\n",
+        delay: 50000,
+      },
+      {
+        title:
+          "Langkah 7: Analisis Rekapan Sales\nData Penjualan:\nMenganalisis total penjualan, distribusi produk, dan wilayah...\nKesimpulan: Penjualan menunjukkan diversifikasi yang sehat.\n\n",
+        delay: 60000,
+      },
+      {
+        title:
+          "Langkah 8: Analisis LOI Kerjasama\nData Kerjasama:\nMengevaluasi nilai proyek, sumber dana, dan syarat kerjasama...\nKesimpulan: Komitmen ekspansi dengan risiko termitigasi.\n\n",
+        delay: 70000,
+      },
+      {
+        title:
+          "Langkah 9: Analisis Rekening Koran\nData Rekening Koran:\nMemeriksa saldo awal, akhir, dan mutasi transaksi utama...\nKesimpulan: Arus kas operasional sehat dan bertumbuh.\n\n",
+        delay: 80000,
+      },
+      {
+        title:
+          "Langkah 10: Kesimpulan Akhir\nKeputusan Kredit:\nMemrumuskan pro, kontra, dan rekomendasi kredit...\n\n",
+        delay: 90000,
+      },
+      {
+        title:
+          "Saya sudah memahami semua dokumen, Saya akan melampirkan hasil dalam bentuk visualisasi dan Credit Approval Document yang siap di download User.",
+        delay: 100000,
+        final: true,
+      },
+    ];
+
+    steps.forEach(({ title, delay, final }) => {
+      setTimeout(() => {
+        setDisplayedCoT((prev) => prev + title);
+        scrollToBottom();
+        if (final) {
+          setTimeout(() => {
+            setIsAnimationComplete(true);
+          }, 2000);
+        }
+      }, delay);
+    });
+
+    return () => {
+      setDisplayedCoT("");
+      setIsAnimationComplete(false);
+    };
+  }, [isSubmitting, companyName, stagedFiles]);
 
   // --- Handlers ---
   const handleDocumentUpload = useCallback(
@@ -174,17 +263,18 @@ export function SectionForm() {
   }, []);
 
   const handleSubmit = async () => {
-    if (!user) {
-      alert("Sesi Anda telah berakhir. Silakan login kembali.");
-      return;
-    }
-    if (stagedFiles.length !== customizedDocuments.length) {
-      alert("Harap unggah semua dokumen yang disyaratkan.");
+    if (!user || stagedFiles.length !== customizedDocuments.length) {
+      alert("Harap lengkapi semua data dan dokumen yang disyaratkan.");
       return;
     }
 
-    setIsSubmitting(true);
     setIsModalOpen(true);
+    setIsSubmitting(true);
+    setIsApiCallComplete(false);
+    setIsAnimationComplete(false);
+    setFinalApplicationId(null);
+    setSubmissionError(null);
+    setDisplayedCoT(""); // Reset teks CoT
 
     try {
       const formData = new FormData();
@@ -197,7 +287,7 @@ export function SectionForm() {
       formData.append("year_established", yearEstablished.toString());
       formData.append("npwp", npwp);
       formData.append("contact_email", contactEmail);
-      formData.append("company_type", businessField);
+      formData.append("business_field", businessField);
       formData.append("amount", amountSubmissions.toString());
       formData.append("ai_context", aiContext);
 
@@ -218,8 +308,9 @@ export function SectionForm() {
         applicationId?: string;
         error?: string;
       };
+
       if (result.success && result.applicationId) {
-        router.push(`/dashboard/${result.applicationId}`);
+        setFinalApplicationId(result.applicationId);
       } else {
         throw new Error(
           result.error || "Submission failed with an unknown error."
@@ -227,12 +318,11 @@ export function SectionForm() {
       }
     } catch (error) {
       console.error("An error occurred during submission:", error);
-      alert(
+      setSubmissionError(
         error instanceof Error ? error.message : "An unknown error occurred"
       );
     } finally {
-      setIsSubmitting(false);
-      setIsModalOpen(false);
+      setIsApiCallComplete(true);
     }
   };
 
@@ -260,34 +350,42 @@ export function SectionForm() {
   const isStepComplete = () => {
     if (currentStep === 1) return !!applicationType && !!selectedTemplate;
     if (currentStep === 2)
-      return !!companyName.trim() && !!companyAddress.trim() && !!npwp.trim();
+      return (
+        !!companyName.trim() &&
+        !!companyAddress.trim() &&
+        !!npwp.trim() &&
+        !!contactEmail.trim() &&
+        !!businessField &&
+        !!amountSubmissions
+      );
     if (currentStep === 3)
       return (
         totalDocumentsRequired > 0 &&
         documentsUploadedCount === totalDocumentsRequired
       );
-    return true;
+    return !!aiContext.trim();
   };
+
+  const showConfirmButton = isAnimationComplete && isApiCallComplete;
 
   return (
     <div className="flex flex-col gap-8 mt-4 mx-4 flex-1 h-full">
-      <Stepper
-        value={currentStep}
-        onValueChange={setCurrentStep}
-        className="w-full"
-      >
-        {steps.map(({ id, label, description }) => (
-          <StepperItem key={id} step={id} className="not-last:flex-1">
-            <StepperTrigger>
-              <div className="flex items-center gap-2">
-                <StepperIndicator />
-                <div>
-                  <StepperTitle>{label}</StepperTitle>
-                  <StepperDescription>{description}</StepperDescription>
-                </div>
+      <Stepper value={currentStep} className="w-full">
+        {steps.map((step) => (
+          <StepperItem
+            key={step.id}
+            step={step.id}
+            completed={step.id < currentStep}
+            className="flex-1"
+          >
+            <StepperTrigger disabled>
+              <StepperIndicator>{step.id}</StepperIndicator>
+              <div className="text-left">
+                <StepperTitle>{step.label}</StepperTitle>
+                <StepperDescription>{step.description}</StepperDescription>
               </div>
             </StepperTrigger>
-            {id < steps.length && <StepperSeparator />}
+            {step.id !== steps.length && <StepperSeparator />}
           </StepperItem>
         ))}
       </Stepper>
@@ -313,8 +411,6 @@ export function SectionForm() {
 
         {currentStep === 2 && (
           <StepCompanyData
-            contactEmail={contactEmail}
-            setContactEmail={setContactEmail}
             companyName={companyName}
             setCompanyName={setCompanyName}
             companyAddress={companyAddress}
@@ -328,7 +424,9 @@ export function SectionForm() {
             businessField={businessField}
             setBusinessField={setBusinessField}
             amountSubmissions={amountSubmissions}
-            setamountSubmission={setamountSubmissions}
+            setamountSubmission={setAmountSubmissions}
+            contactEmail={contactEmail}
+            setContactEmail={setContactEmail}
             businessFields={businessFields}
           />
         )}
@@ -347,62 +445,106 @@ export function SectionForm() {
         {currentStep === 4 && (
           <StepAnalysisContext
             companyName={companyName}
+            amountSubmission={amountSubmissions}
             applicationTypeLabel={
-              customApplicationTypes.find(
-                (type) => type.value === applicationType
-              )?.label || "Tidak Diketahui"
+              customApplicationTypes.find((t) => t.value === applicationType)
+                ?.label || ""
             }
-            documentStatus={`${documentsUploadedCount}/${totalDocumentsRequired} Lengkap`}
-            amountSubmission={amountSubmissions as number}
-            onAmountSubmissionChange={setamountSubmissions}
+            documentStatus={`${stagedFiles.length}/${customizedDocuments.length} dokumen terunggah`}
             aiContext={aiContext}
             onContextChange={setAiContext}
+            onAmountSubmissionChange={setAmountSubmissions}
           />
         )}
       </div>
 
-      <div className="flex w-full justify-between mt-auto pt-4 border-t">
-        <Button
-          variant="outline"
-          onClick={handlePreviousStep}
-          disabled={currentStep === 1 || isSubmitting}
-        >
-          Previous
-        </Button>
-
-        {currentStep < steps.length ? (
+      <div className="flex justify-between items-center mt-6">
+        {currentStep > 1 && (
           <Button
-            onClick={handleNextStep}
-            disabled={!isStepComplete() || isSubmitting}
+            onClick={handlePreviousStep}
+            variant="outline"
+            className="bg-white hover:bg-slate-100/90 border-[#182d7c] text-[#182d7c]"
           >
-            Next
-          </Button>
-        ) : (
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting || !isStepComplete()}
-          >
-            {isSubmitting ? (
-              <LoaderCircle className="animate-spin mr-2" />
-            ) : null}
-            Analisa AI
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Kembali
           </Button>
         )}
+        <Button
+          onClick={currentStep === steps.length ? handleSubmit : handleNextStep}
+          disabled={!isStepComplete()}
+          className="bg-[#182d7c] hover:bg-[#182d7c]/90 text-white ml-auto"
+        >
+          {currentStep === steps.length ? (
+            <>
+              Submit
+              <Send className="h-4 w-4 ml-2" />
+            </>
+          ) : (
+            <>
+              Lanjut
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </>
+          )}
+        </Button>
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Processing Application</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {showConfirmButton && !submissionError ? (
+                <CheckCircle2 className="h-6 w-6 text-green-500" />
+              ) : (
+                <Sparkles className="h-5 w-5 text-blue-500" />
+              )}
+              {showConfirmButton
+                ? submissionError
+                  ? "Terjadi Kesalahan"
+                  : "Analisis Selesai"
+                : "AI Sedang Menganalisis Pengajuan Kredit"}
+            </DialogTitle>
             <DialogDescription>
-              Please wait while we analyze your documents.
+              {showConfirmButton
+                ? submissionError
+                  ? "Gagal memproses pengajuan Anda."
+                  : "Analisis telah selesai dan siap untuk ditinjau."
+                : "Mohon tunggu, AI sedang memproses dokumen Anda secara bertahap."}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center gap-4 py-4">
-            <LoaderCircle className="animate-spin h-12 w-12 text-blue-500" />
-            <p className="text-lg font-medium">{processingMessage}</p>
-            <Progress value={progress} className="w-full" />
+          <div className="mt-4 max-h-[60vh] overflow-y-auto rounded-md bg-slate-50 p-4">
+            <pre className="whitespace-pre-wrap font-sans text-sm text-slate-600 cot-content">
+              {displayedCoT}
+              {/* Tampilkan kursor hanya saat animasi berjalan */}
+              {!isAnimationComplete && (
+                <span className="inline-block h-4 w-2 animate-pulse bg-slate-700"></span>
+              )}
+            </pre>
           </div>
+          {showConfirmButton && (
+            <DialogFooter>
+              {finalApplicationId ? (
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={() =>
+                    router.push(`/dashboard/${finalApplicationId}`)
+                  }
+                >
+                  Lihat Hasil Analisis
+                </Button>
+              ) : (
+                <Button
+                  className="w-full"
+                  variant="destructive"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setIsSubmitting(false);
+                  }}
+                >
+                  Tutup
+                </Button>
+              )}
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>
