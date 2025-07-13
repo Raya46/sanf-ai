@@ -70,13 +70,9 @@ export function RiskScoreSummary() {
   const overallRisk = calculateOverallRisk(riskData);
 
   return (
-    <Card className="w-full max-w-lg">
-      <CardHeader>
-        <CardTitle className="text-center text-xl font-bold text-gray-800">
-          RISK SCORE SUMMARY
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-5 p-6">
+    <div className="bg-white rounded-xl p-6 w-full max-w-lg">
+      <h1 className="mb-4 font-bold"> Risk Score Summary</h1>
+      <div className="space-y-1">
         {/* Menampilkan setiap metrik risiko */}
         {riskData.map((metric) => {
           const details = getRiskDetails(metric.value);
@@ -100,8 +96,7 @@ export function RiskScoreSummary() {
           );
         })}
 
-        {/* Garis pemisah */}
-        <div className="border-t border-gray-200"></div>
+        <div className="mt-2 border-t border-gray-200"></div>
 
         {/* Menampilkan Risiko Keseluruhan */}
         <div className="grid grid-cols-3 items-center gap-4 pt-2">
@@ -115,7 +110,7 @@ export function RiskScoreSummary() {
             </span>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

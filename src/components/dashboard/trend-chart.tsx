@@ -12,6 +12,15 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+// PERBAIKAN: Menambahkan impor untuk komponen Tabel
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // Data untuk chart, menggabungkan data Anda dan data rekaan yang realistis
 const chartData = [
@@ -50,18 +59,15 @@ const chartData = [
 // Tooltip kustom untuk menampilkan informasi saat hover
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    // PERBAIKAN: Definisikan warna secara eksplisit untuk memastikan konsistensi
     const colors: { [key: string]: string } = {
       "2023": "#2563eb", // Warna biru tua
       "2024": "#60a5fa", // Warna biru muda
     };
 
     return (
-      // PERBAIKAN: Menggunakan bg-white secara eksplisit untuk menghindari masalah tema
       <div className="rounded-lg border bg-white p-2 text-sm shadow-sm">
         <p className="font-bold">{label}</p>
         {payload.map((entry: any, index: number) => (
-          // PERBAIKAN: Menggunakan map warna yang sudah didefinisikan
           <p
             key={`item-${index}`}
             style={{ color: colors[entry.dataKey] || entry.color }}
@@ -79,7 +85,7 @@ export function PerformanceBarChart() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Perbandingan Kinerja Finansial</CardTitle>
+        <CardTitle>TREN RASIO KEUANGAN 2023-2024</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[350px]">
@@ -110,7 +116,8 @@ export function PerformanceBarChart() {
               />
               <Tooltip
                 content={<CustomTooltip />}
-                cursor={{ fill: "hsl(var(--muted))" }}
+                // PERBAIKAN: Mengubah fill menjadi transparan untuk menghilangkan background hitam saat hover
+                cursor={{ fill: "transparent" }}
               />
               <Legend
                 iconType="circle"
@@ -129,6 +136,45 @@ export function PerformanceBarChart() {
               />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+
+        {/* PERBAIKAN: Menambahkan bagian AI Insights di bawah chart */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-4">🧠 AI Insights</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[150px]">Category</TableHead>
+                <TableHead>Insight</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">Kecukupan Jaminan</TableCell>
+                <TableCell>
+                  Coverage ratio 265% jauh melebihi minimum yang disyaratkan
+                  (150%). Nilai agunan Rp 26.5 miliar memberikan margin keamanan
+                  yang sangat baik. Seluruh agunan merupakan aset produktif yang
+                  mendukung operasional tambang. Nilai pasar agunan diperkirakan
+                  terus meningkat selama masa pembiayaan.
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Komposisi Agunan</TableCell>
+                <TableCell>
+                  Alat Berat: Rp 14.500.000.000 (54,72% dari total agunan).
+                  Properti: Rp 12.000.000.000 (45,28% dari total agunan).
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Penilaian Agunan</TableCell>
+                <TableCell>
+                  Penilaian Internal (01 Juli 2025): Rp 24.800.000.000. KJPP
+                  Independen (05 Juli 2025): Rp 26.500.000.000.
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>
