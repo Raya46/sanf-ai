@@ -26,7 +26,7 @@ export function DashboardHeader() {
   const params = useParams();
   const router = useRouter();
 
-  const [companyName, setCompanyName] = useState("Company");
+  const [companyName, setCompanyName] = useState("PT Batubara Sejahtera");
   const [applicationFiles, setApplicationFiles] = useState<
     CreditApplication["application_files"]
   >([]);
