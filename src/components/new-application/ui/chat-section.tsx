@@ -86,71 +86,75 @@ export function ChatSection({
         </TabsList>
         <TabsContent
           value="credit-application"
-          className="flex-1 flex flex-col gap-3 mt-2 overflow-hidden"
+          className="flex-1 flex gap-3 mt-2 overflow-hidden"
         >
-          <div className="flex-1 overflow-y-auto flex flex-col gap-3">
-            {/* ChartBarNegative hanya muncul sekali di awal sesi chat jika ada data */}
-            {applicationData &&
-              applicationData.revenue &&
-              applicationData.revenue.length > 0 && (
-                <ChartBarNegative data={applicationData.revenue} />
+          {/* ChartBarNegative only appears once at the beginning of the chat session if there is data */}
+          {applicationData &&
+            applicationData.revenue &&
+            applicationData.revenue.length > 0 && (
+              <div className="w-[400px] flex-shrink-0 overflow-y-auto">
+                <ChartBarNegative />
+              </div>
+            )}
+
+          <div className="flex flex-col flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto flex flex-col gap-3">
+              {isLoadingChat && (
+                <ChatCard
+                  color="bg-transparent"
+                  position="start"
+                  chat="Loading chat history..."
+                />
               )}
 
-            {isLoadingChat && (
-              <ChatCard
-                color="bg-transparent"
-                position="start"
-                chat="Loading chat history..."
-              />
-            )}
-
-            {messages.map((message) => {
-              const { mainContent, sources } = parseMessage(message.content);
-              return (
-                <Fragment key={message.id}>
-                  <ChatCard
-                    color={
-                      message.role === "user"
-                        ? "bg-blue-500 text-white"
-                        : "bg-transparent"
-                    }
-                    position={message.role === "user" ? "end" : "start"}
-                    chat={mainContent}
-                    sources={sources}
-                  />
-                </Fragment>
-              );
-            })}
-            {isLoading && (
-              <ChatCard
-                color="bg-transparent"
-                position="start"
-                chat={statusMessage}
-              />
-            )}
-          </div>
-          <form onSubmit={onSubmit} className="relative w-full flex-shrink-0">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Ketik pesan Anda..."
-              className="min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 pr-12"
-              rows={2}
-              disabled={isLoading}
-            />
-            <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
-              <Button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="rounded-full bg-blue-500 p-1.5 h-fit border"
-                size="icon"
-              >
-                <ArrowUp className="w-4 h-4" />
-              </Button>
+              {messages.map((message) => {
+                const { mainContent, sources } = parseMessage(message.content);
+                return (
+                  <Fragment key={message.id}>
+                    <ChatCard
+                      color={
+                        message.role === "user"
+                          ? "bg-blue-500 text-white"
+                          : "bg-transparent"
+                      }
+                      position={message.role === "user" ? "end" : "start"}
+                      chat={mainContent}
+                      sources={sources}
+                    />
+                  </Fragment>
+                );
+              })}
+              {isLoading && (
+                <ChatCard
+                  color="bg-transparent"
+                  position="start"
+                  chat={statusMessage}
+                />
+              )}
             </div>
-          </form>
+            <form onSubmit={onSubmit} className="relative w-full flex-shrink-0">
+              <Textarea
+                ref={textareaRef}
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Ketik pesan Anda..."
+                className="min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 pr-12"
+                rows={2}
+                disabled={isLoading}
+              />
+              <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
+                <Button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  className="rounded-full bg-blue-500 p-1.5 h-fit border"
+                  size="icon"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </Button>
+              </div>
+            </form>
+          </div>
         </TabsContent>
         <TabsContent
           value="macroeconomics"
