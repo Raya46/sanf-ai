@@ -67,7 +67,6 @@ export default function CreditChat() {
         setChatMessages(data);
       } catch (err) {
         console.error("Chat history fetch error:", err as Error);
-        // Not setting a state error here to avoid blocking the UI
       } finally {
         setIsLoadingChat(false);
       }

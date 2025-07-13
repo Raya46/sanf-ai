@@ -167,13 +167,15 @@ export function PdfExportModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Export Analysis to PDF</DialogTitle>
+          <DialogTitle>Rangkum percakapan kamu ke PDF</DialogTitle>
           <DialogDescription>
-            Review and edit the AI analysis results before exporting.
+            Kamu bisa review, edit dan enhance rangkuman ini.
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-hidden p-4 border rounded-lg bg-white shadow-inner flex flex-col">
-          <div className="flex gap-1 mb-2 flex-wrap"> {/* Added flex-wrap */}
+          <div className="flex gap-1 mb-2 flex-wrap">
+            {" "}
+            {/* Added flex-wrap */}
             <Button
               onClick={() => editor.chain().focus().toggleBold().run()}
               disabled={!editor.can().chain().focus().toggleBold().run()}
@@ -191,16 +193,24 @@ export function PdfExportModal({
               <Italic className="h-4 w-4" />
             </Button>
             <Button
-              onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-              disabled={!editor.can().chain().focus().toggleHeading({ level: 1 }).run()}
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 1 }).run()
+              }
+              disabled={
+                !editor.can().chain().focus().toggleHeading({ level: 1 }).run()
+              }
               variant="outline"
               size="sm"
             >
               <Heading1 className="h-4 w-4" />
             </Button>
             <Button
-              onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-              disabled={!editor.can().chain().focus().toggleHeading({ level: 2 }).run()}
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 2 }).run()
+              }
+              disabled={
+                !editor.can().chain().focus().toggleHeading({ level: 2 }).run()
+              }
               variant="outline"
               size="sm"
             >
@@ -247,8 +257,8 @@ export function PdfExportModal({
             <form onSubmit={handleEnhanceWithAi} className="flex gap-2 mt-2">
               <Textarea
                 ref={textareaRef}
-                value={input} // Use input from useChat
-                onChange={handleInputChange} // Use handleInputChange from useChat
+                value={input}
+                onChange={handleInputChange}
                 placeholder="Enter your prompt to enhance with AI..."
                 className="min-h-[40px] max-h-[100px] resize-none"
                 disabled={isLoading}

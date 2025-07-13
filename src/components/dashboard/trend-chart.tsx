@@ -12,7 +12,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-// PERBAIKAN: Menambahkan impor untuk komponen Tabel
 import {
   Table,
   TableBody,
