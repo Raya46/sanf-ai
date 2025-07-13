@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
 import { type CreditApplication } from "@/lib/types";
 import { CategoryBar } from "@/components/app/ui/category-chart";
 
@@ -49,18 +50,18 @@ export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
                 maxValue: number;
               };
             } = {
-              dscr: { standard: 1.3, direction: "greater", maxValue: 5 },
+              dscr: { standard: 1, direction: "greater", maxValue: 5 },
               cashRatio: { standard: 0.3, direction: "greater", maxValue: 2 },
               quickRatio: { standard: 0.8, direction: "greater", maxValue: 2 },
-              der: { standard: 3.5, direction: "less", maxValue: 5 },
-              currentRatio: { standard: 1, direction: "greater", maxValue: 5 },
+              der: { standard: 4, direction: "less", maxValue: 5 },
+              currentRatio: { standard: 0.8, direction: "greater", maxValue: 5 },
               debtToAsset: {
                 standard: 50,
                 direction: "less",
                 maxValue: 100,
               },
               interestCoverage: {
-                standard: 2,
+                standard: 1,
                 direction: "greater",
                 maxValue: 12,
               },
@@ -112,7 +113,7 @@ export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
                         {config.standard}
                       </span>
                     )}
-                    (Value: {String(value)})
+                    (Nilai: {String(value)})
                   </span>
                 </div>
                 {/* CategoryBar di bawah row label-value */}
@@ -167,9 +168,20 @@ export function KeyRatiosSection({ applicationData }: KeyRatiosSectionProps) {
           })}
         </div>
       ) : (
-        <p className="text-sm text-gray-500">
-          No custom risk parameters defined.
-        </p>
+        // Render skeleton when no risk parameters are defined (assuming loading or empty)
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => ( // Render 3 skeleton rows
+            <div key={index} className="border-b border-gray-100 py-2 text-sm last:border-b-0">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-4 w-1/4" />
+              </div>
+              <div className="mt-2">
+                <Skeleton className="h-4 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

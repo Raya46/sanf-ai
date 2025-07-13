@@ -370,7 +370,7 @@ export function SectionForm() {
   const showConfirmButton = isAnimationComplete && isApiCallComplete;
 
   return (
-    <div className="flex flex-col gap-8 mt-4 mx-4 flex-1 h-full">
+    <div className="flex flex-col gap-8 mt-4 mx-4 flex-1 px-6 pb-6 h-full">
       <Stepper value={currentStep} className="w-full">
         {steps.map((step) => (
           <StepperItem
@@ -379,10 +379,28 @@ export function SectionForm() {
             completed={step.id < currentStep}
             className="flex-1"
           >
-            <StepperTrigger disabled>
-              <StepperIndicator>{step.id}</StepperIndicator>
+            <StepperTrigger> {/* Removed disabled prop */}
+              <StepperIndicator
+                className={
+                  step.id === currentStep
+                    ? "bg-[#182d7c] text-white" // Current step
+                    : step.id < currentStep
+                      ? "bg-green-500 text-white" // Completed step
+                      : "" // Future step (default styling)
+                }
+              >
+                {step.id}
+              </StepperIndicator>
               <div className="text-left">
-                <StepperTitle>{step.label}</StepperTitle>
+                <StepperTitle
+                  className={
+                    step.id === currentStep || step.id < currentStep
+                      ? "text-slate-900" // Current or completed step
+                      : "" // Future step (default styling)
+                  }
+                >
+                  {step.label}
+                </StepperTitle>
                 <StepperDescription>{step.description}</StepperDescription>
               </div>
             </StepperTrigger>

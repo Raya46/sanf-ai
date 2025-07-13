@@ -22,6 +22,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,10 +92,12 @@ export default function ApplicationDashboard() {
   const [viewMode, setViewMode] = useState("grid");
   const [sortBy, setSortBy] = useState("most-recent");
   const [creditAnalyses, setCreditAnalyses] = useState<Application[]>([]);
+  const [isLoading, setIsLoading] = useState(true); // Add loading state
   const router = useRouter();
 
   useEffect(() => {
     const fetchApplications = async () => {
+      setIsLoading(true); // Set loading to true before fetching
       try {
         const response = await fetch("/api/applications");
         if (!response.ok) {
@@ -138,6 +141,8 @@ export default function ApplicationDashboard() {
         setCreditAnalyses(formattedData);
       } catch (error) {
         console.error("Error fetching applications:", error);
+      } finally {
+        setIsLoading(false); // Set loading to false after fetching (success or error)
       }
     };
 
@@ -211,8 +216,9 @@ export default function ApplicationDashboard() {
 
         <div className="flex flex-col lg:flex-row gap-6 mb-8">
           <Button
+            variant="ring"
             onClick={() => router.push("/dashboard/new-application")}
-            className="bg-slate-900 hover:bg-slate-800 text-white w-fit"
+            className="bg-slate-900 ring-slate-900 ring-offset-white hover:bg-slate-800 text-white w-fit"
           >
             <Plus className="w-4 h-4 mr-2" /> Analisis Baru
           </Button>
@@ -283,102 +289,148 @@ export default function ApplicationDashboard() {
               : "space-y-4"
           }
         >
-          {sortedAnalyses.map((analysis) => {
-            const IconComponent = analysis.icon;
-            const StatusIcon = statusIcons[analysis.status] || AlertTriangle;
-
-            return (
-              <Link
-                key={analysis.id}
-                href={`/dashboard/${analysis.id}`}
-                className="block group"
-              >
-                <Card className="bg-blue-50/60 border hover:shadow-lg hover:border-blue-300 border-blue-200/40 transition-all duration-300 cursor-pointer h-full">
+          {isLoading
+            ? // Render 8 skeleton cards when loading
+              Array.from({ length: 8 }).map((_, index) => (
+                <Card
+                  key={index}
+                  className="bg-blue-50/60 border border-blue-200/40 h-full"
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100/60 rounded-lg border border-blue-200/30">
-                          <IconComponent className="w-5 h-5 text-slate-700" />
-                        </div>
-                        {/* PERBAIKAN: Menampilkan label segmen secara langsung */}
-                        <Badge
-                          variant="outline"
-                          className="text-xs border-blue-300/50 text-slate-700 bg-blue-50/40"
-                        >
-                          {analysis.segment}
-                        </Badge>
+                        <Skeleton className="w-10 h-10 rounded-lg" />
+                        <Skeleton className="w-24 h-6 rounded-md" />
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-slate-900"
-                            onClick={(e) => e.preventDefault()}
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem>Lihat Detail</DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            Hapus
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Skeleton className="w-8 h-8 rounded-full" />
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2">
-                      {analysis.applicant}
-                    </h3>
-                    <p className="text-sm text-slate-600 mb-3">
-                      {analysis.title}
-                    </p>
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-full mb-3" />
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-slate-500">
-                          Nominal Pengajuan
-                        </span>
-                        <span className="text-sm font-medium text-slate-900">
-                          {analysis.amount}
-                        </span>
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-4 w-1/4" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-slate-500">
-                          Probabilitas Persetujuan
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <TrendingUp
-                            className={`w-3 h-3 ${getRiskScoreColor(analysis.riskScore)}`}
-                          />
-                          <span
-                            className={`text-sm font-medium ${getRiskScoreColor(analysis.riskScore)}`}
-                          >
-                            {analysis.riskScore}%
-                          </span>
-                        </div>
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-4 w-1/5" />
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-500">
-                        {analysis.date}
-                      </span>
-                      <Badge
-                        className={`text-xs capitalize ${statusColors[analysis.status] || statusColors.unknown}`}
-                      >
-                        <StatusIcon className="w-3 h-3 mr-1" />
-                        {statusTranslations[analysis.status] || analysis.status}
-                      </Badge>
+                      <Skeleton className="h-4 w-1/4" />
+                      <Skeleton className="h-6 w-1/4" />
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
-            );
-          })}
+              ))
+            : // Render actual cards when not loading
+              sortedAnalyses.map((analysis) => {
+                const IconComponent = analysis.icon;
+                const StatusIcon =
+                  statusIcons[analysis.status] || AlertTriangle;
+
+                return (
+                  <Link
+                    key={analysis.id}
+                    href={`/dashboard/${analysis.id}`}
+                    className="block group"
+                  >
+                    <Card className="bg-blue-50/60 border hover:shadow-lg hover:border-blue-300 border-blue-200/40 transition-all duration-300 cursor-pointer h-full">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100/60 rounded-lg border border-blue-200/30">
+                              <IconComponent className="w-5 h-5 text-slate-700" />
+                            </div>
+                            {/* PERBAIKAN: Menampilkan label segmen secara langsung */}
+                            <Badge
+                              variant="outline"
+                              className="text-xs border-blue-300/50 text-slate-700 bg-blue-50/40"
+                            >
+                              {analysis.segment}
+                            </Badge>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-slate-900"
+                                onClick={(e) => e.preventDefault()}
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem>Lihat Detail</DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-600">
+                                Hapus
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2">
+                          {analysis.applicant}
+                        </h3>
+                        <p className="text-sm text-slate-600 mb-3">
+                          {analysis.title}
+                        </p>
+                        <div className="space-y-2 mb-4">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-slate-500">
+                              Nominal Pengajuan
+                            </span>
+                            <span className="text-sm font-medium text-slate-900">
+                              {analysis.amount}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-slate-500">
+                              Probabilitas Persetujuan
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <TrendingUp
+                                className={`w-3 h-3 ${getRiskScoreColor(
+                                  analysis.riskScore
+                                )}`}
+                              />
+                              <span
+                                className={`text-sm font-medium ${getRiskScoreColor(
+                                  analysis.riskScore
+                                )}`}
+                              >
+                                {analysis.riskScore}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-slate-500">
+                            {analysis.date}
+                          </span>
+                          <Badge
+                            className={`text-xs capitalize ${
+                              statusColors[analysis.status] ||
+                              statusColors.unknown
+                            }`}
+                          >
+                            <StatusIcon className="w-3 h-3 mr-1" />
+                            {statusTranslations[analysis.status] ||
+                              analysis.status}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
         </div>
 
-        {sortedAnalyses.length === 0 && (
+        {!isLoading && sortedAnalyses.length === 0 && (
           <div className="text-center py-12">
             <div className="text-slate-600 mb-4">
               <Briefcase className="w-12 h-12 mx-auto mb-4 opacity-50" />

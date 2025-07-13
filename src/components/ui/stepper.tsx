@@ -157,7 +157,7 @@ function StepperTrigger({
   ...props
 }: StepperTriggerProps) {
   const { setActiveStep } = useStepper()
-  const { step, isDisabled } = useStepItem()
+  const { step, isDisabled, state } = useStepItem() // Destructure state
 
   if (asChild) {
     const Comp = asChild ? Slot.Root : "span"
@@ -172,7 +172,8 @@ function StepperTrigger({
     <button
       data-slot="stepper-trigger"
       className={cn(
-        "focus-visible:border-ring focus-visible:ring-ring/50 inline-flex items-center gap-3 rounded-full outline-none focus-visible:z-10 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50",
+        "focus-visible:border-ring focus-visible:ring-ring/50 inline-flex items-center gap-3 rounded-full outline-none focus-visible:z-10 focus-visible:ring-[3px] disabled:pointer-events-none", // Removed disabled:opacity-50
+        state === "inactive" ? "opacity-50" : "", // Apply opacity-50 only for inactive state
         className
       )}
       onClick={() => setActiveStep(step)}
@@ -201,7 +202,7 @@ function StepperIndicator({
     <span
       data-slot="stepper-indicator"
       className={cn(
-        "bg-muted text-muted-foreground data-[state=active]:bg-primary data-[state=completed]:bg-primary data-[state=active]:text-primary-foreground data-[state=completed]:text-primary-foreground relative flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-medium",
+        "bg-gray-200 text-gray-700 data-[state=active]:bg-[#182d7c] data-[state=completed]:bg-green-500 data-[state=active]:text-white data-[state=completed]:text-white relative flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-medium",
         className
       )}
       data-state={state}
@@ -239,10 +240,15 @@ function StepperTitle({
   className,
   ...props
 }: React.HTMLAttributes<HTMLHeadingElement>) {
+  const { state } = useStepItem(); // Access state from context
   return (
     <h3
       data-slot="stepper-title"
-      className={cn("text-sm font-medium", className)}
+      className={cn(
+        "text-sm font-medium data-[state=active]:text-slate-900 data-[state=completed]:text-slate-900",
+        className
+      )}
+      data-state={state}
       {...props}
     />
   )
@@ -267,13 +273,15 @@ function StepperSeparator({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
+  const { state } = useStepItem(); // Access state from context
   return (
     <div
       data-slot="stepper-separator"
       className={cn(
-        "bg-muted group-data-[state=completed]/step:bg-primary m-0.5 group-data-[orientation=horizontal]/stepper:h-0.5 group-data-[orientation=horizontal]/stepper:w-full group-data-[orientation=horizontal]/stepper:flex-1 group-data-[orientation=vertical]/stepper:h-12 group-data-[orientation=vertical]/stepper:w-0.5",
+        "bg-gray-300 group-data-[state=completed]/step:bg-green-500 m-0.5 group-data-[orientation=horizontal]/stepper:h-0.5 group-data-[orientation=horizontal]/stepper:w-full group-data-[orientation=horizontal]/stepper:flex-1 group-data-[orientation=vertical]/stepper:h-12 group-data-[orientation=vertical]/stepper:w-0.5",
         className
       )}
+      data-state={state}
       {...props}
     />
   )

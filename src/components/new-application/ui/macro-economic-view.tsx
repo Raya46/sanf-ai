@@ -14,7 +14,7 @@ import { useChat } from "@ai-sdk/react";
 import { ChatCard } from "./chat-card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, LoaderCircle } from "lucide-react"; // Import LoaderCircle
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface CommodityData {
@@ -101,9 +101,15 @@ export function MacroEconomicView() {
           <CardHeader>
             <CardTitle>Commodities</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative min-h-[192px]"> {/* Added relative and min-h for positioning */}
             {isLoadingData ? (
-              <Skeleton className="h-48 w-full" />
+              <>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10">
+                  <LoaderCircle className="h-8 w-8 animate-spin text-blue-500" />
+                  <p className="mt-2 text-sm text-gray-600">Loading data...</p>
+                </div>
+                <Skeleton className="h-48 w-full" />
+              </>
             ) : (
               <Table>
                 <TableHeader>

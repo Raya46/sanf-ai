@@ -127,19 +127,6 @@ export function AnalyticsSidebar({
 
           {activeView === "credit-application" && (
             <div className="flex flex-col gap-4">
-              <p>Tautan Cepat</p>
-              <div className="flex flex-row items-center gap-2">
-                <File className="w-4 h-4" />
-                <p>Lihat Laporan Lengkap</p>
-              </div>
-              <div className="flex flex-row items-center gap-2">
-                <File className="w-4 h-4" />
-                <p>Lihat Laporan Lengkap</p>
-              </div>
-              <div className="flex flex-row items-center gap-2">
-                <File className="w-4 h-4" />
-                <p>Lihat Laporan Lengkap</p>
-              </div>
               <Button
                 className="bg-blue-600 flex flex-row mx-4"
                 onClick={() => setIsModalOpen(true)}

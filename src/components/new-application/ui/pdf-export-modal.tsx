@@ -13,9 +13,22 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { CreditApplication } from "@/lib/types";
 import { useChat } from "@ai-sdk/react";
-import { LoaderCircle, Bold, Italic } from "lucide-react";
+import {
+  LoaderCircle,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Heading1,
+  Heading2,
+  Quote,
+  Code,
+} from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { TextAlign } from "@tiptap/extension-text-align";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
 
 interface PdfExportModalProps {
   isOpen: boolean;
@@ -33,7 +46,16 @@ export function PdfExportModal({
   const router = useRouter();
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
+      Underline,
+      Link.configure({
+        openOnClick: false,
+      }),
+    ],
     content: "", // Initial content will be set by useEffect
     immediatelyRender: false, // Fix for SSR hydration mismatch
     onUpdate: ({ editor }) => {
@@ -151,7 +173,7 @@ export function PdfExportModal({
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-hidden p-4 border rounded-lg bg-white shadow-inner flex flex-col">
-          <div className="flex gap-1 mb-2">
+          <div className="flex gap-1 mb-2 flex-wrap"> {/* Added flex-wrap */}
             <Button
               onClick={() => editor.chain().focus().toggleBold().run()}
               disabled={!editor.can().chain().focus().toggleBold().run()}
@@ -167,6 +189,54 @@ export function PdfExportModal({
               size="sm"
             >
               <Italic className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+              disabled={!editor.can().chain().focus().toggleHeading({ level: 1 }).run()}
+              variant="outline"
+              size="sm"
+            >
+              <Heading1 className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+              disabled={!editor.can().chain().focus().toggleHeading({ level: 2 }).run()}
+              variant="outline"
+              size="sm"
+            >
+              <Heading2 className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              disabled={!editor.can().chain().focus().toggleBulletList().run()}
+              variant="outline"
+              size="sm"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+              disabled={!editor.can().chain().focus().toggleOrderedList().run()}
+              variant="outline"
+              size="sm"
+            >
+              <ListOrdered className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={() => editor.chain().focus().toggleBlockquote().run()}
+              disabled={!editor.can().chain().focus().toggleBlockquote().run()}
+              variant="outline"
+              size="sm"
+            >
+              <Quote className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+              disabled={!editor.can().chain().focus().toggleCodeBlock().run()}
+              variant="outline"
+              size="sm"
+            >
+              <Code className="h-4 w-4" />
             </Button>
           </div>
           <EditorContent
