@@ -21,6 +21,17 @@ export function StepAnalysisContext({
 }: StepAnalysisContextProps) {
   const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
 
+  const formatRupiah = (value: number | string): string => {
+    if (typeof value === "string") {
+      value = parseInt(value.replace(/[^\d]/g, ""), 10);
+    }
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(value);
+  };
+
   const handleCheckboxChange = (suggestionId: string, checked: boolean) => {
     const suggestion = promptSuggestions.find((s) => s.id === suggestionId);
     if (!suggestion) return;
@@ -85,7 +96,7 @@ export function StepAnalysisContext({
                 <Label className="text-xs text-gray-500">
                   Nominal Pengajuan
                 </Label>
-                <p className="font-medium">{amountSubmission}</p>
+                <p className="font-medium">{formatRupiah(amountSubmission)}</p>
               </div>
               <div>
                 <Label className="text-xs text-gray-500">Dokumen</Label>

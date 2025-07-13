@@ -20,6 +20,8 @@ export default function DashboardPage() {
       setIsLoadingData(true);
       setErrorData(null);
       try {
+        // Add 3 second delay for better skeleton visualization
+        await new Promise((resolve) => setTimeout(resolve, 5000));
         const response = await fetch(`/api/applications/${projectId}`);
         if (!response.ok) {
           if (response.status === 401) {
