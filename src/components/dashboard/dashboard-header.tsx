@@ -32,6 +32,7 @@ export function DashboardHeader() {
   >([]);
 
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
   const [showCreditEvaluationDialog, setShowCreditEvaluationDialog] =
     useState(false);
 
@@ -44,8 +45,18 @@ export function DashboardHeader() {
     router.push(`/dashboard/${params.projectId}/chat/${params.projectId}`);
   };
 
+  // Demo: Show loading modal for 8 seconds, then checklist, then navigate
   const handleViewAiAnalysis = () => {
-    router.push(`/dashboard/${params.projectId}/pdf`);
+    setIsLoadingPdf(true);
+    setShowChecklist(false);
+    setTimeout(() => {
+      setShowChecklist(true);
+      setIsLoadingPdf(false);
+      setTimeout(() => {
+        setShowChecklist(false);
+        router.push(`/dashboard/${params.projectId}/pdf`);
+      }, 1200); // Show checklist for 1.2s
+    }, 8000); // Loading for 8s
   };
 
   return (
@@ -74,20 +85,48 @@ export function DashboardHeader() {
         <Button
           variant="ring"
           className="bg-white text-black"
-          onClick={() => router.push(`/dashboard/${params.projectId}/pdf`)}
+          onClick={handleViewAiAnalysis}
         >
           <BookCheck className="mr-1 h-4 w-4" />
           Credit Approval Recommendation
         </Button>
-        <Dialog open={isLoadingPdf} onOpenChange={setIsLoadingPdf}>
+        <Dialog
+          open={isLoadingPdf || showChecklist}
+          onOpenChange={setIsLoadingPdf}
+        >
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <ScanLine className="h-5 w-5 text-blue-500" />
-                Processing File
+                {showChecklist ? (
+                  <span className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center rounded-full bg-green-100 p-2">
+                      <svg
+                        className="h-6 w-6 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </span>
+                    Selesai! File telah diproses
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <ScanLine className="h-5 w-5 text-blue-500" />
+                    Processing File
+                  </span>
+                )}
               </DialogTitle>
               <DialogDescription>
-                AI sedang menganalisis dokumen Anda secara bertahap.
+                {showChecklist
+                  ? "Analisis selesai, Anda akan diarahkan ke halaman hasil."
+                  : "AI sedang menganalisis dokumen Anda secara bertahap."}
               </DialogDescription>
             </DialogHeader>
           </DialogContent>

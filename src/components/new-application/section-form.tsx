@@ -141,6 +141,7 @@ export function SectionForm() {
       }
     };
 
+    // Durasi total 8 menit (480.000 ms), distribusi bertahap
     const steps = [
       {
         title: "Proses Analisis Kredit oleh AI Agent\n\n",
@@ -149,7 +150,7 @@ export function SectionForm() {
       {
         title:
           "Pertama-tama saya akan membaca dan memahami keseluruhan dokumen yang diberikan user.\n\n",
-        delay: 2000,
+        delay: 20000, // 20 detik
       },
       {
         title: `Langkah 1: Memulai Analisis Pemahaman Awal:\nTujuan: Menilai kelayakan kredit ${
@@ -157,57 +158,57 @@ export function SectionForm() {
         } berdasarkan dokumen yang tersedia.\nDokumen yang Dianalisis:\n${stagedFiles
           .map((file) => `- ${file.file.name}`)
           .join("\n")}\n\n`,
-        delay: 5000,
+        delay: 60000, // 1 menit
       },
       {
         title:
           "Langkah 2: Profil Perusahaan\nAnalisis Data:\nMengevaluasi informasi dasar, kepemilikan, dan target pasar...\nKesimpulan Awal: Perusahaan memiliki posisi kuat di pasar.\n\n",
-        delay: 10000,
+        delay: 120000, // 2 menit
       },
       {
         title:
           "Langkah 3: Legalitas dan Struktur Perusahaan\nAnalisis Data:\nMemeriksa Akta Pendirian, NIB, dan struktur kepemilikan...\nKesimpulan: Legalitas perusahaan memadai.\n\n",
-        delay: 20000,
+        delay: 150000, // 2.5 menit
       },
       {
         title:
           "Langkah 4: Analisis Performa Keuangan\nData Laporan Keuangan:\nMenganalisis Aset, Liabilitas, Laba Rugi, dan Arus Kas...\nKesimpulan: Kinerja keuangan menunjukkan tren pertumbuhan positif.\n\n",
-        delay: 30000,
+        delay: 180000, // 3 menit
       },
       {
         title:
           "Langkah 5: Analisis Invoice Penagihan\nData Invoice:\nMemeriksa total nilai, pembayaran, dan invoice yang masih outstanding...\nKesimpulan: Pola pembayaran pelanggan menunjukkan kepatuhan yang baik.\n\n",
-        delay: 40000,
+        delay: 210000, // 3.5 menit
       },
       {
         title:
           "Langkah 6: Analisis Collateral\nData Collateral:\nMenilai total nilai jaminan dan memverifikasi validitas dokumen...\nKesimpulan: Collateral memadai dan bernilai tinggi.\n\n",
-        delay: 50000,
+        delay: 240000, // 4 menit
       },
       {
         title:
           "Langkah 7: Analisis Rekapan Sales\nData Penjualan:\nMenganalisis total penjualan, distribusi produk, dan wilayah...\nKesimpulan: Penjualan menunjukkan diversifikasi yang sehat.\n\n",
-        delay: 60000,
+        delay: 300000, // 5 menit
       },
       {
         title:
           "Langkah 8: Analisis LOI Kerjasama\nData Kerjasama:\nMengevaluasi nilai proyek, sumber dana, dan syarat kerjasama...\nKesimpulan: Komitmen ekspansi dengan risiko termitigasi.\n\n",
-        delay: 70000,
+        delay: 360000, // 6 menit
       },
       {
         title:
           "Langkah 9: Analisis Rekening Koran\nData Rekening Koran:\nMemeriksa saldo awal, akhir, dan mutasi transaksi utama...\nKesimpulan: Arus kas operasional sehat dan bertumbuh.\n\n",
-        delay: 80000,
+        delay: 420000, // 7 menit
       },
       {
         title:
           "Langkah 10: Kesimpulan Akhir\nKeputusan Kredit:\nMemrumuskan pro, kontra, dan rekomendasi kredit...\n\n",
-        delay: 90000,
+        delay: 450000, // 7.5 menit
       },
       {
         title:
           "Saya sudah memahami semua dokumen, Saya akan melampirkan hasil dalam bentuk visualisasi dan Credit Approval Document yang siap di download User.",
-        delay: 100000,
+        delay: 480000, // 8 menit
         final: true,
       },
     ];
