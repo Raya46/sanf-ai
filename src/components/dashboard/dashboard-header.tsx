@@ -45,7 +45,6 @@ export function DashboardHeader() {
     router.push(`/dashboard/${params.projectId}/chat/${params.projectId}`);
   };
 
-  // Demo: Show loading modal for 8 seconds, then checklist, then navigate
   const handleViewAiAnalysis = () => {
     setIsLoadingPdf(true);
     setShowChecklist(false);
@@ -55,7 +54,7 @@ export function DashboardHeader() {
       setTimeout(() => {
         setShowChecklist(false);
         router.push(`/dashboard/${params.projectId}/pdf`);
-      }, 1200); // Show checklist for 1.2s
+      }, 1200); // Sphow checklist for 1.2s
     }, 8000); // Loading for 8s
   };
 
@@ -118,7 +117,28 @@ export function DashboardHeader() {
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <ScanLine className="h-5 w-5 text-blue-500" />
+                    <span className="inline-flex items-center justify-center">
+                      <svg
+                        className="animate-spin h-6 w-6 text-blue-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        ></path>
+                      </svg>
+                    </span>
                     Processing File
                   </span>
                 )}
@@ -126,7 +146,7 @@ export function DashboardHeader() {
               <DialogDescription>
                 {showChecklist
                   ? "Analisis selesai, Anda akan diarahkan ke halaman hasil."
-                  : "AI sedang menganalisis dokumen Anda secara bertahap."}
+                  : "AI sedang membuat Credit Approval Recommendation"}
               </DialogDescription>
             </DialogHeader>
           </DialogContent>
