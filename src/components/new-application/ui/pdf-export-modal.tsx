@@ -167,9 +167,9 @@ export function PdfExportModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Export Analysis to PDF</DialogTitle>
+          <DialogTitle>Rangkum percakapan kamu ke PDF</DialogTitle>
           <DialogDescription>
-            Review and edit the AI analysis results before exporting.
+            Kamu bisa review, edit dan enhance rangkuman ini.
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-hidden p-4 border rounded-lg bg-white shadow-inner flex flex-col">
