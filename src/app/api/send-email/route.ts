@@ -1,22 +1,22 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import { promises as fs } from "fs";
-import path from "path";
 
+// PERBAIKAN: Interface diubah untuk menerima pdfDataUrl
 interface EmailRequestBody {
   to: string;
   subject: string;
   text: string;
-  pdfPath: string;
+  pdfDataUrl: string; // Menerima base64 data URL
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { to, subject, text, pdfPath } = body as EmailRequestBody;
+    const { to, subject, text, pdfDataUrl } = body as EmailRequestBody;
 
-    // Validate required fields
-    if (!to || !subject || !text || !pdfPath) {
+    // Validasi
+    if (!to || !subject || !text || !pdfDataUrl) {
+      console.log(pdfDataUrl);
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -32,20 +32,16 @@ export async function POST(request: Request) {
       },
     });
 
-    // Read the PDF file
-    const publicDir = path.join(process.cwd(), "public");
-    const filePath = path.join(publicDir, pdfPath);
-    const pdfContent = await fs.readFile(filePath);
-
+    // PERBAIKAN: Menggunakan pdfDataUrl langsung sebagai lampiran
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: `Credit Analyst AI Agent <${process.env.GMAIL_USERNAME}>`,
       to,
       subject,
       text,
       attachments: [
         {
-          filename: "credit-analysis-report.pdf",
-          content: pdfContent,
+          filename: "credit-approval-recommendation.pdf",
+          path: pdfDataUrl, // Nodemailer bisa menangani data URL secara langsung
         },
       ],
     });

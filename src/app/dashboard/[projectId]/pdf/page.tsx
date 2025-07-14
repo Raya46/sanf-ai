@@ -46,7 +46,6 @@ export default function PdfViewerPage() {
     isError: false,
   });
 
-  // Path ke file PDF
   const pdfFile = "/CAR_PT_Batubara_Sejahtera_20250711031531.pdf";
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
@@ -66,30 +65,48 @@ export default function PdfViewerPage() {
     });
   }
 
+  // PERBAIKAN: Fungsi untuk mengubah Blob menjadi Data URL (base64)
+  const convertBlobToDataUrl = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // PERBAIKAN: Fungsi handleSendEmail diperbarui
   const handleSendEmail = async () => {
     if (!emailTo) return;
 
     setIsSending(true);
     try {
-      const response = await fetch("/api/send-email", {
+      // 1. Ambil file PDF dari public folder
+      const fileResponse = await fetch(pdfFile);
+      if (!fileResponse.ok) throw new Error("Could not fetch PDF file.");
+      const pdfBlob = await fileResponse.blob();
+
+      // 2. Ubah menjadi Data URL
+      const pdfDataUrl = await convertBlobToDataUrl(pdfBlob);
+
+      // 3. Kirim Data URL ke API
+      const apiResponse = await fetch("/api/send-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           to: emailTo,
-          subject: `Credit Analysis Report - ${new Date().toLocaleDateString()}`,
-          text: `Mitra yang Terhormat,
-
-Dengan senang hati kami sampaikan Laporan Analisis Kredit untuk Anda tinjau.
-
-Salam hormat,
-Tim Sanf AI`,
-          pdfPath: pdfFile,
+          subject: `Credit Approval Recomendation - ${new Date().toLocaleDateString()}`,
+          text: `Mitra yang Terhormat,\n\nDengan senang hati kami sampaikan Credit Approval Recommendation untuk Anda tinjau.\n\nSalam hormat,\nTim Sanf AI`,
+          pdfDataUrl: pdfDataUrl, // Mengirim data yang benar
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to send email");
+      if (!apiResponse.ok) {
+        const errorBody = await apiResponse.json();
+        throw new Error("Failed to send email via API");
+      }
 
       setStatusDialog({
         isOpen: true,
@@ -102,7 +119,10 @@ Tim Sanf AI`,
       setStatusDialog({
         isOpen: true,
         title: "Error",
-        message: "Failed to send email. Please try again.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to send email. Please try again.",
         isError: true,
       });
     } finally {
@@ -119,19 +139,16 @@ Tim Sanf AI`,
     document.body.removeChild(link);
   };
 
-  // Fungsi untuk navigasi halaman
   const goToPage = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newPageNumber = parseInt(pageInput, 10);
     if (numPages && newPageNumber >= 1 && newPageNumber <= numPages) {
       setPageNumber(newPageNumber);
     } else {
-      // Jika input tidak valid, kembalikan ke nomor halaman saat ini
       setPageInput(String(pageNumber));
     }
   };
 
-  // Sinkronkan input field dengan nomor halaman saat ini
   useEffect(() => {
     setPageInput(String(pageNumber));
   }, [pageNumber]);
@@ -139,8 +156,8 @@ Tim Sanf AI`,
   const handlePrevPage = () => setPageNumber((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () =>
     setPageNumber((prev) => (numPages ? Math.min(prev + 1, numPages) : prev));
-  const handleZoomIn = () => setScale((prev) => Math.min(prev + 0.2, 3)); // Maksimal zoom 3x
-  const handleZoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.5)); // Minimal zoom 0.5x
+  const handleZoomIn = () => setScale((prev) => Math.min(prev + 0.2, 3));
+  const handleZoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.5));
 
   return (
     <div className="flex h-screen flex-col items-center bg-gray-100 p-4 dark:bg-gray-900 sm:p-6 md:p-8">
@@ -233,7 +250,7 @@ Tim Sanf AI`,
           </CardContent>
         </Card>
 
-        {/* Email Dialog */}
+        {/* Dialog untuk mengirim email */}
         <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -272,7 +289,7 @@ Tim Sanf AI`,
           </DialogContent>
         </Dialog>
 
-        {/* Status Dialog */}
+        {/* Dialog untuk status (sukses/error) */}
         <Dialog
           open={statusDialog.isOpen}
           onOpenChange={(open) =>
