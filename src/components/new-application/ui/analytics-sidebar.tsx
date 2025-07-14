@@ -114,7 +114,7 @@ export function AnalyticsSidebar({
                     />
                     <CreditAnalysisCard
                       icon={<Flag className="w-8 h-8" />}
-                      title={`8 Menit`}
+                      title={`5 Menit`}
                       description="Estimasi Waktu Analisis"
                       bgColor="transparent"
                       iconColor="#007BFF"
