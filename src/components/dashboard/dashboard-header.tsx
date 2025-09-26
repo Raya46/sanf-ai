@@ -17,7 +17,7 @@ import {
   FileText,
   LogOut,
   MessageCircle,
-  ScanLine,
+  Trash2,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -35,6 +35,8 @@ export function DashboardHeader() {
   const [showChecklist, setShowChecklist] = useState(false);
   const [showCreditEvaluationDialog, setShowCreditEvaluationDialog] =
     useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -236,6 +238,29 @@ export function DashboardHeader() {
         >
           <LogOut className="h-4 w-4" />
         </Button>
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-red-500" />
+                Hapus Analisis
+              </DialogTitle>
+              <DialogDescription>
+                Apakah Anda yakin ingin menghapus hasil analisis ini? Tindakan
+                ini tidak dapat dibatalkan.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(false)}
+                disabled={isDeleting}
+              >
+                Batal
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </header>
   );

@@ -18,6 +18,7 @@ import {
   Clock,
   LogOut,
   LucideIcon,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -93,6 +102,10 @@ export default function ApplicationDashboard() {
   const [sortBy, setSortBy] = useState("most-recent");
   const [creditAnalyses, setCreditAnalyses] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true); // Add loading state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [applicationToDelete, setApplicationToDelete] =
+    useState<Application | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -189,6 +202,39 @@ export default function ApplicationDashboard() {
   const handleLogout = async () => {
     await logout();
     router.push("/login");
+  };
+
+  const handleDeleteApplication = async () => {
+    if (!applicationToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(
+        `/api/applications/${applicationToDelete.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to delete application");
+      }
+      // Remove from local state
+      setCreditAnalyses((prev) =>
+        prev.filter((app) => app.id !== applicationToDelete.id)
+      );
+      setShowDeleteDialog(false);
+      setApplicationToDelete(null);
+    } catch (error) {
+      console.error("Error deleting application:", error);
+      alert("Gagal menghapus aplikasi. Silakan coba lagi.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const openDeleteDialog = (application: Application) => {
+    setApplicationToDelete(application);
+    setShowDeleteDialog(true);
   };
 
   return (
@@ -358,14 +404,23 @@ export default function ApplicationDashboard() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 hover:text-slate-900"
-                                onClick={(e) => e.preventDefault()}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
                               >
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                               <DropdownMenuItem>Lihat Detail</DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDeleteDialog(analysis);
+                                }}
+                              >
                                 Hapus
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -446,6 +501,38 @@ export default function ApplicationDashboard() {
             </Button>
           </div>
         )}
+
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-red-500" />
+                Hapus Analisis
+              </DialogTitle>
+              <DialogDescription>
+                Apakah Anda yakin ingin menghapus analisis untuk{" "}
+                <strong>{applicationToDelete?.applicant}</strong>? Tindakan ini
+                tidak dapat dibatalkan.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(false)}
+                disabled={isDeleting}
+              >
+                Batal
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteApplication}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Menghapus..." : "Hapus"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

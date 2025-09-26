@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { streamText, CoreMessage, StreamData } from "ai";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
@@ -55,12 +55,12 @@ export async function GET(
 
 export interface CloudflareEnv {
   AI: Ai | null;
-  OPENAI_API_KEY: string;
+  GOOGLE_API_KEY: string;
 }
 
 // Get environment variables for OpenNext on Cloudflare
 function getCloudflareEnv(): CloudflareEnv {
-  let apiKey = process.env.OPENAI_API_KEY; // Default for local dev
+  let apiKey = process.env.GOOGLE_API_KEY; // Default for local dev
   let ai: Ai | null = null;
 
   // Check if we're in development or production
@@ -80,8 +80,8 @@ function getCloudflareEnv(): CloudflareEnv {
       const { env } = getCloudflareContext() as { env: any };
       ai = env.AI;
       // In production on Cloudflare, secrets are on the 'env' object, not process.env.
-      // This requires you to set the secret via `npx wrangler secret put OPENAI_API_KEY`.
-      apiKey = env.OPENAI_API_KEY;
+      // This requires you to set the secret via `npx wrangler secret put GOOGLE_API_KEY`.
+      apiKey = env.GOOGLE_API_KEY;
 
       console.log("Production Cloudflare context accessed.");
 
@@ -114,11 +114,11 @@ function getCloudflareEnv(): CloudflareEnv {
   }
 
   console.log(
-    `API Key loaded: ${apiKey ? `sk-...${apiKey.slice(-4)}` : "Not found"}`
+    `API Key loaded: ${apiKey ? `...${apiKey.slice(-4)}` : "Not found"}`
   );
 
   if (!apiKey || apiKey.length === 0) {
-    throw new Error("OPENAI_API_KEY not found or is empty in environment");
+    throw new Error("GOOGLE_API_KEY not found or is empty in environment");
   }
 
   if (!ai) {
@@ -142,7 +142,7 @@ function getCloudflareEnv(): CloudflareEnv {
 
   return {
     AI: ai,
-    OPENAI_API_KEY: apiKey,
+    GOOGLE_API_KEY: apiKey,
   };
 }
 
@@ -218,9 +218,8 @@ export async function POST(
 
     // 4. Setup AI and get response
     const env = getCloudflareEnv();
-    const openai = createOpenAI({
-      baseURL: "https://openrouter.ai/api/v1",
-      apiKey: env.OPENAI_API_KEY,
+    const google = createGoogleGenerativeAI({
+      apiKey: env.GOOGLE_API_KEY,
     });
 
     let contextChunks = "";
@@ -309,7 +308,7 @@ Rekomendasi: Minta konfirmasi jadwal pembayaran sebelum menyetujui. Terdapat ris
     data.append({ status: "Generating response..." });
 
     const result = await streamText({
-      model: openai("gpt-4o-mini"),
+      model: google("models/text-embedding-005"),
       messages: messagesForAI,
       async onFinish(completion) {
         await supabase.from("chat_messages").insert({

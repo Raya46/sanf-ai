@@ -387,8 +387,8 @@ export function SectionForm() {
                   step.id === currentStep
                     ? "bg-[#182d7c] text-white" // Current step
                     : step.id < currentStep
-                      ? "bg-green-500 text-white" // Completed step
-                      : "" // Future step (default styling)
+                    ? "bg-green-500 text-white" // Completed step
+                    : "" // Future step (default styling)
                 }
               >
                 {step.id}
