@@ -5,11 +5,12 @@ import { z } from "zod";
 // --- Configuration ---
 const FIRECRAWL_API_KEY = process.env.FIRECRAWL_KEY;
 
-if (!FIRECRAWL_API_KEY) {
-  throw new Error("FIRECRAWL_KEY environment variable is not set.");
+function getFirecrawlApp() {
+  if (!FIRECRAWL_API_KEY) {
+    throw new Error("FIRECRAWL_KEY environment variable is not set.");
+  }
+  return new FirecrawlApp({ apiKey: FIRECRAWL_API_KEY });
 }
-
-const firecrawl = new FirecrawlApp({ apiKey: FIRECRAWL_API_KEY });
 
 // --- Caching ---
 let cachedData: any = null;
@@ -27,7 +28,7 @@ const EnergyPricesSchema = z.object({
       Price: z.string().describe("The current price of the commodity"),
       Day: z.string().describe("The change in value for the day"),
       "%": z.string().describe("The percentage change for the day"),
-    })
+    }),
   ),
 });
 
@@ -53,7 +54,7 @@ export async function GET() {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
       { message: `Failed to fetch macroeconomic data: ${message}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -61,6 +62,7 @@ export async function GET() {
 // --- Helper Functions ---
 async function scrapeCommodities() {
   console.log("Scraping commodities...");
+  const firecrawl = getFirecrawlApp();
   const scrapeResult = await firecrawl.scrapeUrl(
     "https://tradingeconomics.com/commodities",
     {
@@ -70,13 +72,13 @@ async function scrapeCommodities() {
         prompt:
           "Extract the data from the commodities table. The top-level key should be 'energy_prices'. The keys for each object in the array should be exactly 'Commodity', 'Unit', 'Price', 'Day', and '%'.",
       },
-    }
+    },
   );
 
   if (scrapeResult.success && scrapeResult.json?.energy_prices) {
     return scrapeResult.json;
   }
   throw new Error(
-    "Failed to extract commodities data with the specified format."
+    "Failed to extract commodities data with the specified format.",
   );
 }

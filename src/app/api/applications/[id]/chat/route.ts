@@ -6,7 +6,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createClient();
@@ -41,7 +41,7 @@ export async function GET(
       console.error("Error fetching chat messages:", messagesError);
       return NextResponse.json(
         { error: messagesError.message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -87,7 +87,7 @@ function getCloudflareEnv(): CloudflareEnv {
 
       if (ai) {
         console.log(
-          "AI binding successfully accessed via OpenNext context in production"
+          "AI binding successfully accessed via OpenNext context in production",
         );
       }
     } catch (contextError) {
@@ -114,7 +114,7 @@ function getCloudflareEnv(): CloudflareEnv {
   }
 
   console.log(
-    `API Key loaded: ${apiKey ? `...${apiKey.slice(-4)}` : "Not found"}`
+    `API Key loaded: ${apiKey ? `...${apiKey.slice(-4)}` : "Not found"}`,
   );
 
   if (!apiKey || apiKey.length === 0) {
@@ -130,10 +130,10 @@ function getCloudflareEnv(): CloudflareEnv {
       console.error("This indicates an issue with:");
       console.error("1. Verify AI binding is configured in wrangler.jsonc");
       console.error(
-        "2. Ensure deployed to Cloudflare Workers with proper bindings"
+        "2. Ensure deployed to Cloudflare Workers with proper bindings",
       );
       console.error(
-        "3. Verify AutoRAG is in the same Cloudflare account as the Worker"
+        "3. Verify AutoRAG is in the same Cloudflare account as the Worker",
       );
     }
   } else {
@@ -148,7 +148,7 @@ function getCloudflareEnv(): CloudflareEnv {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const supabase = await createClient();
   const data = new StreamData();
@@ -169,17 +169,37 @@ export async function POST(
       return new Response("Unauthorized", { status: 401 });
     }
 
-    // 1. Get chat session
-    const { data: session, error: sessionError } = await supabase
+    // 1. Get or create chat session
+    let { data: session, error: sessionError } = await supabase
       .from("chat_sessions")
       .select("id")
       .eq("application_id", applicationId)
       .eq("user_id", user.id)
       .single();
 
-    if (sessionError || !session) {
-      console.error("Chat session not found:", sessionError);
-      return new Response("Chat session not found", { status: 404 });
+    if (sessionError && sessionError.code !== "PGRST116") {
+      return new Response(`Session lookup error: ${sessionError.message}`, {
+        status: 500,
+      });
+    }
+
+    if (!session) {
+      const { data: newSession, error: createError } = await supabase
+        .from("chat_sessions")
+        .insert({
+          application_id: applicationId,
+          user_id: user.id,
+        })
+        .select("id")
+        .single();
+
+      if (createError) {
+        return new Response(
+          `Failed to create session: ${createError.message}`,
+          { status: 500 },
+        );
+      }
+      session = newSession;
     }
     const sessionId = session.id;
 
@@ -189,11 +209,17 @@ export async function POST(
       return new Response("Last message must be from user", { status: 400 });
     }
 
-    await supabase.from("chat_messages").insert({
+    const { error: msgError } = await supabase.from("chat_messages").insert({
       session_id: sessionId,
       sender_type: "user",
       message_content: userMessage.content as string,
     });
+
+    if (msgError) {
+      return new Response(`Failed to save message: ${msgError.message}`, {
+        status: 500,
+      });
+    }
 
     // 3. Fetch full chat history for context
     const { data: history, error: historyError } = await supabase
@@ -203,7 +229,6 @@ export async function POST(
       .order("sent_at", { ascending: true });
 
     if (historyError) {
-      console.error("Error fetching chat history:", historyError);
       return new Response("Error fetching history", { status: 500 });
     }
 
@@ -211,7 +236,7 @@ export async function POST(
       (msg: { sender_type: string; message_content: string }) => ({
         role: msg.sender_type === "user" ? "user" : "assistant",
         content: msg.message_content,
-      })
+      }),
     );
 
     const userQuery = userMessage.content as string;
@@ -263,21 +288,14 @@ Saat diminta mensimulasikan skenario, kamu berpikir logis dan runtut langkah dem
 Jika ada ketidakpastian, kamu menandai risikonya dan merekomendasikan validasi tambahan, bukan berspekulasi.
 
 Memori selama sesi meliputi:
-
 Semua dokumen yang diunggah atau dirujuk
-
 Rasio keuangan, detail invoice, ketentuan pelunasan, dan anomali
-
 Konteks bisnis dari pemohon
 
 Setiap tanggapanmu harus selalu mencakup:
-
 Analisis terstruktur (ringkasan poin-poin atau bullet jika diperlukan)
-
 Identifikasi jelas terhadap red flag, jika ada
-
 Dampak jangka panjang jika pengajuan disetujui
-
 Rekomendasi validasi tambahan jika data lemah atau belum jelas
 
 Contoh Perilaku Penggunaan:
@@ -289,7 +307,6 @@ Kewajiban bulanan hampir setara dengan volatilitas pendapatan selama 6 bulan ter
 
 Terdapat invoice tertunda dari klien terbesar mereka pada bulan April.
 Rekomendasi: Minta konfirmasi jadwal pembayaran sebelum menyetujui. Terdapat risiko guncangan pembayaran dalam 6 bulan jika arus kas menurun.”
-
 `;
 
     const messagesForAI: CoreMessage[] = [
@@ -303,32 +320,38 @@ Rekomendasi: Minta konfirmasi jadwal pembayaran sebelum menyetujui. Terdapat ris
         content: `Here is some context from relevant documents:\n${contextChunks}`,
       });
     }
-    messagesForAI.push(userMessage);
 
-    data.append({ status: "Generating response..." });
+    // IMPORTANT: previousMessages ALREADY includes the message inserted earlier in the controller.
+    // So we DON'T need to push userMessage again.
 
-    const result = await streamText({
-      model: google("models/text-embedding-005"),
-      messages: messagesForAI,
-      async onFinish(completion) {
-        await supabase.from("chat_messages").insert({
-          session_id: sessionId,
-          sender_type: "ai",
-          message_content: completion.text,
-        });
+    try {
+      const result = await streamText({
+        model: google("gemini-2.0-flash-001"),
+        messages: messagesForAI,
+        onFinish: async ({ text }) => {
+          try {
+            await supabase.from("chat_messages").insert({
+              session_id: sessionId,
+              sender_type: "ai",
+              message_content: text,
+            });
+          } catch (dbError) {
+            console.error("Failed to save AI response:", dbError);
+          } finally {
+            data.close();
+          }
+        },
+      });
 
-        data.append({ status: "completed" });
-        data.close();
-      },
-    });
-
-    const stream = result.toDataStream();
-
-    return new NextResponse(stream, {
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
+      return result.toDataStreamResponse({ data });
+    } catch (streamError) {
+      console.error("streamText failed:", streamError);
+      data.close();
+      throw streamError;
+    }
   } catch (error) {
     console.error("Error in chat route:", error);
+    data.close(); // Ensure stream data is closed
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred";
     return new Response(errorMessage, { status: 500 });
