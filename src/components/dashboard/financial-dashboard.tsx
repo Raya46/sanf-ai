@@ -7,8 +7,6 @@ import { TabNavigation } from "@/components/dashboard/tab-navigation";
 import { MetricTrendCard } from "@/components/dashboard/metric-trend-card";
 import { CombinedMetricsCard } from "@/components/dashboard/combined-metrics-card";
 import { KeyRatiosSection } from "@/components/dashboard/key-ratios-section";
-import { MainChart } from "@/components/dashboard/main-chart";
-import { CreditRadarChart } from "@/components/dashboard/credit-radar-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -26,14 +24,18 @@ import {
   ArrowDown,
   TrendingUp,
 } from "lucide-react";
-import { BalanceSheetTab } from "@/components/dashboard/balance-sheet-tab";
-import { CashFlowTab } from "@/components/dashboard/cash-flow-tab";
-import { RatioTab } from "@/components/dashboard/ratio-tab";
-import { IndustryDataTab } from "@/components/dashboard/industry-data-tab";
-import { IncomeStatementTab } from "./income-statement-tab";
 import { type CreditApplication } from "@/lib/types";
-import { RiskScoreSummary } from "./risk-score-summary";
-import { PerformanceBarChart } from "./trend-chart";
+import dynamic from "next/dynamic";
+
+const MainChart = dynamic(() => import("@/components/dashboard/main-chart").then(mod => mod.MainChart), { ssr: false });
+const CreditRadarChart = dynamic(() => import("@/components/dashboard/credit-radar-chart").then(mod => mod.CreditRadarChart), { ssr: false });
+const PerformanceBarChart = dynamic(() => import("./trend-chart").then(mod => mod.PerformanceBarChart), { ssr: false });
+const BalanceSheetTab = dynamic(() => import("@/components/dashboard/balance-sheet-tab").then(mod => mod.BalanceSheetTab), { ssr: false });
+const CashFlowTab = dynamic(() => import("@/components/dashboard/cash-flow-tab").then(mod => mod.CashFlowTab), { ssr: false });
+const RatioTab = dynamic(() => import("@/components/dashboard/ratio-tab").then(mod => mod.RatioTab), { ssr: false });
+const IndustryDataTab = dynamic(() => import("@/components/dashboard/industry-data-tab").then(mod => mod.IndustryDataTab), { ssr: false });
+const IncomeStatementTab = dynamic(() => import("./income-statement-tab").then(mod => mod.IncomeStatementTab), { ssr: false });
+const RiskScoreSummary = dynamic(() => import("./risk-score-summary").then(mod => mod.RiskScoreSummary), { ssr: false });
 
 const tabs = [
   { id: "income-statements", label: "Ringkasan Analisa" },
@@ -290,7 +292,7 @@ export function FinancialDashboard({
 
               {/* Main Chart */}
               <div className="lg:col-span-2 pb-6">
-                <PerformanceBarChart/>
+                <PerformanceBarChart />
                 <div className="p-6 w-full bg-white rounded-lg border-1 mt-6">
                   <h3 className="text-lg font-semibold mb-4 text-gray-700">
                     PERFORMA KEUANGAN TERKINI

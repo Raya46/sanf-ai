@@ -8,9 +8,18 @@ import { ChatCard } from "@/components/new-application/ui/chat-card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { MacroEconomicView } from "./macro-economic-view";
-import { ChartBarNegative } from "./negative-bar-chart";
 import { CreditApplication, ChatMessage as DbChatMessage } from "@/lib/types";
+import dynamic from "next/dynamic";
+
+const MacroEconomicView = dynamic(
+  () => import("./macro-economic-view").then((mod) => mod.MacroEconomicView),
+  { ssr: false }
+);
+
+const ChartBarNegative = dynamic(
+  () => import("./negative-bar-chart").then((mod) => mod.ChartBarNegative),
+  { ssr: false }
+);
 
 interface ChatSectionProps {
   activeView: ActiveView;

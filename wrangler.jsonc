@@ -1,8 +1,10 @@
 {
   "main": ".open-next/worker.js",
   "name": "sanf-ai",
+  "minify": true,
   "compatibility_flags": ["nodejs_compat"],
   "compatibility_date": "2024-09-23",
+  "account_id":"3f9b5eb4116447a7109cacef6de4320e",
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"

@@ -13,11 +13,17 @@ if (process.env.NODE_ENV === "development") {
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@opennextjs/cloudflare"],
+  // Optimize for Cloudflare
+  output: "standalone",
+  compress: true,
   // Ensure static exports work with Cloudflare Pages
   trailingSlash: true,
   // Optimize for edge runtime
   images: {
     unoptimized: true,
+  },
+  experimental: {
+    optimizePackageImports: ["lucide-react", "recharts"],
   },
 };
 

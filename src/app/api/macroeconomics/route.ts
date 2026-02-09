@@ -1,23 +1,15 @@
 import { NextResponse } from "next/server";
-import FirecrawlApp from "@mendable/firecrawl-js";
 import { z } from "zod";
 
 // --- Configuration ---
 const FIRECRAWL_API_KEY = process.env.FIRECRAWL_KEY;
-
-function getFirecrawlApp() {
-  if (!FIRECRAWL_API_KEY) {
-    throw new Error("FIRECRAWL_KEY environment variable is not set.");
-  }
-  return new FirecrawlApp({ apiKey: FIRECRAWL_API_KEY });
-}
 
 // --- Caching ---
 let cachedData: any = null;
 let lastFetchTime: number = 0;
 const CACHE_DURATION_MS = 10 * 60 * 1000; // 10 minutes
 
-// --- Zod Schema for LLM Extraction (as requested by user) ---
+// --- Zod Schema for LLM Extraction ---
 const EnergyPricesSchema = z.object({
   energy_prices: z.array(
     z.object({
@@ -41,14 +33,9 @@ export async function GET() {
 
   try {
     const commoditiesData = await scrapeCommodities();
-
-    // The schema already creates the { energy_prices: [...] } structure
-    const responseData = commoditiesData;
-
-    cachedData = responseData;
+    cachedData = commoditiesData;
     lastFetchTime = now;
-
-    return NextResponse.json(responseData);
+    return NextResponse.json(commoditiesData);
   } catch (error) {
     console.error("Error in macroeconomics API route:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -61,23 +48,43 @@ export async function GET() {
 
 // --- Helper Functions ---
 async function scrapeCommodities() {
-  console.log("Scraping commodities...");
-  const firecrawl = getFirecrawlApp();
-  const scrapeResult = await firecrawl.scrapeUrl(
-    "https://tradingeconomics.com/commodities",
-    {
+  console.log("Scraping commodities using direct fetch...");
+
+  if (!FIRECRAWL_API_KEY) {
+    throw new Error("FIRECRAWL_KEY environment variable is not set.");
+  }
+
+  const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+    },
+    body: JSON.stringify({
+      url: "https://tradingeconomics.com/commodities",
       formats: ["json"],
       jsonOptions: {
         schema: EnergyPricesSchema,
         prompt:
           "Extract the data from the commodities table. The top-level key should be 'energy_prices'. The keys for each object in the array should be exactly 'Commodity', 'Unit', 'Price', 'Day', and '%'.",
       },
-    },
-  );
+    }),
+  });
 
-  if (scrapeResult.success && scrapeResult.json?.energy_prices) {
-    return scrapeResult.json;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Firecrawl API error: ${response.status} ${errorText}`);
   }
+
+  const result = (await response.json()) as {
+    success: boolean;
+    data?: { json?: { energy_prices: any[] } };
+  };
+
+  if (result.success && result.data?.json?.energy_prices) {
+    return result.data.json;
+  }
+
   throw new Error(
     "Failed to extract commodities data with the specified format.",
   );

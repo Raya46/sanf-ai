@@ -8,9 +8,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ContentOverview } from "./ui/content-overview";
-import { ContentReport } from "./ui/content-report";
-import { ContentStatistic } from "./ui/content-statistic";
+import dynamic from "next/dynamic";
+
+const ContentOverview = dynamic(() => import("./ui/content-overview").then(mod => mod.ContentOverview), { ssr: false });
+const ContentReport = dynamic(() => import("./ui/content-report").then(mod => mod.ContentReport), { ssr: false });
+const ContentStatistic = dynamic(() => import("./ui/content-statistic").then(mod => mod.ContentStatistic), { ssr: false });
 
 const invoices = [
   {

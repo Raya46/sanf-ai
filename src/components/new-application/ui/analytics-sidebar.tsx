@@ -13,7 +13,12 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PdfExportModal } from "./pdf-export-modal";
+import dynamic from "next/dynamic";
+
+const PdfExportModal = dynamic(
+  () => import("./pdf-export-modal").then((mod) => mod.PdfExportModal),
+  { ssr: false }
+);
 
 import { CreditApplication } from "@/lib/types";
 import { useRouter } from "next/navigation";

@@ -2,9 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
-import { Document, Page as PdfPage, pdfjs } from "react-pdf";
+import dynamic from "next/dynamic";
 import {
   ChevronLeft,
   ChevronRight,
@@ -26,8 +24,19 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-// Mengatur worker untuk react-pdf
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Dynamically import the PDF viewer content with SSR disabled
+const PdfViewerContent = dynamic(
+  () => import("@/components/pdf/PdfViewerContent"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-96 flex-col items-center justify-center text-gray-500">
+        <Loader2 className="mb-2 h-8 w-8 animate-spin" />
+        <span>Initializing Viewer...</span>
+      </div>
+    ),
+  },
+);
 
 export default function PdfViewerPage() {
   const router = useRouter();
@@ -315,30 +324,13 @@ export default function PdfViewerPage() {
 
         {/* PDF Viewer */}
         <div className="flex justify-center">
-          <Document
-            file={pdfFile}
-            onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={onDocumentLoadError}
-            loading={
-              <div className="flex h-96 flex-col items-center justify-center text-gray-500">
-                <Loader2 className="mb-2 h-8 w-8 animate-spin" />
-                <span>Loading PDF...</span>
-              </div>
-            }
-            error={
-              <div className="flex h-96 flex-col items-center justify-center text-red-500">
-                <span>Failed to load PDF</span>
-                <span>Please try again later</span>
-              </div>
-            }
-            className="flex justify-center"
-          >
-            <PdfPage
-              pageNumber={pageNumber}
-              scale={scale}
-              className="shadow-lg"
-            />
-          </Document>
+          <PdfViewerContent
+            pdfFile={pdfFile}
+            pageNumber={pageNumber}
+            scale={scale}
+            onDocumentLoadSuccess={onDocumentLoadSuccess}
+            onDocumentLoadError={onDocumentLoadError}
+          />
         </div>
       </div>
     </div>
