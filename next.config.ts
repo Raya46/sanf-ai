@@ -12,7 +12,6 @@ if (process.env.NODE_ENV === "development") {
 }
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@opennextjs/cloudflare"],
   // Optimize for Cloudflare
   output: "standalone",
   compress: true,

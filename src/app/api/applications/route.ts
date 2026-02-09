@@ -25,6 +25,21 @@ const s3 = new AwsClient({
   region: "auto",
 });
 
+export interface CloudflareEnv {
+  AI: any;
+  VECTOR_INDEX: any;
+  GOOGLE_API_KEY: string;
+}
+
+function chunkText(text: string, size: number = 1500): string[] {
+  const chunks: string[] = [];
+  const cleanText = text.replace(/\s+/g, " ").trim();
+  for (let i = 0; i < cleanText.length; i += size) {
+    chunks.push(cleanText.slice(i, i + size));
+  }
+  return chunks;
+}
+
 const CandlestickDataSchema = z.object({
   period: z
     .string()
@@ -50,19 +65,19 @@ const analysisSchema = z.object({
   overall_indicator: z
     .string()
     .describe(
-      "An overall risk indicator (e.g., 'LOW_RISK', 'MEDIUM_RISK', 'HIGH_RISK')."
+      "An overall risk indicator (e.g., 'LOW_RISK', 'MEDIUM_RISK', 'HIGH_RISK').",
     ),
   document_validation_percentage: z
     .number()
     .min(0)
     .max(100)
     .describe(
-      "A percentage score for document validity and completeness (0-100)."
+      "A percentage score for document validity and completeness (0-100).",
     ),
   estimated_analysis_time_minutes: z
     .number()
     .describe(
-      "Estimated time in minutes for a human to perform a similar analysis."
+      "Estimated time in minutes for a human to perform a similar analysis.",
     ),
   revenue: z
     .array(
@@ -70,7 +85,7 @@ const analysisSchema = z.object({
         year: z.number().describe("The year for the revenue data point."),
         month: z.number().min(1).max(12).describe("The month number (1-12)."),
         revenue: z.number().describe("The calculated revenue for that month."),
-      })
+      }),
     )
     .max(36)
     .describe("An array of monthly revenue data for up to the last 36 months."),
@@ -85,47 +100,31 @@ const analysisSchema = z.object({
   analysis_value: z
     .array(CandlestickDataSchema)
     .describe(
-      "An array of data points formatted for a candlestick chart, based on monthly revenue fluctuations."
+      "An array of data points formatted for a candlestick chart, based on monthly revenue fluctuations.",
     ),
 });
 
-// --- Fungsi Helper & GET (Tidak berubah) ---
-export interface CloudflareEnv {
-  AI: any;
-  GOOGLE_API_KEY: string;
-}
-function getCloudflareEnv(): CloudflareEnv {
+// --- Helper: Get Cloudflare Environment ---
+function getCloudflareEnv() {
   try {
     const { env } = getCloudflareContext() as { env: any };
-    console.log(
-      "✅ Successfully accessed Cloudflare context. Assuming production environment."
-    );
-    const apiKey = env.GOOGLE_API_KEY;
-    if (!apiKey) {
-      console.error(
-        "❌ CRITICAL: Cloudflare context found, but GOOGLE_API_KEY secret is MISSING."
-      );
-      throw new Error(
-        "GOOGLE_API_KEY secret not found in Cloudflare environment."
-      );
-    }
-    return { AI: env.AI, GOOGLE_API_KEY: apiKey };
+    console.log("✅ Successfully accessed Cloudflare context.");
+    return {
+      AI: env.AI,
+      GOOGLE_API_KEY: env.GOOGLE_API_KEY,
+      VECTOR_INDEX: env.VECTOR_INDEX,
+    };
   } catch (e) {
-    console.log(
-      "Could not get Cloudflare context. Assuming local development environment."
-    );
-    const apiKey = process.env.GOOGLE_API_KEY;
-    if (!apiKey) {
-      console.error(
-        "❌ CRITICAL: Running locally, but GOOGLE_API_KEY is MISSING from .env file."
-      );
-      throw new Error(
-        "GOOGLE_API_KEY not found in process.env for local development."
-      );
-    }
-    return { AI: null, GOOGLE_API_KEY: apiKey };
+    console.log("Running in local development environment.");
+    return {
+      AI: null,
+      GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+      VECTOR_INDEX: null,
+    };
   }
 }
+
+// --- Fungsi POST Utama (Logika Baru) ---
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -169,7 +168,7 @@ export async function POST(request: NextRequest) {
     if (!files || files.length === 0) {
       return NextResponse.json(
         { error: "No files uploaded." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -199,16 +198,96 @@ export async function POST(request: NextRequest) {
       console.error("Error creating initial application:", initialInsertError);
       return NextResponse.json(
         { error: initialInsertError.message },
-        { status: 500 }
+        { status: 500 },
       );
     }
     console.log(`Initial record created with ID: ${application.id}`);
 
     // LANGKAH 3: Upload file ke R2 dan siapkan prompt AI
     console.log("Step 2: Uploading files and preparing AI context...");
-    const uploadedFilesData = [];
+    const uploadedFilesData: {
+      application_id: string;
+      file_name: string;
+      r2_object_key: string;
+      file_size_bytes: number;
+      file_type: string;
+    }[] = [];
     let allExtractedText = "";
 
+    // --- Parallel Processing for 10 PDFs ---
+    const processPromises = files.map(async (file) => {
+      console.log(` - Preparing ${file.name}...`);
+
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const r2Key = `docs/${user.id}/${application.id}/${uuidv4()}-${file.name}`;
+
+      // Upload to R2 (Parallel)
+      const uploadPromise = s3
+        .fetch(`${endpoint}/${bucketName}/${r2Key}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.type,
+            "Content-Length": buffer.length.toString(),
+          },
+          body: buffer,
+        })
+        .then(() => {
+          return {
+            application_id: application.id,
+            file_name: file.name,
+            r2_object_key: r2Key,
+            file_size_bytes: file.size,
+            file_type: "document",
+          };
+        });
+
+      // Extract text if PDF (Parallel)
+      let extractedText = "";
+      if (file.type === "application/pdf") {
+        try {
+          const extractionFormData = new FormData();
+          extractionFormData.append("pdfFile", file);
+
+          const extractionResponse = await fetch(
+            "https://pdf-processing-dusky.vercel.app/",
+            {
+              method: "POST",
+              body: extractionFormData,
+            },
+          );
+
+          if (extractionResponse.ok) {
+            const extractionResult = await extractionResponse.json();
+            if (
+              extractionResult &&
+              typeof extractionResult === "object" &&
+              "text" in extractionResult
+            ) {
+              extractedText = `\n\n--- Start of Document: ${file.name} ---\n\n${extractionResult.text}\n\n--- End of Document: ${file.name} ---\n\n`;
+            }
+          }
+        } catch (extractionError) {
+          console.error(
+            `Failed to extract text from ${file.name}:`,
+            extractionError,
+          );
+          extractedText = `\n\n--- FAILED TO EXTRACT TEXT FROM: ${file.name} ---\n\n`;
+        }
+      }
+
+      return { uploadInfo: await uploadPromise, extractedText };
+    });
+
+    const results = await Promise.all(processPromises);
+
+    // Consolidate results
+    results.forEach((res) => {
+      if (res.uploadInfo) uploadedFilesData.push(res.uploadInfo);
+      if (res.extractedText) allExtractedText += res.extractedText;
+    });
+
+    // NOW define the prompt after we have all the text
     const analysisPrompt = `You are a world-class credit analyst AI.
     
     **IMPORTANT RULE 1: LANGUAGE:** Your entire response, including the HTML report and all text, MUST be in Indonesian (Bahasa Indonesia).
@@ -228,70 +307,68 @@ export async function POST(request: NextRequest) {
     1.  Generate a comprehensive analysis report in **pure HTML format** and in **Indonesian**.
     2.  Based on the monthly revenue data, generate a series of candlestick data points for the 'analysis_value' field.
     
-    **Full Text Content from All Documents:**
+    **Full Text Content from All Documents (${files.length} documents):**
     ${allExtractedText}`;
 
-    for (const file of files) {
-      console.log(` - Processing ${file.name}...`);
+    // --- NEW: Save extracted text to R2 and Index in Vectorize ---
+    if (allExtractedText.trim()) {
+      console.log("Step 2.5: Saving extracted text to R2 and indexing...");
 
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const r2Key = `docs/${user.id}/${application.id}/${uuidv4()}-${
-        file.name
-      }`;
-      await s3.fetch(`${endpoint}/${bucketName}/${r2Key}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type,
-          "Content-Length": buffer.length.toString(),
-        },
-        body: buffer,
-      });
-      uploadedFilesData.push({
-        application_id: application.id,
-        file_name: file.name,
-        r2_object_key: r2Key,
-        file_size_bytes: file.size,
-        file_type: "document",
-      });
+      // 1. Save full text to R2 for development fallback
+      const textBuffer = Buffer.from(allExtractedText);
+      const textR2Key = `docs/${user.id}/${application.id}/full-extracted-text.txt`;
 
-      // PERUBAHAN UTAMA: Panggil server Express untuk ekstraksi teks
-      if (file.type === "application/pdf") {
-        try {
-          const extractionFormData = new FormData();
-          extractionFormData.append("pdfFile", file);
+      try {
+        await s3.fetch(`${endpoint}/${bucketName}/${textR2Key}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "text/plain",
+            "Content-Length": textBuffer.length.toString(),
+          },
+          body: textBuffer,
+        });
+        console.log("Full extracted text saved to R2");
+      } catch (r2Error) {
+        console.error("Failed to save extracted text to R2:", r2Error);
+      }
 
-          const extractionResponse = await fetch(
-            "https://pdf-processing-dusky.vercel.app/",
-            {
-              method: "POST",
-              body: extractionFormData,
-            }
-          );
+      // 2. Index in Vectorize
+      try {
+        console.log("Starting Vectorize indexing...");
+        const ctx = await getCloudflareContext();
+        const env = ctx.env as unknown as CloudflareEnv;
+        const ai = env.AI;
+        const vectorize = env.VECTOR_INDEX;
 
-          if (!extractionResponse.ok) {
-            throw new Error(
-              `Extraction server failed with status ${extractionResponse.status}`
+        if (ai && vectorize) {
+          const chunks = chunkText(allExtractedText, 1500).slice(0, 100); // Guard limit to 100 chunks for now
+          console.log(`Indexing ${chunks.length} chunks...`);
+
+          const batchSize = 10;
+          for (let i = 0; i < chunks.length; i += batchSize) {
+            const batch = chunks.slice(i, i + batchSize);
+            const { data: embeddings } = await (ai as any).run(
+              "@cf/baai/bge-small-en-v1.5",
+              { text: batch },
             );
-          }
 
-          const extractionResult = await extractionResponse.json();
-          if (
-            extractionResult &&
-            typeof extractionResult === "object" &&
-            "text" in extractionResult &&
-            typeof extractionResult.text === "string"
-          ) {
-            allExtractedText += `\n\n--- Start of Document: ${file.name} ---\n\n${extractionResult.text}\n\n--- End of Document: ${file.name} ---\n\n`;
-          } else {
-            allExtractedText += `\n\n--- FAILED TO EXTRACT TEXT FROM: ${file.name} ---\n\n`;
+            const vectors = embeddings.map((values: number[], idx: number) => ({
+              id: uuidv4(),
+              values,
+              metadata: {
+                application_id: application.id,
+                text: batch[idx],
+              },
+            }));
+
+            await (vectorize as any).upsert(vectors);
           }
-        } catch (extractionError) {
-          console.error(
-            `Failed to extract text from ${file.name}:`,
-            extractionError
-          );
-          allExtractedText += `\n\n--- FAILED TO EXTRACT TEXT FROM: ${file.name} ---\n\n`;
+          console.log("Vectorize indexing completed successfully");
+        } else {
+          console.warn("AI or VECTOR_INDEX binding missing");
         }
+      } catch (vectorError) {
+        console.error("Vectorize indexing failed:", vectorError);
       }
     }
 
